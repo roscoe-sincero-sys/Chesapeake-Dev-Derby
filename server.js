@@ -94,15 +94,46 @@ async function serveFile(res, file, method) {
  * Builds the HTTP server. `dataDir` is where names.json / winners.json live;
  * tests point it at a temp folder.
  */
-export function createServer({ dataDir = path.join(ROOT, 'data') } = {}) {
+export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = false, shutdownDelay = 3000 } = {}) {
   const store = createStore(dataDir);
   const publicDir = path.join(ROOT, 'public');
   const threeDir = path.join(ROOT, 'node_modules', 'three');
 
-  return http.createServer(async (req, res) => {
+  let tabs = 0;
+  let shutdownTimer;
+  const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://localhost');
       const pathname = decodeURIComponent(url.pathname);
+
+      // One persistent connection per page, including background tabs. A grace
+      // period lets reloads and navigation reconnect before the server stops.
+      if (pathname === '/api/session' && req.method === 'GET') {
+        if (!exitOnClose) {
+          res.writeHead(204);
+          return res.end();
+        }
+        clearTimeout(shutdownTimer);
+        tabs++;
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-store',
+          Connection: 'keep-alive',
+        });
+        res.write(': connected\n\n');
+        const heartbeat = setInterval(() => res.write(': alive\n\n'), 15000);
+        res.on('close', () => {
+          clearInterval(heartbeat);
+          tabs--;
+          if (tabs === 0 && server.listening) {
+            shutdownTimer = setTimeout(() => {
+              server.close();
+              server.closeIdleConnections?.();
+            }, shutdownDelay);
+          }
+        });
+        return;
+      }
 
       if (pathname === '/api/state' && req.method === 'GET') {
         const [{ names, warnings }, winners] = await Promise.all([store.loadNames(), store.loadWinners()]);
@@ -158,6 +189,8 @@ export function createServer({ dataDir = path.join(ROOT, 'data') } = {}) {
       else res.end();
     }
   });
+  server.on('close', () => clearTimeout(shutdownTimer));
+  return server;
 }
 
 // Start listening only when run directly (`node server.js`), not when imported by tests.
@@ -165,7 +198,7 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 if (isMain) {
   const port = Number(process.env.PORT) || 4100;
   const host = process.env.HOST || '127.0.0.1';
-  const server = createServer();
+  const server = createServer({ exitOnClose: process.argv.includes('--exit-on-close') });
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`Port ${port} is already in use. Try: PORT=${port + 1} npm start  (PowerShell: $env:PORT=${port + 1}; npm start)`);

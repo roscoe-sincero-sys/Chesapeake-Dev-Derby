@@ -16,5 +16,5 @@ if not exist "node_modules\three" (
     exit /b 1
   )
 )
-node server.js --open
-pause
+node server.js --open --exit-on-close
+if errorlevel 1 pause
