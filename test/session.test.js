@@ -4,6 +4,7 @@ import { once } from 'node:events';
 import http from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createServer } from '../server.js';
+import { openBrowserUnlessConnected } from '../lib/browser-session.js';
 
 async function launch(t, exitOnClose = true) {
   const server = createServer({ exitOnClose, shutdownDelay: 200 });
@@ -67,4 +68,31 @@ test('other tabs and reloads keep the launcher server alive', { timeout: 10000 }
   await closeReplacement();
   await closed;
   assert.equal(server.listening, false);
+});
+
+
+test('launcher opens the browser when no existing tab reconnects', async (t) => {
+  const { server } = await launch(t);
+  let opened = 0;
+  assert.equal(await openBrowserUnlessConnected(server, () => opened++, 100), true);
+  assert.equal(opened, 1);
+});
+
+test('a reconnecting tab suppresses opening another browser tab', async (t) => {
+  const { server, tab } = await launch(t);
+  let opened = 0;
+  const pending = openBrowserUnlessConnected(server, () => opened++, 500);
+  await tab();
+  assert.equal(await pending, false);
+  await delay(600);
+  assert.equal(opened, 0);
+});
+
+test('stopping the server cancels a pending browser launch', async (t) => {
+  const { server } = await launch(t);
+  let opened = 0;
+  const pending = openBrowserUnlessConnected(server, () => opened++, 500);
+  await new Promise((resolve) => server.close(resolve));
+  assert.equal(await pending, false);
+  assert.equal(opened, 0);
 });

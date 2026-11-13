@@ -20,7 +20,8 @@ npm start       # then open http://127.0.0.1:4100
 `npm run open` does the same and opens your browser for you. On Windows you can also double-click
 **`start.cmd`**. This launcher automatically stops the server and closes its terminal about three
 seconds after the last game or roster-editor tab closes. Reloading or moving between those screens keeps
-it running. `npm start` and `npm run open` keep running until you press Ctrl+C.
+it running. On startup it waits up to four seconds for an existing tab to reconnect, avoiding a duplicate
+tab after you stop the server with Ctrl+C and restart the launcher. `npm start` and `npm run open` keep running until you press Ctrl+C.
 
 To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm start`).
 

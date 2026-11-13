@@ -15,6 +15,7 @@ import { stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { exec } from 'node:child_process';
 import { createStore } from './lib/store.js';
+import { openBrowserUnlessConnected } from './lib/browser-session.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
@@ -120,7 +121,8 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
           'Cache-Control': 'no-store',
           Connection: 'keep-alive',
         });
-        res.write(': connected\n\n');
+        res.write('retry: 1000\n: connected\n\n');
+        server.emit('browser-connected');
         const heartbeat = setInterval(() => res.write(': alive\n\n'), 15000);
         res.on('close', () => {
           clearInterval(heartbeat);
@@ -198,7 +200,8 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 if (isMain) {
   const port = Number(process.env.PORT) || 4100;
   const host = process.env.HOST || '127.0.0.1';
-  const server = createServer({ exitOnClose: process.argv.includes('--exit-on-close') });
+  const exitOnClose = process.argv.includes('--exit-on-close');
+  const server = createServer({ exitOnClose });
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`Port ${port} is already in use. Try: PORT=${port + 1} npm start  (PowerShell: $env:PORT=${port + 1}; npm start)`);
@@ -212,7 +215,9 @@ if (isMain) {
     console.log(`\n  🏁 Chesapeake Dev Derby is running at ${address}\n  Press Ctrl+C to stop.\n`);
     if (process.argv.includes('--open')) {
       const opener = process.platform === 'win32' ? `start "" "${address}"` : process.platform === 'darwin' ? `open "${address}"` : `xdg-open "${address}"`;
-      exec(opener, () => {});
+      const open = () => exec(opener, () => {});
+      if (exitOnClose) openBrowserUnlessConnected(server, open);
+      else open();
     }
   });
 }
