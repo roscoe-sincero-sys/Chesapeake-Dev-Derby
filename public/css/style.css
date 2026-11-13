@@ -138,8 +138,12 @@ h2 {
   gap: 10px;
 }
 
-.spacer {
-  flex: 1;
+#roster-section .section-head { flex-wrap: wrap; }
+.roster-actions {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .count {
@@ -800,7 +804,6 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   background: var(--gold); border: 3px solid #101420;
   box-shadow: 0 0 0 2px var(--gold);
 }
-.speed-scale { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
 .editor-page { overflow: auto; background: #101420; }
 .editor { position: relative; z-index: 1; width: min(680px, calc(100% - 32px)); margin: 32px auto; padding: 24px; }
 .editor h1 { margin: 20px 0 12px; }

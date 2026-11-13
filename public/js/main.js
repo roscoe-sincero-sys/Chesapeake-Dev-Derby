@@ -79,7 +79,7 @@ async function loadState() {
     retry.textContent = 'Retry';
     retry.onclick = loadState;
     status.append(retry);
-    $('roster-section').hidden = true;
+    $('check-all').disabled = $('check-none').disabled = true;
     $('recent-section').hidden = true;
     $('run').disabled = true;
   }
@@ -174,7 +174,7 @@ function renderLobby() {
     recent.append(li);
   });
 
-  $('roster-section').hidden = !state.names.length;
+  $('check-all').disabled = $('check-none').disabled = !state.names.length;
   $('recent-section').hidden = !state.names.length;
   updateRunButton();
 }

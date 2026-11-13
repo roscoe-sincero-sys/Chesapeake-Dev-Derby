@@ -29,15 +29,16 @@
       </header>
 
       <div id="status" role="status"></div>
-      <nav aria-label="Roster settings"><a class="link" href="roster.html">Modify list</a></nav>
 
-      <section id="roster-section" hidden>
+      <section id="roster-section">
         <div class="section-head">
           <h2>Who's here today?</h2>
           <span id="racer-count" class="count"></span>
-          <span class="spacer"></span>
-          <button id="check-all" type="button" class="link">All</button>
-          <button id="check-none" type="button" class="link">None</button>
+          <nav class="roster-actions" aria-label="Roster controls">
+            <button id="check-all" type="button" class="link" disabled>All</button>
+            <button id="check-none" type="button" class="link" disabled>None</button>
+            <a class="link" href="roster.html">Modify List</a>
+          </nav>
         </div>
         <p class="hint">Untick anyone who is absent. The last three winners sit this one out.</p>
         <ul id="roster"></ul>
@@ -54,7 +55,6 @@
           <output id="speed-value" for="race-speed">2&#215;</output>
         </div>
         <input id="race-speed" type="range" min="1" max="20" step="1" value="2" />
-        <div class="speed-scale" aria-hidden="true"><span>1&#215; &middot; Scenic route</span><span>20&#215; &middot; Full throttle</span></div>
       </section>
 
       <details id="guide">
