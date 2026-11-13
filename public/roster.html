@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modify list - Chesapeake Dev Derby</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three/build/three.module.js" } }
+  </script>
+</head>
+<body class="editor-page">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <main class="panel editor">
+    <a href="/">Back to lobby</a>
+    <h1>Modify the racer list</h1>
+    <p>Add, rename, or remove people below. Changes apply to the next race. Recent winner history is kept.</p>
+    <form id="roster-form">
+      <label for="names">Racer names</label>
+      <p id="names-hint" class="hint">One name per line. Up to 30 names, 40 characters each. Blank lines and duplicate names are ignored. Saving an empty list clears the roster.</p>
+      <textarea id="names" rows="12" aria-describedby="names-hint" disabled></textarea>
+      <div class="editor-actions">
+        <button id="save-names" type="submit" class="primary" disabled>Save list</button>
+        <a href="/">Return to lobby</a>
+        <button id="reload-names" type="button" hidden>Retry loading</button>
+      </div>
+    </form>
+    <p id="editor-status" role="status" aria-live="polite">Loading roster...</p>
+  </main>
+  <script type="module" src="js/roster.js"></script>
+</body>
+</html>

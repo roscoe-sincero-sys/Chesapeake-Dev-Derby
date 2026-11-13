@@ -11,10 +11,10 @@ const $ = (id) => document.getElementById(id);
 
 // Optional URL switches, handy for demos and testing:
 //   ?seed=123   replay the same race every time
-//   ?speed=3    run the race faster (0.25 – 8)
+//   ?speed=3    run the race faster (1 to 20)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
-const speed = Math.min(8, Math.max(0.25, Number(params.get('speed')) || 1));
+let speed = Math.min(20, Math.max(1, Math.round(Number(params.get('speed')) || 2)));
 
 const state = {
   names: [],
@@ -59,7 +59,7 @@ async function loadState() {
     status.replaceChildren();
     const notes = [...data.warnings];
     if (!game) notes.unshift('3D is not available in this browser, so the race will be run off-screen and the winner shown straight away.');
-    if (!state.names.length) notes.unshift('data/names.json has no names in it yet. Add some and reload.');
+    if (!state.names.length) notes.unshift('The roster is empty. Use Modify list to add racers.');
     if (notes.length) {
       status.className = 'warn';
       const list = document.createElement('ul');
@@ -79,7 +79,7 @@ async function loadState() {
     retry.textContent = 'Retry';
     retry.onclick = loadState;
     status.append(retry);
-    $('roster-section').hidden = true;
+    $('check-all').disabled = $('check-none').disabled = true;
     $('recent-section').hidden = true;
     $('run').disabled = true;
   }
@@ -174,7 +174,7 @@ function renderLobby() {
     recent.append(li);
   });
 
-  $('roster-section').hidden = !state.names.length;
+  $('check-all').disabled = $('check-none').disabled = !state.names.length;
   $('recent-section').hidden = !state.names.length;
   updateRunButton();
 }
@@ -260,6 +260,17 @@ function init() {
 
   $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
 
+  const slider = $('race-speed');
+  const showSpeed = () => {
+    speed = Number(slider.value);
+    $('speed-value').textContent = `${speed}\u00d7`;
+    slider.setAttribute('aria-valuetext', `${speed} times normal speed`);
+    slider.style.setProperty('--fill', `${(speed - 1) / 19 * 100}%`);
+  };
+  slider.value = speed;
+  slider.addEventListener('input', showSpeed);
+  showSpeed();
+
   $('run').addEventListener('click', run);
   $('check-all').addEventListener('click', () => setAll(true));
   $('check-none').addEventListener('click', () => setAll(false));
@@ -280,10 +291,10 @@ function init() {
   showMute();
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && state.phase === 'lobby' && !e.target.closest('button, summary, a')) {
+    if (e.key === 'Enter' && state.phase === 'lobby' && !e.target.closest('button, summary, a, input, textarea, select')) {
       e.preventDefault();
       run();
-    } else if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    } else if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
       mute.click();
     }
   });

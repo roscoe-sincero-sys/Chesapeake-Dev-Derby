@@ -68,3 +68,49 @@ test('serves the game, Three.js, and blocks path traversal', async (t) => {
     assert.ok(!text.includes('chesapeake-dev-derby') && !text.includes('createServer') && !text.includes('"names"'), `${sneaky} leaked a project file`);
   }
 });
+
+const putNames = (base, body) => fetch(`${base}/api/names`, {
+  method: 'PUT', headers: { 'Content-Type': 'application/json' },
+  body: typeof body === 'string' ? body : JSON.stringify(body),
+});
+
+test('roster edits persist, normalize duplicates, and preserve winner history', async (t) => {
+  const { base, dir } = await startServer(t);
+  await post(base, { name: 'Ada' });
+  const before = await readFile(path.join(dir, 'winners.json'), 'utf8');
+  const response = await putNames(base, { names: [' Grace  Hopper ', 'grace hopper', '', 'Linus'] });
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(result.names, ['Grace Hopper', 'Linus']);
+  assert.equal(result.warnings.length, 1);
+  assert.deepEqual(JSON.parse(await readFile(path.join(dir, 'names.json'), 'utf8')).names, result.names);
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.deepEqual(state.names, result.names);
+  assert.equal(await readFile(path.join(dir, 'winners.json'), 'utf8'), before);
+  assert.equal((await post(base, { name: 'Ada' })).status, 400);
+  assert.equal((await post(base, { name: 'Linus' })).status, 200);
+  assert.equal((await fetch(`${base}/roster.html`)).status, 200);
+});
+
+test('invalid roster edits leave the saved roster intact', async (t) => {
+  const { base, dir } = await startServer(t);
+  const before = await readFile(path.join(dir, 'names.json'), 'utf8');
+  for (const body of [null, {}, [], { names: [42] }, { names: ['x'.repeat(41)] },
+    { names: Array.from({ length: 31 }, (_, i) => `Racer ${i}`) }, 'not json']) {
+    assert.equal((await putNames(base, body)).status, 400);
+    assert.equal(await readFile(path.join(dir, 'names.json'), 'utf8'), before);
+  }
+  assert.equal((await putNames(base, { names: ['x'.repeat(20_000)] })).status, 413);
+  assert.equal(await readFile(path.join(dir, 'names.json'), 'utf8'), before);
+});
+
+test('roster writes serialize and an empty roster can be saved', async (t) => {
+  const { base } = await startServer(t);
+  const responses = await Promise.all(['A', 'B', 'C'].map((n) => putNames(base, { names: [n] })));
+  for (const response of responses) assert.equal(response.status, 200);
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.equal(state.names.length, 1);
+  assert.ok(['A', 'B', 'C'].includes(state.names[0]));
+  assert.equal((await putNames(base, { names: [] })).status, 200);
+  assert.deepEqual((await (await fetch(`${base}/api/state`)).json()).names, []);
+});

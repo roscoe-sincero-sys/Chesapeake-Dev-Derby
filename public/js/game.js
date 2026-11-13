@@ -241,14 +241,15 @@ export class Game {
       scale = 0.3;
     }
     this.accumulator += dt * scale;
+    // At 20x and the maximum 0.1-second frame, allow all 120 fixed steps.
     let steps = 0;
-    while (this.accumulator >= STEP && steps < 40) {
+    while (this.accumulator >= STEP && steps < 121) {
       sim.step(STEP);
       this.accumulator -= STEP;
       steps++;
       for (const event of sim.drainEvents()) this.handleEvent(event);
     }
-    if (steps === 40) this.accumulator = 0;
+    if (steps === 121) this.accumulator = 0;
 
     this.hooks.onFrame?.(sim);
 

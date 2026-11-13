@@ -86,10 +86,16 @@ export class Hud {
   }
 
   countdown(text) {
+    clearTimeout(this.countdownTimer);
     this.count.textContent = text;
     this.count.className = '';
     void this.count.offsetWidth; // restart the CSS animation
     this.count.className = text === 'GO' ? 'pop go' : 'pop';
+    // Remove expired text instead of leaving transparent text over the track.
+    this.countdownTimer = setTimeout(() => {
+      this.count.textContent = '';
+      this.count.className = '';
+    }, 900);
   }
 
   /** Called every frame with the simulation; updates standings and progress. */
@@ -196,6 +202,7 @@ export class Hud {
 
   /** Hides and resets everything. */
   end() {
+    clearTimeout(this.countdownTimer);
     clearTimeout(this.resultsTimer);
     this.root.hidden = true;
     this.root.classList.remove('results-open');
@@ -206,7 +213,7 @@ export class Hud {
     this.count.textContent = '';
     this.count.className = '';
     this.saveStatus('');
-    $('winner-name').textContent = '';
+    $('winner-name').textContent = 'Race results';
     this.rows.clear();
     this.lineup = null;
   }
