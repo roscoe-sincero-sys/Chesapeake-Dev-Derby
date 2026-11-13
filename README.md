@@ -4,7 +4,7 @@ Pick who leads the team meeting — by racing for it.
 
 Every name on your roster becomes a 3D kart racer (a browser tab, a blue crab, a hamburger menu…) and
 runs an obstacle course of web-developer hazards over the Chesapeake Bay. First across the line leads the
-meeting. A race takes about 50 seconds.
+meeting. A race takes about 50 seconds at 1x speed, or about 25 seconds at the default 2x.
 
 Built with [Three.js](https://threejs.org/) and a tiny zero-dependency Node server.
 
@@ -24,7 +24,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 ## Running a meeting pick
 
-1. **Edit the roster** in [`data/names.json`](data/names.json) — up to 30 names:
+1. **Edit the roster** using **Modify list** in the lobby (one name per line), or in [`data/names.json`](data/names.json) — up to 30 names:
 
    ```json
    { "names": ["Ada", "Grace", "Linus"] }
@@ -33,7 +33,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** Everyone is listed with a checkbox. A ticked box means that person is racing.
+2. **Open the lobby.** Set the **Race speed** slider from 1 to 20 (default 2); higher values finish sooner. Everyone is listed with a checkbox. A ticked box means that person is racing.
    - **Untick** anyone who is absent today.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
@@ -105,7 +105,7 @@ Handy for demos and testing:
 
 | Option      | Effect                                                    |
 | ----------- | --------------------------------------------------------- |
-| `?speed=3`  | Run the race faster or slower (0.25 – 8)                  |
+| `?speed=3`  | Initial race speed (1 to 20; default 2)                  |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
 
 ## Tests

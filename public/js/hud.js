@@ -206,7 +206,7 @@ export class Hud {
     this.count.textContent = '';
     this.count.className = '';
     this.saveStatus('');
-    $('winner-name').textContent = '';
+    $('winner-name').textContent = 'Race results';
     this.rows.clear();
     this.lineup = null;
   }

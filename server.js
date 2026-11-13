@@ -5,6 +5,7 @@
 //   2. reads data/names.json and reads/writes data/winners.json
 //
 //   GET  /api/state    -> { names, winners, warnings }
+//   PUT  /api/names    -> body { names: [...] } ; returns { names, warnings }
 //   POST /api/winners  -> body { name } ; returns { winners }
 
 import http from 'node:http';
@@ -106,6 +107,16 @@ export function createServer({ dataDir = path.join(ROOT, 'data') } = {}) {
       if (pathname === '/api/state' && req.method === 'GET') {
         const [{ names, warnings }, winners] = await Promise.all([store.loadNames(), store.loadWinners()]);
         return sendJson(res, 200, { names, winners, warnings });
+      }
+
+      if (pathname === '/api/names' && req.method === 'PUT') {
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch (err) {
+          return sendJson(res, err.statusCode || 400, { error: err.statusCode ? err.message : 'Body must be JSON with a "names" array.' });
+        }
+        return sendJson(res, 200, await store.saveNames(payload));
       }
 
       if (pathname === '/api/winners' && req.method === 'POST') {

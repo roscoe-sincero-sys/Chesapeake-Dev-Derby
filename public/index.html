@@ -11,7 +11,7 @@
     </script>
   </head>
   <body>
-    <canvas id="scene" aria-label="3D race track"></canvas>
+    <canvas id="scene" aria-hidden="true"></canvas>
 
     <div id="toolbar">
       <button id="mute" type="button" title="Sound on/off" aria-label="Toggle sound">🔊</button>
@@ -29,6 +29,7 @@
       </header>
 
       <div id="status" role="status"></div>
+      <nav aria-label="Roster settings"><a class="link" href="roster.html">Modify list</a></nav>
 
       <section id="roster-section" hidden>
         <div class="section-head">
@@ -45,6 +46,16 @@
       <section id="recent-section" hidden>
         <div class="section-head"><h2>Last three winners</h2></div>
         <ol id="recent"></ol>
+      </section>
+
+      <section class="speed-control" aria-labelledby="speed-label">
+        <div class="section-head">
+          <label id="speed-label" for="race-speed">Race speed</label>
+          <output id="speed-value" for="race-speed">2&#215;</output>
+        </div>
+        <input id="race-speed" type="range" min="1" max="20" step="1" value="2" aria-describedby="speed-hint" />
+        <div class="speed-scale" aria-hidden="true"><span>1&#215; &middot; Scenic route</span><span>20&#215; &middot; Full throttle</span></div>
+        <p id="speed-hint" class="hint">Higher speeds finish sooner. Default: 2&#215;.</p>
       </section>
 
       <details id="guide">
@@ -85,7 +96,7 @@
     </main>
 
     <!-- Heads-up display during the race -->
-    <div id="hud" hidden>
+    <div id="hud" role="region" aria-label="Race progress" hidden>
       <div id="progress" aria-hidden="true">
         <span class="tag">&lt;race&gt;</span>
         <div id="progress-bar"><div id="progress-dots"></div></div>
@@ -101,7 +112,7 @@
       <div class="panel results-card" role="dialog" aria-labelledby="winner-name">
         <div class="trophy" aria-hidden="true">🏆</div>
         <p class="results-kicker">Leading the next team meeting</p>
-        <h2 id="winner-name"></h2>
+        <h2 id="winner-name">Race results</h2>
         <p id="winner-kind" class="results-kind"></p>
         <ol id="podium"></ol>
         <p id="save-status" class="save-status" role="status"></p>
