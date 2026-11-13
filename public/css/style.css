@@ -803,7 +803,7 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 }
 .speed-scale { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
 .editor-page { overflow: auto; background: #101420; }
-.editor { width: min(680px, calc(100% - 32px)); margin: 32px auto; padding: 24px; }
+.editor { position: relative; z-index: 1; width: min(680px, calc(100% - 32px)); margin: 32px auto; padding: 24px; }
 .editor h1 { margin: 20px 0 12px; }
 .editor label { display: block; font-weight: 650; margin-top: 20px; }
 .editor textarea {
