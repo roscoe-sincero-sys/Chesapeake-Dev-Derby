@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chesapeake Dev Derby</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      { "imports": { "three": "/vendor/three/build/three.module.js" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="scene" aria-label="3D race track"></canvas>
+
+    <div id="toolbar">
+      <button id="mute" type="button" title="Sound on/off" aria-label="Toggle sound">🔊</button>
+      <button id="quit" type="button" hidden>✕ Quit race</button>
+    </div>
+
+    <!-- Lobby: who is racing today -->
+    <main id="lobby" class="panel">
+      <header class="lobby-head">
+        <div class="flag-chip" aria-hidden="true"></div>
+        <div>
+          <h1>Chesapeake Dev Derby</h1>
+          <p class="tagline">First across the line leads the team meeting.</p>
+        </div>
+      </header>
+
+      <div id="status" role="status"></div>
+
+      <section id="roster-section" hidden>
+        <div class="section-head">
+          <h2>Who's here today?</h2>
+          <span id="racer-count" class="count"></span>
+          <span class="spacer"></span>
+          <button id="check-all" type="button" class="link">All</button>
+          <button id="check-none" type="button" class="link">None</button>
+        </div>
+        <p class="hint">Untick anyone who is absent. The last three winners sit this one out.</p>
+        <ul id="roster"></ul>
+      </section>
+
+      <section id="recent-section" hidden>
+        <div class="section-head"><h2>Last three winners</h2></div>
+        <ol id="recent"></ol>
+      </section>
+
+      <details id="guide">
+        <summary>Field guide: obstacles &amp; items</summary>
+        <div class="guide-grid">
+          <div>
+            <h3>Obstacles</h3>
+            <ul>
+              <li><b>404 pit</b> — fall in, respawn after a moment</li>
+              <li><b>Broken link</b> — trip and spin out</li>
+              <li><b>Merge conflict</b> — stop to resolve it</li>
+              <li><b>Infinite scroll</b> — a conveyor dragging you back</li>
+              <li><b>Slow load zone</b> — crawl at 99% loaded</li>
+              <li><b>Redirect loop</b> — go round in circles</li>
+              <li><b>Null pointer</b> — a sweeping cursor turns you <code>null</code></li>
+              <li><b>Unhandled exception</b> — a mine that throws everyone nearby</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Items (from <code>{?}</code> crates)</h3>
+            <ul>
+              <li>☕ <b>Coffee</b> — speed boost</li>
+              <li>💨 <b>Bay Breeze</b> — big tailwind for those behind</li>
+              <li>🛡️ <b>Firewall</b> — blocks the next hit</li>
+              <li>🐛 <b>Bug</b> — thrown at the racer ahead</li>
+              <li>💥 <b>Force Push</b> — flattens the leader</li>
+            </ul>
+            <h3>Racers</h3>
+            <p class="guide-racers" id="guide-racers"></p>
+          </div>
+        </div>
+      </details>
+
+      <footer class="lobby-foot">
+        <button id="run" type="button" class="primary" disabled>🏁 Run</button>
+        <span id="run-hint" class="hint"></span>
+      </footer>
+    </main>
+
+    <!-- Heads-up display during the race -->
+    <div id="hud" hidden>
+      <div id="progress" aria-hidden="true">
+        <span class="tag">&lt;race&gt;</span>
+        <div id="progress-bar"><div id="progress-dots"></div></div>
+        <span class="tag">&lt;/race&gt;</span>
+      </div>
+      <ol id="leaderboard" aria-label="Standings"></ol>
+      <div id="feed" aria-live="off"></div>
+      <div id="countdown" aria-live="assertive"></div>
+    </div>
+
+    <!-- Winner announcement -->
+    <div id="results" hidden>
+      <div class="panel results-card" role="dialog" aria-labelledby="winner-name">
+        <div class="trophy" aria-hidden="true">🏆</div>
+        <p class="results-kicker">Leading the next team meeting</p>
+        <h2 id="winner-name"></h2>
+        <p id="winner-kind" class="results-kind"></p>
+        <ol id="podium"></ol>
+        <p id="save-status" class="save-status" role="status"></p>
+        <div class="results-actions">
+          <button id="retry-save" type="button" hidden>Retry save</button>
+          <button id="back" type="button" class="primary">Back to lobby</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

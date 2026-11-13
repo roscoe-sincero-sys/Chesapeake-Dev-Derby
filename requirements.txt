@@ -1,0 +1,27 @@
+Problem to be solved: Pick a name from a list to lead a team meeting but in an entertaining way.  
+
+Solution: Create a Mario Kart-style item race using Three.js.  The winner of the race will lead the team meeting.  It turns a list of names into an animated 3D racers that run through an obstacle course.  The racers and obstacles follow a web developer or maryland theme.
+
+Inspiration: https://genname.io/tools/name-race
+
+The above website was used as inspiration for this solution.
+
+Design:
+
+1.  It loads a list of names of up to 30 from a JSON file.
+2.  The winners of the last three races are not eligible.
+3.  Screen will show a list of names with a checkbox next to them indicating that they are eligible.
+4.  User can uncheck the box if participant is absent from the meeting.
+5.  User clicks Run.
+6.  The race begins.
+7.  The name of current winner is saved to another JSON file.  If file already has 3 names, it replaces the oldest name.
+
+Racers:
+Browser tab, Dev tools panel, CSS stylesheet scroll, Hamburger menu, Responsive layout, Hosting server, Domain name, Loading spinner, Flexbox box, Cookie banner, Sticky navbar, Baltimore oriole,  Blue crab, Diamondback terrapin 
+
+Obstacles:
+
+404 pit, Broken link, Merge Conflict, Infinite scroll, Slow load zone, Redirect loop, Null pointer, Unhandled exception
+
+
+

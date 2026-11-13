@@ -1,0 +1,18 @@
+{
+  "name": "chesapeake-dev-derby",
+  "version": "1.0.0",
+  "description": "Pick who leads the team meeting with a 3D item race (Three.js). Web-dev and Maryland themed.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "open": "node server.js --open",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  }
+}
