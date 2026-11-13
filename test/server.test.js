@@ -18,7 +18,7 @@ async function startServer(t, names = ['Ada', 'Grace', 'Linus', 'Hedy']) {
 }
 
 const post = (base, body) =>
-  fetch(`${base}/api/winners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
+  fetch(`${base}/api/winners`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base }, body: typeof body === 'string' ? body : JSON.stringify(body) });
 
 test('GET /api/state returns names and winners', async (t) => {
   const { base } = await startServer(t);
@@ -70,7 +70,7 @@ test('serves the game, Three.js, and blocks path traversal', async (t) => {
 });
 
 const putNames = (base, body) => fetch(`${base}/api/names`, {
-  method: 'PUT', headers: { 'Content-Type': 'application/json' },
+  method: 'PUT', headers: { 'Content-Type': 'application/json', Origin: base },
   body: typeof body === 'string' ? body : JSON.stringify(body),
 });
 

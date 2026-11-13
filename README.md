@@ -168,3 +168,17 @@ the models to match, so the outcome is the same on a fast or slow machine.
 | Blank page / module errors               | Run `npm install` — Three.js is served from `node_modules`.            |
 | "3D is not available in this browser"    | WebGL is off. The race is decided off-screen and the winner still shown and saved. |
 | No sound                                 | Click the speaker button (or press **M**); the setting is remembered.  |
+
+## Local server security
+
+The app accepts local connections only. `HOST` may be `127.0.0.1` (default), `localhost`, or `::1`.
+Requests must use one of those loopback hosts and the listening port. LAN/public hosting and custom
+hostnames are not supported; forwarded host headers are not trusted.
+
+Browser writes and launcher-session connections must come from the same origin. Non-browser clients
+making writes or opening launcher sessions must send an `Origin` header matching their target origin
+(for example, `http://127.0.0.1:4100`).
+Roster and winner writes also require `Content-Type: application/json`. These checks protect against
+untrusted web pages; they do not authenticate other programs running on your computer.
+
+The game and roster editor cannot be embedded in frames. Top-level browser navigation is unchanged.

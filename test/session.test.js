@@ -20,7 +20,7 @@ async function launch(t, exitOnClose = true) {
   });
   async function tab() {
     const response = await new Promise((resolve, reject) => {
-      http.get(`${base}/api/session`, { agent: false }, resolve).on('error', reject);
+      http.get(`${base}/api/session`, { agent: false, headers: { Origin: base } }, resolve).on('error', reject);
     });
     assert.equal(response.statusCode, 200);
     assert.match(response.headers['content-type'], /text\/event-stream/);
@@ -37,7 +37,7 @@ async function launch(t, exitOnClose = true) {
 
 test('normal server does not enable browser-close shutdown', async (t) => {
   const { base, server } = await launch(t, false);
-  assert.equal((await fetch(`${base}/api/session`)).status, 204);
+  assert.equal((await fetch(`${base}/api/session`, { headers: { Origin: base } })).status, 204);
   await delay(300);
   assert.equal(server.listening, true);
 });
