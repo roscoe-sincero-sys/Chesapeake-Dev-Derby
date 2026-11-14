@@ -206,3 +206,112 @@ test('shuffle keeps every element', () => {
   assert.deepEqual([...out].sort(), [...input].sort());
   assert.notDeepEqual(out, input);
 });
+
+// ---------------------------------------------------------------- office-politics items (issue #45)
+
+function throwAt(sim, from, target, item) {
+  from.item = item;
+  from.itemDelay = 0;
+  from.s = 100;
+  target.s = 110;
+  sim.updateItems(from, 0.1, 0.5);
+  assert.equal(from.item, null, `${item} was thrown`);
+  for (let i = 0; i < 30 && sim.projectiles.length; i++) sim.updateProjectiles(DT);
+  return sim.drainEvents();
+}
+
+test('You Are Not Being Clear spins the rival ahead out', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(5) });
+  const [a, b] = sim.racers;
+  const events = throwAt(sim, a, b, 'notClear');
+  assert.equal(b.stun.kind, 'spin');
+  assert.equal(b.stun.cause, 'notClear');
+  assert.equal(b.stun.dur, TUNING.stun.notClear);
+  assert.ok(events.some((e) => e.type === 'hit' && e.cause === 'notClear' && e.by === a));
+});
+
+test('Eight-Minute Audit locks the rival\'s controls for 8 seconds', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(6) });
+  const [a, b] = sim.racers;
+  const events = throwAt(sim, a, b, 'audit');
+  assert.equal(b.auditT, 8);
+  assert.ok(events.some((e) => e.type === 'status' && e.effect === 'audit' && e.by === a));
+  // Locked: holds its line even with an obstacle dead ahead, and cannot use its item.
+  sim.time = 5;
+  b.d = 0;
+  b.item = 'coffee';
+  b.itemDelay = 0;
+  sim.obstacles = [{ id: 7, type: 'mergeConflict', shape: 'rect', s: 125, d: 0, halfLen: 1, sMin: 124, sMax: 126, dMin: -3, dMax: 3, active: true }];
+  b.oi = 0;
+  b.noticed.set(7, true);
+  for (let i = 0; i < 20; i++) sim.updateRacer(b, 0.1);
+  assert.equal(b.d, 0, 'did not steer');
+  assert.equal(b.item, 'coffee', 'could not use the item');
+  // ...until the audit is over.
+  for (let i = 0; i < 70; i++) sim.updateRacer(b, 0.1);
+  assert.equal(b.auditT, 0);
+});
+
+test('Production Roulette reverses the rival\'s steering', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(7) });
+  const [a, b] = sim.racers;
+  // A merge conflict just ahead, covering the right-hand side of the lane.
+  const wall = { id: 7, type: 'mergeConflict', shape: 'rect', s: 125, d: 2, halfLen: 1, sMin: 124, sMax: 126, dMin: -0.5, dMax: 4.5, active: true };
+  const steer = () => {
+    b.s = 110;
+    b.d = 0;
+    b.wanderD = 0;
+    b.oi = 0;
+    sim.obstacles = [wall];
+    b.noticed.set(7, true);
+    sim.think(b, 11);
+    return b.targetD;
+  };
+  assert.ok(steer() < -2, 'normally steers left, clear of the wall');
+  throwAt(sim, a, b, 'roulette');
+  assert.equal(b.reverseT, TUNING.rouletteDuration);
+  const reversed = steer();
+  assert.ok(reversed > 0 && reversed < 4.5, 'reversed: steers right, into the wall');
+});
+
+test('Security Theater locks the rival to 12-15 mph', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(8) });
+  const [a, b] = sim.racers;
+  const events = throwAt(sim, a, b, 'theater');
+  const status = events.find((e) => e.type === 'status' && e.effect === 'theater');
+  assert.ok(status.mph >= 12 && status.mph <= 15);
+  sim.time = 10;
+  b.v = 25;
+  b.boostT = 3;
+  b.boostF = 1.6;
+  for (let i = 0; i < 20; i++) sim.updateRacer(b, 0.1);
+  const mph = b.v * TUNING.mphPerUnit;
+  assert.ok(mph >= 11.9 && mph <= 15.1, `speed ${mph.toFixed(1)} mph`);
+  for (let i = 0; i < 60; i++) sim.updateRacer(b, 0.1);
+  assert.ok(b.v * TUNING.mphPerUnit > 30, 'back up to speed once it ends');
+});
+
+test('a firewall blocks the office-politics items', () => {
+  for (const item of ['audit', 'roulette', 'theater', 'notClear']) {
+    const sim = new RaceSim({ names: names(2), rng: mulberry32(9) });
+    const [a, b] = sim.racers;
+    b.shield = 10;
+    const events = throwAt(sim, a, b, item);
+    assert.ok(events.some((e) => e.type === 'block' && e.by === a), item);
+    assert.equal(b.auditT + b.reverseT + b.theaterT, 0, item);
+    assert.equal(b.stun, null, item);
+  }
+});
+
+test('the leader never gets the office-politics items, and they turn up in real races', () => {
+  const rng = mulberry32(12);
+  for (let i = 0; i < 2000; i++) assert.ok(!['notClear', 'audit', 'roulette', 'theater'].includes(rollItem(0, rng)));
+  const landed = new Set();
+  for (let seed = 1; seed <= 12; seed++) {
+    for (const e of runRace(12, seed * 31).events) {
+      if (e.type === 'status') landed.add(e.effect);
+      if (e.type === 'hit' && e.cause === 'notClear') landed.add('notClear');
+    }
+  }
+  for (const item of ['notClear', 'audit', 'roulette', 'theater']) assert.ok(landed.has(item), `${item} never landed`);
+});

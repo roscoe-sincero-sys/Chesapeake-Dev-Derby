@@ -21,6 +21,10 @@ export const ITEM_INFO = {
   forcePush: { emoji: '💥', label: 'Force Push' },
   renewedCert: { emoji: '🔐', label: 'Renewed Certificate' },
   returnUrl: { emoji: '↩️', label: '?returnUrl=' },
+  notClear: { emoji: '🌫️', label: 'You Are Not Being Clear' },
+  audit: { emoji: '📋', label: 'Eight-Minute Audit' },
+  roulette: { emoji: '🎰', label: 'Production Roulette' },
+  theater: { emoji: '🎭', label: 'Security Theater' },
 };
 
 const HIT_EMOTE = {
@@ -36,7 +40,16 @@ const HIT_EMOTE = {
   slowLoad: '⏳',
   sslExpired: '🔓',
   urlBarricade: '🚧',
+  notClear: '🌫️',
 };
+
+/** Icon over a racer while a lasting effect is on them. */
+export function statusIcon(r) {
+  if (r.auditT > 0) return ITEM_INFO.audit.emoji;
+  if (r.reverseT > 0) return ITEM_INFO.roulette.emoji;
+  if (r.theaterT > 0) return ITEM_INFO.theater.emoji;
+  return null;
+}
 
 const HIT_SOUND = { pit404: 'fall', redirectLoop: 'loop', nullPointer: 'null', exception: 'hit', forcePush: 'explode', sslExpired: 'null', urlBarricade: 'fall' };
 
@@ -330,6 +343,12 @@ export class Game {
         this.sfx.play('block');
         this.sparkle(e.racer.s, e.racer.d, 1.2, ['#66d9e8', '#ffffff'], 18);
         break;
+      case 'status':
+        // Office politics landed: audit, roulette or theater.
+        this.emote(visual, ITEM_INFO[e.effect].emoji);
+        this.sfx.play('null');
+        this.sparkle(e.racer.s, e.racer.d, 1.2, ['#e599f7', '#ffffff', '#ffd43b'], 16);
+        break;
       case 'pass':
         // Drove straight through an obstacle thanks to the matching item.
         this.emote(visual, ITEM_INFO[e.item].emoji);
@@ -460,7 +479,10 @@ export class Game {
           body.rotation.x = 0.09;
           body.scale.set(0.95, 0.97, 1.1);
         }
-        if (r.zone?.type === 'slowLoad') body.rotation.z = Math.sin(t * 5 + r.id) * 0.06;
+        if (r.zone?.type === 'slowLoad' || r.theaterT > 0) body.rotation.z = Math.sin(t * 5 + r.id) * 0.06;
+        // Steering reversed: the kart fishtails; controls locked: it stays rigidly straight.
+        if (r.reverseT > 0) body.rotation.y = v.yaw + Math.sin(t * 9 + r.id) * 0.35;
+        if (r.auditT > 0) body.rotation.y = 0;
       } else {
         // Revving on the grid.
         body.position.y = Math.abs(Math.sin(t * 9 + r.id * 1.3)) * 0.07;
@@ -488,9 +510,11 @@ export class Game {
         if (r.shield < 2) v.shield.visible = Math.floor(t * 10) % 2 === 0;
       }
 
-      v.itemIcon.visible = Boolean(r.item) && !r.stun;
-      if (r.item) {
-        const texture = emojiTexture(ITEM_INFO[r.item].emoji);
+      // Held item, or failing that the effect someone has landed on this racer.
+      const icon = r.item ? ITEM_INFO[r.item].emoji : statusIcon(r);
+      v.itemIcon.visible = Boolean(icon) && !r.stun && !r.finished;
+      if (icon) {
+        const texture = emojiTexture(icon);
         if (v.itemIcon.material.map !== texture) v.itemIcon.material.map = texture;
         v.itemIcon.position.y = LABEL_Y + 1.05 + Math.sin(t * 6 + r.id) * 0.08;
       }
@@ -519,7 +543,7 @@ export class Game {
         this.projectileVisuals.set(p.id, sprite);
         this.raceGroup.add(sprite);
       }
-      const height = p.kind === 'bug' ? 1.6 + Math.sin(p.t * 14) * 0.3 : 3 + Math.sin(Math.min(1, p.t / 1.2) * Math.PI) * 2.5;
+      const height = p.kind !== 'forcePush' ? 1.6 + Math.sin(p.t * 14) * 0.3 : 3 + Math.sin(Math.min(1, p.t / 1.2) * Math.PI) * 2.5;
       this.track.point(p.s, p.d, height, sprite.position);
       if (p.kind === 'forcePush' && Math.random() < 0.6) {
         this.particles.burst(sprite.position, { count: 1, colors: ['#ff6b6b', '#ffe066'], speed: 1, up: 1, life: 0.4, size: 0.25, gravity: 0 });

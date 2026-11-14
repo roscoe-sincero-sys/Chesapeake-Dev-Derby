@@ -1,7 +1,7 @@
 // On-screen race display: countdown, live standings, progress strip,
 // event feed and the winner card. Plain DOM, no 3D.
 
-import { ITEM_INFO } from './game.js';
+import { ITEM_INFO, statusIcon } from './game.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,6 +20,13 @@ const HIT_TEXT = {
   forcePush: (r, by) => `${who(by)} force-pushed 💥 over ${who(r)}`,
   sslExpired: (r) => `${who(r)} hit SSL Expired — your connection is not private`,
   urlBarricade: (r) => `${who(r)} hit DO NOT MODIFY URLS and dropped into the error pit`,
+  notClear: (r, by) => `${who(by)} told ${who(r)} “You Are Not Being Clear” 🌫️ — “It's your fault.”`,
+};
+
+const STATUS_TEXT = {
+  audit: (r, by) => `${who(by)} opened an Eight-Minute Audit 📋 on ${who(r)} — “Access limited pending audit.”`,
+  roulette: (r, by) => `${who(by)} spun Production Roulette 🎰 on ${who(r)} — “Oops. That was pr0dI.”`,
+  theater: (r, by, mph) => `Security Theater 🎭: ${who(by)} locked ${who(r)} to ${mph} mph — “Vahi says you're going too fast.”`,
 };
 
 const PASS_TEXT = {
@@ -43,6 +50,7 @@ const STUN_ICON = {
   forcePush: '💥',
   sslExpired: '🔓',
   urlBarricade: '🚧',
+  notClear: '🌫️',
 };
 
 export class Hud {
@@ -127,6 +135,7 @@ export class Hud {
       let extra = '';
       if (r.finished) extra = r.dnf ? '' : '🏁';
       else if (r.stun) extra = STUN_ICON[r.stun.cause] || '💫';
+      else if (statusIcon(r)) extra = statusIcon(r);
       else if (r.item) extra = ITEM_INFO[r.item].emoji;
       else if (r.shield > 0) extra = '🛡️';
       else if (r.returnUrl) extra = ITEM_INFO.returnUrl.emoji;
@@ -157,7 +166,10 @@ export class Hud {
         this.line(ZONE_TEXT[e.obstacle.type]?.(e.racer));
         break;
       case 'block':
-        this.line(`${who(e.racer)}'s firewall 🛡️ blocked ${e.cause === 'bug' || e.cause === 'forcePush' ? `${who(e.by)}'s attack` : 'the hit'}`);
+        this.line(`${who(e.racer)}'s firewall 🛡️ blocked ${e.by ? `${who(e.by)}'s ${ITEM_INFO[e.cause]?.label ?? 'attack'}` : 'the hit'}`);
+        break;
+      case 'status':
+        this.line(STATUS_TEXT[e.effect]?.(e.racer, e.by, e.mph));
         break;
       case 'pass':
         this.line(PASS_TEXT[e.item]?.(e.racer));
