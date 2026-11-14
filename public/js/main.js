@@ -89,6 +89,7 @@ async function loadState() {
     status.append(retry);
     $('check-all').disabled = $('check-none').disabled = true;
     $('recent-section').hidden = true;
+    $('reset-winners').hidden = true;
     $('run').disabled = $('pick').disabled = true;
   }
 }
@@ -186,7 +187,42 @@ function renderLobby() {
 
   $('check-all').disabled = $('check-none').disabled = !state.names.length;
   $('recent-section').hidden = !state.names.length;
+  $('reset-winners').hidden = !state.winners.length;
   updateRunButton();
+}
+
+/** Asks for confirmation, then clears the recent-winner list so everyone is eligible again. */
+function confirmResetWinners() {
+  const dialog = $('reset-dialog');
+  if (typeof dialog.showModal !== 'function') {
+    // Very old browsers without <dialog>: fall back to the built-in confirm box.
+    if (window.confirm('Reset the last three winners? Everyone will be able to race again.')) resetWinners();
+    return;
+  }
+  dialog.returnValue = '';
+  dialog.showModal();
+}
+
+async function resetWinners() {
+  const status = $('reset-status');
+  status.hidden = false;
+  status.className = 'hint';
+  status.textContent = 'Resetting…';
+  try {
+    const data = await api('/api/winners', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    state.winners = data.winners;
+    state.roster = buildRoster(state.names, state.winners);
+    renderLobby();
+    status.textContent = 'List reset. Everyone can race again.';
+    $('check-all').focus({ preventScroll: true });
+  } catch (err) {
+    status.className = 'hint error-text';
+    status.textContent = `Could not reset the list: ${err.message}`;
+  }
 }
 
 function saveLobbySettings() {
@@ -262,6 +298,7 @@ function pick() {
 
 function backToLobby() {
   game?.clearRace();
+  $('reset-status').hidden = true;
   hud.end();
   $('quit').hidden = true;
   $('lobby').hidden = false;
@@ -326,6 +363,11 @@ function init() {
   $('check-all').addEventListener('click', () => setAll(true));
   $('check-none').addEventListener('click', () => setAll(false));
   $('back').addEventListener('click', backToLobby);
+  $('reset-winners').addEventListener('click', confirmResetWinners);
+  $('reset-dialog').addEventListener('close', () => {
+    if ($('reset-dialog').returnValue === 'reset') resetWinners();
+    else $('reset-winners').focus({ preventScroll: true });
+  });
   $('quit').addEventListener('click', backToLobby);
   $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner));
 

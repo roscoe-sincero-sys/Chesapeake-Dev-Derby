@@ -360,20 +360,27 @@ function urlBarricade(o) {
       ctx.fill();
     }
   });
-  const notice = drawnMat('barricade-notice', 512, 160, (ctx, w, h) => {
+  const notice = drawnMat('barricade-notice', 1024, 320, (ctx, w, h) => {
     ctx.fillStyle = '#fff3bf';
     ctx.fillRect(0, 0, w, h);
-    ctx.lineWidth = 12;
+    ctx.lineWidth = 24;
     ctx.strokeStyle = '#212529';
-    ctx.strokeRect(6, 6, w - 12, h - 12);
-    ctx.fillStyle = '#c92a2a';
+    ctx.strokeRect(12, 12, w - 24, h - 24);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `900 50px ${FONT_UI}`;
-    ctx.fillText('DO NOT MODIFY URLS', w / 2, 62);
-    ctx.fillStyle = '#212529';
-    ctx.font = `600 24px ${FONT_UI}`;
-    ctx.fillText('— by order of Management —', w / 2, 118);
+    // Shrink each line until it fits inside the border with a margin.
+    const fit = (text, y, size, weight, color) => {
+      let px = size;
+      ctx.font = `${weight} ${px}px ${FONT_UI}`;
+      while (ctx.measureText(text).width > w - 110 && px > 20) {
+        px -= 2;
+        ctx.font = `${weight} ${px}px ${FONT_UI}`;
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(text, w / 2, y);
+    };
+    fit('DO NOT MODIFY URLS', 128, 100, 900, '#c92a2a');
+    fit('— by order of Management —', 236, 48, 600, '#212529');
   });
   const dark = mat('#343a40');
   const plank = (y) => at(box(width, 0.55, 0.22, [dark, dark, dark, dark, stripes, stripes]), 0, y, 0);

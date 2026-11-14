@@ -48,7 +48,8 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      through reloads and visits to **Edit team list**. Removed names are dropped from saved attendance;
      new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`
      URL setting overrides the saved race length. A length saved by an older version of the slider moves
-     to the nearest of the five lengths.
+     to the nearest of the five lengths. When anyone is unchecked, the count ("2 people marked absent.")
+     appears at the end of the hint line under **Team list**.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
@@ -64,8 +65,11 @@ Quitting a race before anyone finishes saves nothing. Press **M** (or the speake
 
 ### Resetting or correcting the history
 
-`data/winners.json` is plain JSON, oldest first. Edit it by hand to fix a mistake, or empty the list to
-make everyone eligible again:
+To make everyone eligible again, click **Reset list** next to **Last three winners** in the lobby and
+confirm. This empties `data/winners.json` and can't be undone.
+
+`data/winners.json` is plain JSON, oldest first. You can also edit it by hand to fix a mistake, or empty
+the list yourself:
 
 ```json
 { "winners": [] }
@@ -150,7 +154,7 @@ Uses Node's built-in test runner — no extra packages. Covers:
 ## How it's put together
 
 ```
-server.js            Serves the game; GET /api/state, POST /api/winners
+server.js            Serves the game; GET /api/state, PUT /api/names, POST/DELETE /api/winners
 lib/store.js         Reads names.json, reads/writes winners.json
 data/names.json      Your roster (edit this)
 data/winners.json    Last three winners (written by the game)

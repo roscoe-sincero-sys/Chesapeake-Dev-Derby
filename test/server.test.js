@@ -39,6 +39,19 @@ test('POST /api/winners saves the winner and keeps only the last three', async (
   assert.deepEqual(onDisk.winners.map((w) => w.name), ['Grace', 'Linus', 'Hedy']);
 });
 
+test('DELETE /api/winners clears the history so everyone is eligible again', async (t) => {
+  const { base, dir } = await startServer(t);
+  for (const name of ['Ada', 'Grace', 'Linus']) assert.equal((await post(base, { name })).status, 200);
+  const res = await fetch(`${base}/api/winners`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Origin: base }, body: '{}' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { winners: [] });
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.deepEqual(state.winners, []);
+  assert.deepEqual(state.names, ['Ada', 'Grace', 'Linus', 'Hedy']);
+  const onDisk = JSON.parse(await readFile(path.join(dir, 'winners.json'), 'utf8'));
+  assert.deepEqual(onDisk, { winners: [] });
+});
+
 test('POST /api/winners rejects bad input', async (t) => {
   const { base } = await startServer(t);
   assert.equal((await post(base, {})).status, 400);
