@@ -127,3 +127,49 @@ test('roster writes serialize and an empty roster can be saved', async (t) => {
   assert.equal((await putNames(base, { names: [] })).status, 200);
   assert.deepEqual((await (await fetch(`${base}/api/state`)).json()).names, []);
 });
+
+// ---------------------------------------------------------------- full winner history (issue #49)
+
+const history = async (base) => (await (await fetch(`${base}/api/history`)).json()).history;
+
+test('every result is kept in the full history, newest first, with race or skip', async (t) => {
+  const { base, dir } = await startServer(t);
+  for (const [name, mode] of [['Ada', 'race'], ['Grace', 'skip'], ['Linus', 'race'], ['Hedy', 'race'], ['Ada', 'skip']]) {
+    assert.equal((await post(base, { name, mode })).status, 200);
+  }
+  const list = await history(base);
+  assert.deepEqual(list.map((h) => `${h.name}:${h.mode}`), ['Ada:skip', 'Hedy:race', 'Linus:race', 'Grace:skip', 'Ada:race']);
+  for (const h of list) assert.ok(!Number.isNaN(Date.parse(h.date)), 'each result has a date and time');
+  assert.ok(Date.parse(list[0].date) >= Date.parse(list[4].date));
+  // The recent list still keeps only three, with the same timestamps.
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.deepEqual(state.winners.map((w) => w.name), ['Linus', 'Hedy', 'Ada']);
+  assert.equal(state.winners[2].date, list[0].date);
+  const onDisk = JSON.parse(await readFile(path.join(dir, 'history.json'), 'utf8'));
+  assert.equal(onDisk.history.length, 5);
+});
+
+test('a winner without a mode counts as a race; an unknown mode is refused', async (t) => {
+  const { base } = await startServer(t);
+  assert.equal((await post(base, { name: 'Ada' })).status, 200);
+  const bad = await post(base, { name: 'Grace', mode: 'coin-flip' });
+  assert.equal(bad.status, 400);
+  assert.match((await bad.json()).error, /mode/);
+  assert.deepEqual((await history(base)).map((h) => `${h.name}:${h.mode}`), ['Ada:race']);
+});
+
+test('resetting the last three winners keeps the full history', async (t) => {
+  const { base } = await startServer(t);
+  for (const name of ['Ada', 'Grace']) await post(base, { name, mode: 'race' });
+  await fetch(`${base}/api/winners`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Origin: base }, body: '{}' });
+  assert.deepEqual((await history(base)).map((h) => h.name), ['Grace', 'Ada']);
+});
+
+test('an older install starts its history from winners.json, and keeps it through a reset', async (t) => {
+  const { base, dir } = await startServer(t);
+  await writeFile(path.join(dir, 'winners.json'), JSON.stringify({ winners: [{ name: 'Linus', date: '2026-11-01T15:00:00.000Z' }, { name: 'Hedy', date: '2026-11-07T15:00:00.000Z' }] }));
+  assert.deepEqual((await history(base)).map((h) => `${h.name}:${h.mode}`), ['Hedy:null', 'Linus:null']);
+  await fetch(`${base}/api/winners`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Origin: base }, body: '{}' });
+  await post(base, { name: 'Ada', mode: 'skip' });
+  assert.deepEqual((await history(base)).map((h) => `${h.name}:${h.mode}`), ['Ada:skip', 'Hedy:null', 'Linus:null']);
+});

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Winner history - Chesapeake Dev Derby</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="editor-page">
+  <main class="panel editor history">
+    <a href="/">Back to lobby</a>
+    <h1>Winner history</h1>
+    <p>Every meeting leader the derby has picked, newest first.</p>
+    <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
+    <div class="history-scroll">
+      <table id="history-table" hidden>
+        <caption class="visually-hidden">All past winners, newest first</caption>
+        <thead>
+          <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
+        </thead>
+        <tbody id="history-rows"></tbody>
+      </table>
+    </div>
+    <div class="editor-actions">
+      <a href="/">Return to lobby</a>
+      <button id="reload-history" type="button" hidden>Retry loading</button>
+    </div>
+  </main>
+  <script type="module" src="js/history.js"></script>
+  <script type="module" src="js/session.js"></script>
+</body>
+</html>

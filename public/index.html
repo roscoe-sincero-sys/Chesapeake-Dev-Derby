@@ -48,7 +48,10 @@
       <section id="recent-section" hidden>
         <div class="section-head">
           <h2>Last three winners</h2>
-          <button id="reset-winners" type="button" class="link" hidden>Reset list</button>
+          <nav class="roster-actions" aria-label="Winner list controls">
+            <a class="link" href="history.html">Full history</a>
+            <button id="reset-winners" type="button" class="link" hidden>Reset list</button>
+          </nav>
         </div>
         <ol id="recent"></ol>
         <p id="reset-status" class="hint" role="status" hidden></p>
@@ -57,7 +60,7 @@
       <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
         <form method="dialog">
           <h2 id="reset-title">Reset the last three winners?</h2>
-          <p id="reset-body">This clears the list, so everyone can race again, including recent winners. It can't be undone.</p>
+          <p id="reset-body">This clears the list, so everyone can race again, including recent winners. It can't be undone. The full history is kept.</p>
           <div class="dialog-actions">
             <button value="cancel" type="submit" autofocus>Cancel</button>
             <button value="reset" type="submit" class="danger">Reset list</button>
