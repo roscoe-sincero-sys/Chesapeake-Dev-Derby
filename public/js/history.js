@@ -22,7 +22,7 @@ async function request(url) {
   } catch {
     /* handled below */
   }
-  if (!response.ok) throw new Error(body?.error || `Server error (${response.status})`);
+  if (!response.ok) throw Object.assign(new Error(body?.error || `Server error (${response.status})`), { status: response.status });
   return body;
 }
 
@@ -70,7 +70,11 @@ async function load() {
       : 'No winners yet. Results appear here after each race or pick.';
   } catch (err) {
     summary.className = 'hint error-text';
-    summary.textContent = `Could not load the history: ${err.message}`;
+    // Pages are read from disk on every request, but the server's API only changes when it restarts:
+    // a server started before the winner history existed answers 404 here.
+    summary.textContent = err.status === 404
+      ? 'The derby is still running an older version without the winner history. Restart it: close the derby window (or press Ctrl+C where it is running), start it again with start.cmd or npm start, then reload this page.'
+      : `Could not load the history: ${err.message}`;
     $('reload-history').hidden = false;
   }
 }
