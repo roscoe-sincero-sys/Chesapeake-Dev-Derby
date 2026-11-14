@@ -15,6 +15,7 @@ const BILLBOARDS = [
   [['It works on', 'my machine™'], '#3b3f8f'],
   [['Ping me before you flush', 'via webhook'], '#5f3dc4'],
   [['crabs && code', '|| nothing'], '#8c390c'],
+  [['LICENSE EXPIRED?', "Let's roll back the server clock.", 'It worked on shareware trials.'], '#d9480f'],
   [['git commit -m', '"final_FINAL_v2"'], '#24292f'],
   [["I'll remake drag and drop.", 'Now with more drag', 'and no drop.'], '#c2255c'],
   [['Have you tried', 'clearing the cache?'], '#0b7285'],
