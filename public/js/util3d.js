@@ -167,7 +167,7 @@ export function makeSprite(texture, width, height, { depthTest = true } = {}) {
 }
 
 /** Name tag texture: dark pill, coloured edge, white text sized to fit. */
-export function nameTagTexture(text, color = '#ffffff', { mono = false, background = 'rgba(16, 20, 32, 0.82)' } = {}) {
+export function nameTagTexture(text, color = '#ffffff', { mono = false, background = '#101420' } = {}) {
   return canvasTexture(512, 128, (ctx, w, h) => {
     const family = mono ? FONT_MONO : FONT_UI;
     let size = 64;
