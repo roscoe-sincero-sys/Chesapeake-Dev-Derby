@@ -44,6 +44,11 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 2. **Open the lobby.** Pick a **Race length** on the slider: about 120, 60 (default), 30, 15 or 10 seconds
    of racing, not counting the short countdown. Everyone is listed with a checkbox. A ticked box means that
    person is racing.
+   - The list is in **alphabetical order**. A name that is an email address is shown without the
+     `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
+     the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
+     Racers, results and the winner list use the same short names; `data/winners.json` still stores the
+     full entry. Hover a name to see it in full.
    - **Uncheck** anyone who is absent today. Attendance and race speed are kept in this browser tab
      through reloads and visits to **Edit team list**. Removed names are dropped from saved attendance;
      new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`

@@ -32,3 +32,35 @@ export function pickRandomRacer(roster, absent = new Set(), rng = Math.random) {
   const racers = selectRacers(roster, absent);
   return racers.length >= 2 ? racers[Math.floor(rng() * racers.length)] : null;
 }
+
+const EMAIL = /^([^\s@]+)@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * How each roster name is shown on screen. A name that looks like an email address is shortened
+ * to its local part (tony.stark@ultron.com → tony.stark), unless that would clash with another
+ * name on the list (tony.stark@vision.com, or a plain "Tony.Stark"); then the full address is kept.
+ * Returns a Map from nameKey(name) to the display name. Stored names are never changed.
+ */
+export function displayNames(names) {
+  const local = (name) => EMAIL.exec(String(name).trim())?.[1] ?? null;
+  const counts = new Map();
+  const bump = (key) => counts.set(key, (counts.get(key) || 0) + 1);
+  for (const name of names) {
+    const part = local(name);
+    bump(nameKey(part ?? name));
+  }
+  const shown = new Map();
+  for (const name of names) {
+    const part = local(name);
+    shown.set(nameKey(name), part && counts.get(nameKey(part)) === 1 ? part : name);
+  }
+  return shown;
+}
+
+const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
+/** Sorts roster entries alphabetically by how they are shown (case-insensitive, numbers in order). */
+export function sortByDisplayName(entries, shown) {
+  const label = (entry) => shown.get(nameKey(entry.name)) ?? entry.name;
+  return [...entries].sort((a, b) => collator.compare(label(a), label(b)) || collator.compare(a.name, b.name));
+}
