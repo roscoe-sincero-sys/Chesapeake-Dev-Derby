@@ -18,7 +18,10 @@ export const OBSTACLE_TYPES = [
   'urlBarricade',
 ];
 
-export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl'];
+export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater'];
+
+/** Thrown items that leave the target with a lasting effect instead of a stun. */
+export const STATUS_ITEMS = ['audit', 'roulette', 'theater'];
 
 export const TUNING = {
   // About 120 seconds of racing at 1x speed.
@@ -56,7 +59,17 @@ export const TUNING = {
     errorPit: 2.6, // DO NOT MODIFY URLS: dropped into the error pit
     bug: 1.3,
     forcePush: 1.7,
+    notClear: 1.9, // You Are Not Being Clear: spinning out trying to clarify
   },
+  // Lasting effects from thrown items (seconds).
+  auditDuration: 8, // Eight-Minute Audit: controls locked
+  rouletteDuration: 6, // Production Roulette: steering reversed
+  theaterDuration: 6, // Security Theater: speed locked to 12-15 mph
+  theaterMph: [12, 15],
+  // For display: track units per second at the base speed shown as about 60 mph.
+  mphPerUnit: 60 / 21,
+  // How far ahead (track units) a thrown sabotage item can reach.
+  throwRange: 60,
   // How long a Renewed Certificate stays valid (seconds).
   certDuration: 20,
   slowLoadFactor: 0.45,
@@ -220,6 +233,11 @@ export function rollItem(rankFraction, rng = Math.random) {
     // Passes for specific obstacles: the same odds wherever you are in the field.
     renewedCert: 1.2,
     returnUrl: 1.2,
+    // Office-politics sabotage, thrown at the racer ahead: nobody ahead, no point.
+    notClear: f > 0.05 ? 0.5 + 0.9 * f : 0,
+    audit: f > 0.05 ? 0.4 + 0.8 * f : 0,
+    roulette: f > 0.05 ? 0.4 + 0.8 * f : 0,
+    theater: f > 0.05 ? 0.4 + 0.8 * f : 0,
   };
   let total = 0;
   for (const k of ITEM_TYPES) total += weights[k];
@@ -288,6 +306,10 @@ export class RaceSim {
         shield: 0,
         certT: 0, // seconds of Renewed Certificate left
         returnUrl: false, // holding a ?returnUrl= pass
+        auditT: 0, // seconds left with controls locked (Eight-Minute Audit)
+        reverseT: 0, // seconds left with steering reversed (Production Roulette)
+        theaterT: 0, // seconds left speed-locked (Security Theater)
+        theaterCap: 0, // the locked speed, in track units per second
         item: null,
         itemDelay: 0,
         itemHeld: 0,
@@ -392,6 +414,9 @@ export class RaceSim {
     if (r.shield > 0) r.shield = Math.max(0, r.shield - dt);
     if (r.boostT > 0) r.boostT = Math.max(0, r.boostT - dt);
     if (r.certT > 0) r.certT = Math.max(0, r.certT - dt);
+    if (r.auditT > 0) r.auditT = Math.max(0, r.auditT - dt);
+    if (r.reverseT > 0) r.reverseT = Math.max(0, r.reverseT - dt);
+    if (r.theaterT > 0) r.theaterT = Math.max(0, r.theaterT - dt);
 
     // Skip obstacles that are well behind us.
     while (r.oi < this.obstacles.length && this.obstacles[r.oi].sMax < r.s - 12) r.oi++;
@@ -445,15 +470,20 @@ export class RaceSim {
     }
 
     // --- steering ---
-    r.wanderT -= dt;
-    if (r.wanderT <= 0) {
-      r.wanderT = 2.5 + this.rng() * 3.5;
-      r.wanderD = clamp(r.d + (this.rng() - 0.5) * 12, -hw, hw);
-    }
-    r.thinkT -= dt;
-    if (r.thinkT <= 0) {
-      r.thinkT = T.thinkInterval;
-      this.think(r, hw);
+    if (r.auditT > 0) {
+      // Controls locked: hold the current line, whatever is in the way.
+      r.targetD = r.d;
+    } else {
+      r.wanderT -= dt;
+      if (r.wanderT <= 0) {
+        r.wanderT = 2.5 + this.rng() * 3.5;
+        r.wanderD = clamp(r.d + (this.rng() - 0.5) * 12, -hw, hw);
+      }
+      r.thinkT -= dt;
+      if (r.thinkT <= 0) {
+        r.thinkT = T.thinkInterval;
+        this.think(r, hw);
+      }
     }
     const lateral = T.lateralSpeed * Math.min(1, 0.2 + r.v / 12) * dt;
     r.d = clamp(r.d + clamp(r.targetD - r.d, -lateral, lateral), -hw, hw);
@@ -472,13 +502,15 @@ export class RaceSim {
       target = T.baseSpeed * r.pace * mood * rubberBand * zoneFactor;
       if (r.boostT > 0) target *= r.boostF;
       target = Math.min(target, T.baseSpeed * T.maxSpeedFactor);
+      // Security Theater: locked to 12-15 mph, boosts or not.
+      if (r.theaterT > 0) target = Math.min(target, r.theaterCap);
     }
     if (r.v < target) r.v = Math.min(target, r.v + T.accel * (r.boostT > 0 ? 2 : 1) * dt);
     else r.v = Math.max(target, r.v - T.brake * dt);
     r.s += (r.v - belt) * dt;
 
-    // --- items ---
-    this.updateItems(r, dt, rankFraction);
+    // --- items --- (an audit locks those too: no grabbing crates, no using items)
+    if (r.auditT <= 0) this.updateItems(r, dt, rankFraction);
   }
 
   think(r, hw) {
@@ -512,7 +544,8 @@ export class RaceSim {
         best = c;
       }
     }
-    r.targetD = best;
+    // Production Roulette: every correction goes the wrong way.
+    r.targetD = r.reverseT > 0 ? clamp(2 * r.d - best, -hw, hw) : best;
   }
 
   /** True if the racer holds the item that lets them straight through this obstacle. */
@@ -601,6 +634,32 @@ export class RaceSim {
     return true;
   }
 
+  /**
+   * Applies a lasting effect from a thrown item (audit, roulette or theater). A firewall blocks it,
+   * like any other attack. Returns true if it landed.
+   */
+  applyStatus(r, effect, { by = null } = {}) {
+    const T = TUNING;
+    if (r.finished) return false;
+    if (r.shield > 0) {
+      r.shield = 0;
+      this.emit('block', { racer: r, cause: effect, by });
+      return false;
+    }
+    let mph = null;
+    if (effect === 'audit') r.auditT = T.auditDuration;
+    else if (effect === 'roulette') r.reverseT = T.rouletteDuration;
+    else if (effect === 'theater') {
+      const [lo, hi] = T.theaterMph;
+      mph = Math.round(lo + this.rng() * (hi - lo));
+      r.theaterT = T.theaterDuration;
+      r.theaterCap = mph / T.mphPerUnit;
+      r.boostT = 0;
+    }
+    this.emit('status', { racer: r, effect, by, mph });
+    return true;
+  }
+
   updateStun(r, dt, belt) {
     const st = r.stun;
     st.t += dt;
@@ -673,15 +732,17 @@ export class RaceSim {
     } else {
       // Thrown items need someone to throw them at.
       let target = null;
-      if (item === 'bug') {
+      if (item === 'forcePush') {
+        const leader = this.order.find((o) => !o.finished);
+        if (leader && leader !== r) target = leader;
+      } else {
+        // The bug and the office-politics items go to the rival directly ahead.
         for (const other of this.racers) {
           if (other === r || other.finished || other.s <= r.s) continue;
           if (!target || other.s < target.s) target = other;
         }
-        if (target && target.s - r.s > 45) target = null;
-      } else {
-        const leader = this.order.find((o) => !o.finished);
-        if (leader && leader !== r) target = leader;
+        const range = item === 'bug' ? 45 : TUNING.throwRange;
+        if (target && target.s - r.s > range) target = null;
       }
       if (target) {
         this.projectiles.push({ id: this.nextProjectileId++, kind: item, from: r, target, s: r.s, d: r.d, t: 0 });
@@ -712,8 +773,12 @@ export class RaceSim {
       if (dist <= move + 1) {
         this.projectiles.splice(i, 1);
         this.emit('impact', { projectile: p, s: target.s, d: target.d });
-        const kind = p.kind === 'bug' ? 'spin' : 'blast';
-        this.applyHit(target, kind, p.kind, { by: p.from, duration: TUNING.stun[p.kind] });
+        if (STATUS_ITEMS.includes(p.kind)) {
+          this.applyStatus(target, p.kind, { by: p.from });
+        } else {
+          const kind = p.kind === 'forcePush' ? 'blast' : 'spin';
+          this.applyHit(target, kind, p.kind, { by: p.from, duration: TUNING.stun[p.kind] });
+        }
       } else {
         p.s += (ds / dist) * move;
         p.d += (dd / dist) * move;
@@ -755,6 +820,7 @@ export class RaceSim {
         r.shield = 0;
         r.certT = 0;
         r.returnUrl = false;
+        r.auditT = r.reverseT = r.theaterT = 0;
         r.item = null;
         if (r.place === 1) {
           this.winner = r;

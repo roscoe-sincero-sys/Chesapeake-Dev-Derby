@@ -457,7 +457,8 @@ export function buildCrate(crate, track) {
 
 /** A thrown item in flight (a bug, or a force-push). */
 export function buildProjectile(kind) {
-  if (kind === 'bug') return makeSprite(emojiTexture('🐛'), 1.9, 1.9);
+  const glyph = { bug: '🐛', notClear: '🌫️', audit: '📋', roulette: '🎰', theater: '🎭' }[kind];
+  if (glyph) return makeSprite(emojiTexture(glyph), 1.9, 1.9);
   const texture = cachedTexture('force-push', 256, 96, (ctx, w, h) => {
     roundRect(ctx, 4, 8, w - 8, h - 16, 30);
     ctx.fillStyle = '#c92a2a';

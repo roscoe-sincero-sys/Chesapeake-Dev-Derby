@@ -121,6 +121,14 @@ watersnakes.
 | 💥 Force Push  | Homes in on the leader — only racers in the back half get these     |
 | 🔐 Renewed Certificate | Immune to SSL Expired for 20 seconds                        |
 | ↩️ ?returnUrl= | Lets you through the next DO NOT MODIFY URLS barricade (used up by it) |
+| 🌫️ You Are Not Being Clear | Thrown at the rival ahead; they spin out trying to clarify. *"It's your fault."* |
+| 📋 Eight-Minute Audit | Locks the rival ahead's controls for 8 seconds: no steering round obstacles, no crates, no items. *"Access limited pending audit."* |
+| 🎰 Production Roulette | Reverses the rival ahead's steering for 6 seconds, so they swerve towards trouble. *"Oops. That was pr0dI."* |
+| 🎭 Security Theater | Locks the rival ahead to 12–15 mph for 6 seconds. *"Vahi says you're going too fast."* |
+
+The four office-politics items are thrown at the nearest racer ahead (within range), so the leader never
+gets them. A Firewall blocks them like any other attack. Seconds are race time, so they pass faster at
+shorter race lengths.
 
 ## Is it fair?
 
