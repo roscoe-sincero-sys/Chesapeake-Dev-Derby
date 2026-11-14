@@ -4,7 +4,7 @@ import { Game, runHeadless } from './game.js';
 import { Hud } from './hud.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
-import { buildRoster, selectRacers, nameKey } from './eligibility.js';
+import { buildRoster, selectRacers, pickRandomRacer, nameKey } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed } from './lobby-settings.js';
 
@@ -12,7 +12,7 @@ const $ = (id) => document.getElementById(id);
 
 // Optional URL switches, handy for demos and testing:
 //   ?seed=123   replay the same race every time
-//   ?speed=3    run the race faster (1 to 20)
+//   ?speed=3    run the race faster (1 to 7)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
 const savedSettings = readLobbySettings();
@@ -27,6 +27,7 @@ const state = {
   absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
   phase: 'lobby', // lobby | race | results
   pendingWinner: null,
+  raceStartedAt: null,
 };
 
 const sfx = new Sfx();
@@ -40,7 +41,7 @@ async function api(path, options) {
   try {
     response = await fetch(path, options);
   } catch {
-    throw new Error('Cannot reach the server. Is "npm start" still running?');
+    throw new Error('Lost connection to the app. Ask the host to restart it, then tap Retry.');
   }
   let body = null;
   try {
@@ -65,7 +66,7 @@ async function loadState() {
     status.replaceChildren();
     const notes = [...data.warnings];
     if (!game) notes.unshift('3D is not available in this browser, so the race will be run off-screen and the winner shown straight away.');
-    if (!state.names.length) notes.unshift('The roster is empty. Use Modify list to add racers.');
+    if (!state.names.length) notes.unshift('The team list is empty. Use Edit team list to add names.');
     if (notes.length) {
       status.className = 'warn';
       const list = document.createElement('ul');
@@ -79,7 +80,7 @@ async function loadState() {
     renderLobby();
   } catch (err) {
     status.className = 'error';
-    status.textContent = `Could not load the roster: ${err.message} `;
+    status.textContent = `Could not load the team list: ${err.message} `;
     const retry = document.createElement('button');
     retry.type = 'button';
     retry.textContent = 'Retry';
@@ -87,13 +88,13 @@ async function loadState() {
     status.append(retry);
     $('check-all').disabled = $('check-none').disabled = true;
     $('recent-section').hidden = true;
-    $('run').disabled = true;
+    $('run').disabled = $('pick').disabled = true;
   }
 }
 
 async function saveWinner(name) {
   state.pendingWinner = name;
-  hud.saveStatus('Saving to winners.json…');
+  hud.saveStatus('Saving the result…');
   try {
     const data = await api('/api/winners', {
       method: 'POST',
@@ -102,7 +103,7 @@ async function saveWinner(name) {
     });
     state.winners = data.winners;
     state.pendingWinner = null;
-    hud.saveStatus('✓ Saved to winners.json — sitting out the next three races.', 'ok');
+    hud.saveStatus(`Saved. ${name} sits out the next three races.`, 'ok');
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -149,12 +150,12 @@ function renderLobby() {
       li.className = 'ineligible';
       const badge = document.createElement('span');
       badge.className = 'badge';
-      badge.textContent = ago === 1 ? 'won last race' : `won ${ago} races ago`;
+      const wait = 4 - ago;
+      badge.textContent = `Sits out ${wait} more race${wait === 1 ? '' : 's'}`;
       const text = document.createElement('span');
       text.className = 'who';
       text.append(name, badge);
       label.append(text);
-      const wait = state.winners.length - ago + 1;
       label.title = `${entry.name} won recently — eligible again in ${wait} race${wait === 1 ? '' : 's'}.`;
     }
     li.append(label);
@@ -204,8 +205,8 @@ function updateRunButton() {
   updateAttendanceStatus();
   const racing = selectRacers(state.roster, state.absent).length;
   $('racer-count').textContent = `${racing} racing`;
-  $('run').disabled = racing < 2;
-  $('run-hint').textContent = racing < 2 ? 'Tick at least two people to race.' : `${racing} racers on the grid — may the best tab win.`;
+  $('run').disabled = $('pick').disabled = racing < 2;
+  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win.`;
 }
 
 function setAll(present) {
@@ -232,8 +233,10 @@ function run() {
 
   if (!game) {
     // No WebGL: decide the race instantly and go straight to the result.
+    const started = performance.now();
     const sim = runHeadless(racers, rng);
-    hud.showWinner(sim.winner.name, null, sim.winnerTime, 0);
+    const elapsed = (performance.now() - started) / 1000;
+    hud.showWinner(sim.winner.name, null, elapsed, 0, `Race completed off-screen in ${elapsed.toFixed(1)}s.`);
     sim.standings().slice(1, 3).forEach((r, i) => hud.podium(i + 2, r.name));
     state.phase = 'results';
     saveWinner(sim.winner.name);
@@ -243,6 +246,17 @@ function run() {
   const lineup = game.startRace(racers, { rng, timeScale: speed });
   hud.begin(lineup);
   $('quit').hidden = false;
+}
+
+function pick() {
+  if (state.phase !== 'lobby') return;
+  const rng = seed === null ? Math.random : mulberry32(seed);
+  const winner = pickRandomRacer(state.roster, state.absent, rng);
+  if (!winner) return;
+  state.phase = 'results';
+  $('lobby').hidden = true;
+  hud.showWinner(winner, null, null, 0, 'Random pick - race skipped.');
+  saveWinner(winner);
 }
 
 function backToLobby() {
@@ -262,12 +276,14 @@ function init() {
       $('scene'),
       {
         onCountdown: (text) => hud.countdown(text),
+        onRaceStart: () => { state.raceStartedAt = performance.now(); },
         onFrame: (sim) => hud.frame(sim),
         onEvent: (event) => hud.event(event),
         onWinner: (racer, kind) => {
           state.phase = 'results';
           $('quit').hidden = true;
-          hud.showWinner(racer.name, kind, racer.finishTime, 2600 / speed);
+          const elapsed = (performance.now() - state.raceStartedAt) / 1000;
+          hud.showWinner(racer.name, kind, elapsed, 2600 / speed);
           // Save immediately, so the result is recorded even if the tab is closed.
           saveWinner(racer.name);
         },
@@ -287,9 +303,10 @@ function init() {
   const slider = $('race-speed');
   const showSpeed = () => {
     speed = Number(slider.value);
-    $('speed-value').textContent = `${speed}\u00d7`;
-    slider.setAttribute('aria-valuetext', `${speed} times normal speed`);
-    slider.style.setProperty('--fill', `${(speed - 1) / 19 * 100}%`);
+    const length = `About ${Math.round(50 / speed)} seconds${speed === 2 ? ' (default)' : ''}`;
+    $('speed-value').textContent = length;
+    slider.setAttribute('aria-valuetext', length);
+    slider.style.setProperty('--fill', `${(speed - 1) / 6 * 100}%`);
     saveLobbySettings();
     updateAttendanceStatus();
   };
@@ -298,6 +315,7 @@ function init() {
   showSpeed();
 
   $('run').addEventListener('click', run);
+  $('pick').addEventListener('click', pick);
   $('check-all').addEventListener('click', () => setAll(true));
   $('check-none').addEventListener('click', () => setAll(false));
   $('back').addEventListener('click', backToLobby);

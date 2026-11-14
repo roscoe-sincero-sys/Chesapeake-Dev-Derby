@@ -820,3 +820,17 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Keep actions readable on narrow screens without moving the length control. */
+.lobby-foot { flex-wrap: wrap; gap: 10px; }
+.lobby-foot .hint { flex-basis: 100%; }
+button.primary { white-space: nowrap; }
+.lobby-foot button.primary { padding-inline: 22px; }
+button.secondary {
+  background: #26364a; border: 1px solid #8997ac; border-radius: 10px;
+  color: var(--text); padding: 12px; font-size: 14px; white-space: nowrap;
+}
+button.secondary:disabled { cursor: not-allowed; }
+.speed-control .section-head { flex-wrap: wrap; }
+#speed-value { font-size: 15px; }
+.length-scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }

@@ -4,7 +4,7 @@ const KEY = 'derby-lobby-settings';
 
 export function normalizeSpeed(value) {
   return typeof value === 'number' && Number.isFinite(value)
-    ? Math.min(20, Math.max(1, Math.round(value))) : 2;
+    ? Math.min(7, Math.max(1, Math.round(value))) : 2;
 }
 
 export function readLobbySettings(getStorage = () => window.sessionStorage) {

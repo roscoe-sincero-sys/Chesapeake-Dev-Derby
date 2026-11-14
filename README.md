@@ -27,7 +27,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 ## Running a meeting pick
 
-1. **Edit the roster** using **Modify list** in the lobby (one name per line), or in [`data/names.json`](data/names.json) — up to 30 names:
+1. **Edit the team list** using **Edit team list** in the lobby (one name per line), or in [`data/names.json`](data/names.json) — up to 30 names:
 
    ```json
    { "names": ["Ada", "Grace", "Linus"] }
@@ -36,17 +36,17 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** Set the **Race speed** slider from 1 to 20 (default 2); higher values finish sooner. Everyone is listed with a checkbox. A ticked box means that person is racing.
-   - **Untick** anyone who is absent today. Attendance and race speed are kept in this browser tab
-     through reloads and visits to **Modify List**. Removed names are dropped from saved attendance;
+2. **Open the lobby.** Set the **Race length** slider (1x to 7x, default 2x); its label estimates racing time. Everyone is listed with a checkbox. A ticked box means that person is racing.
+   - **Uncheck** anyone who is absent today. Attendance and race speed are kept in this browser tab
+     through reloads and visits to **Edit team list**. Removed names are dropped from saved attendance;
      new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`
      URL setting overrides the saved speed.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
-3. Click **🏁 Run** (or press **Enter**). You need at least two racers.
+3. Click **Start race** (or press **Enter**). You need at least two racers.
 
-4. Watch the race. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
+4. Watch the race. The result shows actual elapsed racing time, excluding the countdown. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
    the moment they cross the line. That file holds the last three winners; when it already has three,
    the new winner replaces the oldest.
 
@@ -62,6 +62,9 @@ make everyone eligible again:
 ```json
 { "winners": [] }
 ```
+
+For an immediate result, use **Skip race, just pick**. It randomly picks from the same eligible,
+present racers and saves the result with the same three-race exclusion. Both actions need at least two racers.
 
 ## What's on the track
 
@@ -111,7 +114,7 @@ Handy for demos and testing:
 
 | Option      | Effect                                                    |
 | ----------- | --------------------------------------------------------- |
-| `?speed=3`  | Initial race speed (1 to 20; default 2)                  |
+| `?speed=3`  | Initial race speed (1 to 7; default 2)                  |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
 
 ## Tests

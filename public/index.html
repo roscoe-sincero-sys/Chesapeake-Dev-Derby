@@ -32,15 +32,15 @@
 
       <section id="roster-section">
         <div class="section-head">
-          <h2>Who's here today?</h2>
+          <h2>Team list</h2>
           <span id="racer-count" class="count"></span>
           <nav class="roster-actions" aria-label="Roster controls">
-            <button id="check-all" type="button" class="link" disabled>All</button>
-            <button id="check-none" type="button" class="link" disabled>None</button>
-            <a class="link" href="roster.html">Modify List</a>
+            <button id="check-all" type="button" class="link" disabled>Select all</button>
+            <button id="check-none" type="button" class="link" disabled>Clear all</button>
+            <a class="link" href="roster.html">Edit team list</a>
           </nav>
         </div>
-        <p class="hint">Untick anyone who is absent. The last three winners sit this one out.</p>
+        <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.</p>
         <p id="attendance-status" class="hint" role="status" hidden></p>
         <ul id="roster"></ul>
       </section>
@@ -52,10 +52,17 @@
 
       <section class="speed-control" aria-labelledby="speed-label">
         <div class="section-head">
-          <label id="speed-label" for="race-speed">Race speed</label>
-          <output id="speed-value" for="race-speed">2&#215;</output>
+          <label id="speed-label" for="race-speed">Race length</label>
+          <output id="speed-value" for="race-speed">About 25 seconds (default)</output>
         </div>
-        <input id="race-speed" type="range" min="1" max="20" step="1" value="2" />
+        <input id="race-speed" type="range" min="1" max="7" step="1" value="2" list="race-speed-marks" />
+        <datalist id="race-speed-marks">
+          <option value="1" label="About 50 seconds"></option>
+          <option value="2" label="About 25 seconds (default)"></option>
+          <option value="4" label="About 13 seconds"></option>
+          <option value="7" label="About 7 seconds"></option>
+        </datalist>
+        <div class="length-scale" aria-hidden="true"><span>Longer</span><span>Shorter</span></div>
       </section>
 
       <details id="guide">
@@ -90,7 +97,8 @@
       </details>
 
       <footer class="lobby-foot">
-        <button id="run" type="button" class="primary" disabled>🏁 Run</button>
+        <button id="run" type="button" class="primary" disabled>Start race</button>
+        <button id="pick" type="button" class="secondary" disabled>Skip race, just pick</button>
         <span id="run-hint" class="hint"></span>
       </footer>
     </main>

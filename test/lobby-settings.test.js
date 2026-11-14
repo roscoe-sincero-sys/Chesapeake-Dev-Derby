@@ -10,10 +10,10 @@ function storage(initial = null) {
 
 test('attendance and speed survive a settings round trip', () => {
   const getStorage = storage();
-  assert.equal(writeLobbySettings({ absent: new Set(['ada', 'grace']), speed: 12 }, getStorage), true);
+  assert.equal(writeLobbySettings({ absent: new Set(['ada', 'grace']), speed: 5 }, getStorage), true);
   const restored = readLobbySettings(getStorage);
   assert.deepEqual([...restored.absent], ['ada', 'grace']);
-  assert.equal(restored.speed, 12);
+  assert.equal(restored.speed, 5);
   assert.deepEqual(selectRacers(buildRoster(['Ada', 'Grace', 'Linus', 'Hedy'], []), restored.absent), ['Linus', 'Hedy']);
 });
 
@@ -35,7 +35,7 @@ test('corrupt saved settings fall back safely and normalize valid names and spee
   }
   const restored = readLobbySettings(storage('{"absent":[" Ada ","ADA",null,42,""],"speed":99}'));
   assert.deepEqual([...restored.absent], ['ada']);
-  assert.equal(restored.speed, 20);
+  assert.equal(restored.speed, 7);
   assert.equal(readLobbySettings(storage('{"speed":-5}')).speed, 1);
 });
 

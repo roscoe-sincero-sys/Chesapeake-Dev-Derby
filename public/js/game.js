@@ -181,7 +181,7 @@ export class Game {
     if (this.phase === 'lobby') {
       this.updateLobbyCamera(real);
     } else if (this.phase === 'countdown') {
-      this.updateCountdown(dt);
+      this.updateCountdown(real);
     } else {
       this.updateRace(dt, real);
     }
