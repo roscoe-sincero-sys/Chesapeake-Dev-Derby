@@ -14,9 +14,11 @@ export const OBSTACLE_TYPES = [
   'redirectLoop',
   'nullPointer',
   'exception',
+  'sslExpired',
+  'urlBarricade',
 ];
 
-export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush'];
+export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl'];
 
 export const TUNING = {
   trackLength: 1000,
@@ -39,6 +41,8 @@ export const TUNING = {
     redirectLoop: 0.55,
     nullPointer: 0.35,
     exception: 0.5,
+    sslExpired: 0.5,
+    urlBarricade: 0.5,
   },
   stun: {
     fall: 1.7, // 404 pit
@@ -47,9 +51,13 @@ export const TUNING = {
     loop: 1.6, // redirect loop
     null: 1.3, // null pointer
     blast: 1.5, // unhandled exception
+    cert: 1.6, // SSL expired: stuck on the browser warning page
+    errorPit: 2.6, // DO NOT MODIFY URLS: dropped into the error pit
     bug: 1.3,
     forcePush: 1.7,
   },
+  // How long a Renewed Certificate stays valid (seconds).
+  certDuration: 20,
   slowLoadFactor: 0.45,
   scrollBeltSpeed: 9,
   explosionRadius: 4.5,
@@ -165,6 +173,18 @@ export function generateCourse(rng = Math.random, length = TUNING.trackLength, h
       for (const d of lanes(3 + Math.floor(rng() * 2))) circle('exception', s + rand(0, 9), d, 1.2);
       return 10;
     },
+    // A certificate checkpoint across half the road.
+    sslExpired(s) {
+      const [a, b] = band(0.5);
+      rect('sslExpired', 'rect', s, 0.8, a, b);
+      return 4;
+    },
+    // A barricade across just over half the road, with an error pit behind it.
+    urlBarricade(s) {
+      const [a, b] = band(0.55);
+      rect('urlBarricade', 'rect', s, 0.8, a, b);
+      return 6;
+    },
   };
 
   crateRow(38);
@@ -196,6 +216,9 @@ export function rollItem(rankFraction, rng = Math.random) {
     bug: f > 0.05 ? 2.5 : 0,
     breeze: 3 * f * f,
     forcePush: f > 0.5 ? 1.4 * f : 0,
+    // Passes for specific obstacles: the same odds wherever you are in the field.
+    renewedCert: 1.2,
+    returnUrl: 1.2,
   };
   let total = 0;
   for (const k of ITEM_TYPES) total += weights[k];
@@ -262,6 +285,8 @@ export class RaceSim {
         boostT: 0,
         boostF: 1,
         shield: 0,
+        certT: 0, // seconds of Renewed Certificate left
+        returnUrl: false, // holding a ?returnUrl= pass
         item: null,
         itemDelay: 0,
         itemHeld: 0,
@@ -365,6 +390,7 @@ export class RaceSim {
 
     if (r.shield > 0) r.shield = Math.max(0, r.shield - dt);
     if (r.boostT > 0) r.boostT = Math.max(0, r.boostT - dt);
+    if (r.certT > 0) r.certT = Math.max(0, r.certT - dt);
 
     // Skip obstacles that are well behind us.
     while (r.oi < this.obstacles.length && this.obstacles[r.oi].sMax < r.s - 12) r.oi++;
@@ -467,6 +493,7 @@ export class RaceSim {
         if (o.sMin > r.s + T.lookAhead) break;
         if (o.sMax < r.s - 1 || !o.active || !r.noticed.get(o.id)) continue;
         if (o.shape !== 'zone' && r.cleared.has(o.id)) continue;
+        if (this.canPass(r, o)) continue; // no need to steer round something we can drive through
         if (c > o.dMin - 1.8 && c < o.dMax + 1.8) score += o.shape === 'zone' ? 40 : 100;
       }
       if (wantsCrate) {
@@ -485,6 +512,11 @@ export class RaceSim {
       }
     }
     r.targetD = best;
+  }
+
+  /** True if the racer holds the item that lets them straight through this obstacle. */
+  canPass(r, o) {
+    return (o.type === 'sslExpired' && r.certT > 0) || (o.type === 'urlBarricade' && r.returnUrl);
   }
 
   triggerObstacle(r, o) {
@@ -506,6 +538,20 @@ export class RaceSim {
         break;
       case 'exception':
         this.explode(o);
+        break;
+      case 'sslExpired':
+        // A renewed certificate stays valid for every checkpoint until it runs out.
+        if (r.certT > 0) this.emit('pass', { racer: r, obstacle: o, item: 'renewedCert' });
+        else this.applyHit(r, 'cert', 'sslExpired');
+        break;
+      case 'urlBarricade':
+        // A ?returnUrl= is used up by the barricade it gets you through.
+        if (r.returnUrl) {
+          r.returnUrl = false;
+          this.emit('pass', { racer: r, obstacle: o, item: 'returnUrl' });
+        } else {
+          this.applyHit(r, 'errorPit', 'urlBarricade');
+        }
         break;
     }
   }
@@ -617,6 +663,12 @@ export class RaceSim {
     } else if (item === 'firewall') {
       r.shield = 10;
       use();
+    } else if (item === 'renewedCert') {
+      r.certT = TUNING.certDuration;
+      use();
+    } else if (item === 'returnUrl') {
+      r.returnUrl = true;
+      use();
     } else {
       // Thrown items need someone to throw them at.
       let target = null;
@@ -700,6 +752,8 @@ export class RaceSim {
         r.stun = null;
         r.boostT = 0;
         r.shield = 0;
+        r.certT = 0;
+        r.returnUrl = false;
         r.item = null;
         if (r.place === 1) {
           this.winner = r;

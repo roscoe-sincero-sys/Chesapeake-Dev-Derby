@@ -103,6 +103,63 @@ test('a firewall blocks exactly one hit', () => {
   assert.equal(sim.drainEvents().filter((e) => e.type === 'block').length, 1);
 });
 
+test('a Renewed Certificate gives immunity to SSL Expired until it runs out', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(3) });
+  const [a, b] = sim.racers;
+  const gate = (id) => ({ id, type: 'sslExpired' });
+
+  sim.triggerObstacle(a, gate(9001));
+  assert.equal(a.stun.kind, 'cert', 'without a certificate the warning page stops you');
+
+  b.item = 'renewedCert';
+  b.itemDelay = 0;
+  sim.updateItems(b, 0.1, 0);
+  assert.equal(b.item, null);
+  assert.equal(b.certT, TUNING.certDuration);
+  sim.triggerObstacle(b, gate(9002));
+  sim.triggerObstacle(b, gate(9003));
+  assert.equal(b.stun, null, 'the certificate covers every checkpoint while valid');
+  assert.ok(sim.canPass(b, gate(9004)));
+  assert.equal(sim.drainEvents().filter((e) => e.type === 'pass' && e.item === 'renewedCert').length, 2);
+
+  // It does nothing for the barricade, and it expires.
+  assert.equal(sim.canPass(b, { id: 1, type: 'urlBarricade' }), false);
+  b.certT = 0;
+  sim.triggerObstacle(b, gate(9005));
+  assert.equal(b.stun.kind, 'cert');
+});
+
+test('?returnUrl= passes exactly one DO NOT MODIFY URLS barricade', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(4) });
+  const [a, b] = sim.racers;
+  const barricade = (id) => ({ id, type: 'urlBarricade' });
+
+  sim.triggerObstacle(a, barricade(9001));
+  assert.equal(a.stun.kind, 'errorPit');
+  assert.ok(a.stun.dur >= 2 && a.stun.dur <= 4, 'the error pit holds you for a few seconds');
+
+  b.item = 'returnUrl';
+  b.itemDelay = 0;
+  sim.updateItems(b, 0.1, 0);
+  assert.equal(b.returnUrl, true);
+  assert.equal(sim.canPass(b, { id: 1, type: 'sslExpired' }), false, 'it is no help with SSL Expired');
+  sim.triggerObstacle(b, barricade(9002));
+  assert.equal(b.stun, null);
+  assert.equal(b.returnUrl, false, 'used up by the barricade');
+  sim.triggerObstacle(b, barricade(9003));
+  assert.equal(b.stun.kind, 'errorPit');
+  assert.equal(sim.drainEvents().filter((e) => e.type === 'pass' && e.item === 'returnUrl').length, 1);
+});
+
+test('passes are used during real races', () => {
+  const passed = new Set();
+  for (let seed = 1; seed <= 20; seed++) {
+    for (const e of runRace(12, seed * 53).events) if (e.type === 'pass') passed.add(e.item);
+  }
+  assert.ok(passed.has('renewedCert'), 'a renewed certificate never got anyone through');
+  assert.ok(passed.has('returnUrl'), 'a ?returnUrl= never got anyone through');
+});
+
 test('item odds favour trailing racers', () => {
   const rng = mulberry32(99);
   const count = (fraction) => {
