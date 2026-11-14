@@ -200,3 +200,4 @@ Claude's initial development statistics, as reported by the project owner:
 | Lines added | 6,170 |
 | Lines removed | 2 |
 | Total cost | $13.31 |
+| Fable 5.2 usage (high effort) | 29% |
