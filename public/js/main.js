@@ -102,14 +102,15 @@ async function loadState() {
   }
 }
 
-async function saveWinner(name) {
+async function saveWinner(name, mode) {
   state.pendingWinner = name;
+  state.pendingMode = mode;
   hud.saveStatus('Saving the result…');
   try {
     const data = await api('/api/winners', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, mode }),
     });
     state.winners = data.winners;
     state.pendingWinner = null;
@@ -286,7 +287,7 @@ function run() {
     hud.showWinner(sim.winner.name, null, elapsed, 0, `Race completed off-screen in ${elapsed.toFixed(1)}s.`);
     sim.standings().slice(1, 3).forEach((r, i) => hud.podium(i + 2, r.name));
     state.phase = 'results';
-    saveWinner(stored(sim.winner.name));
+    saveWinner(stored(sim.winner.name), 'race');
     return;
   }
 
@@ -303,7 +304,7 @@ function pick() {
   state.phase = 'results';
   $('lobby').hidden = true;
   hud.showWinner(show(winner), null, null, 0, 'Random pick - race skipped.');
-  saveWinner(winner);
+  saveWinner(winner, 'skip');
 }
 
 function backToLobby() {
@@ -333,7 +334,7 @@ function init() {
           const elapsed = (performance.now() - state.raceStartedAt) / 1000;
           hud.showWinner(racer.name, kind, elapsed, 2600 / speed);
           // Save immediately, so the result is recorded even if the tab is closed.
-          saveWinner(stored(racer.name));
+          saveWinner(stored(racer.name), 'race');
         },
       },
       sfx,
@@ -379,7 +380,7 @@ function init() {
     else $('reset-winners').focus({ preventScroll: true });
   });
   $('quit').addEventListener('click', backToLobby);
-  $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner));
+  $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner, state.pendingMode));
 
   const mute = $('mute');
   const showMute = () => {

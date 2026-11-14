@@ -840,7 +840,7 @@ button.secondary:disabled { cursor: not-allowed; }
 
 /* Reset the last three winners. */
 #recent-section .section-head { flex-wrap: wrap; }
-#reset-winners { margin-left: auto; }
+#recent-section .roster-actions { margin-left: auto; }
 .error-text { color: #ffa8a8; }
 #reset-dialog {
   max-width: min(420px, calc(100vw - 32px));
@@ -858,3 +858,20 @@ button.secondary:disabled { cursor: not-allowed; }
 .dialog-actions button { border-radius: 10px; padding: 10px 16px; font-size: 14px; min-height: 44px; }
 button.danger { background: #c92a2a; border-color: #ff8787; color: #fff; font-weight: 650; }
 button.danger:hover { filter: brightness(1.1); }
+
+/* Winner history page. */
+.history-scroll { overflow-x: auto; margin-top: 12px; }
+#history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+#history-table th, #history-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
+#history-table th { color: var(--muted); font-weight: 650; font-size: 13px; }
+#history-table tbody tr:first-child td { color: var(--gold); }
+#history-table td.num { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+#history-table td.who { font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
+#history-table td.mode.unknown { color: var(--muted); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 560px) {
+  .editor.history { padding: 18px 14px; }
+  #history-table { font-size: 13px; }
+  #history-table th, #history-table td { padding: 8px 5px; white-space: normal; }
+  #history-table td.mode { white-space: nowrap; }
+}

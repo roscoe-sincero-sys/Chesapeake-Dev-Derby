@@ -6,7 +6,8 @@
 //
 //   GET  /api/state    -> { names, winners, warnings }
 //   PUT  /api/names    -> body { names: [...] } ; returns { names, warnings }
-//   POST /api/winners  -> body { name } ; returns { winners }
+//   GET  /api/history  -> { history } every recorded result, newest first
+//   POST /api/winners  -> body { name, mode? } (mode "race" or "skip") ; returns { winners }
 //   DELETE /api/winners -> body {} ; clears the history, returns { winners: [] }
 
 import http from 'node:http';
@@ -159,6 +160,10 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         return sendJson(res, 200, { names, winners, warnings });
       }
 
+      if (pathname === '/api/history' && req.method === 'GET') {
+        return sendJson(res, 200, { history: (await store.loadHistory()).reverse() });
+      }
+
       if (pathname === '/api/names' && req.method === 'PUT') {
         let payload;
         try {
@@ -179,7 +184,7 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         if (!payload || typeof payload.name !== 'string' || !payload.name.trim()) {
           return sendJson(res, 400, { error: 'A winner "name" is required.' });
         }
-        const winners = await store.recordWinner(payload.name);
+        const winners = await store.recordWinner(payload.name, payload.mode ?? 'race');
         return sendJson(res, 200, { winners });
       }
 

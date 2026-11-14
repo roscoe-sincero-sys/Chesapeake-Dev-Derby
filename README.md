@@ -72,10 +72,18 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
+### Winner history
+
+Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
+5,000). Click **Full history** next to **Last three winners** in the lobby to see the list, newest first,
+with each winner's date and time and whether they won a **race** or were picked with **Skip race, just
+pick**. On an install from before the history was added, the list starts with the winners already in
+`data/winners.json`; those show **—** under How because that wasn't recorded.
+
 ### Resetting or correcting the history
 
 To make everyone eligible again, click **Reset list** next to **Last three winners** in the lobby and
-confirm. This empties `data/winners.json` and can't be undone.
+confirm. This empties `data/winners.json` and can't be undone. The full history is kept.
 
 `data/winners.json` is plain JSON, oldest first. You can also edit it by hand to fix a mistake, or empty
 the list yourself:
@@ -175,12 +183,14 @@ Uses Node's built-in test runner — no extra packages. Covers:
 ## How it's put together
 
 ```
-server.js            Serves the game; GET /api/state, PUT /api/names, POST/DELETE /api/winners
-lib/store.js         Reads names.json, reads/writes winners.json
+server.js            Serves the game; GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
+lib/store.js         Reads names.json, reads/writes winners.json and history.json
 data/names.json      Your roster (edit this)
 data/winners.json    Last three winners (written by the game)
+data/history.json    Every result, with date, time and race/skip (written by the game)
 public/
   index.html         Lobby, race HUD and winner card
+  history.html       Winner history page (js/history.js)
   css/style.css
   js/main.js         Lobby logic, starts races, saves the winner
   js/eligibility.js  Who may race (last three winners sit out)
