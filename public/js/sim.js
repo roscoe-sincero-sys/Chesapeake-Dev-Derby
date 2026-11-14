@@ -21,7 +21,8 @@ export const OBSTACLE_TYPES = [
 export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl'];
 
 export const TUNING = {
-  trackLength: 1000,
+  // About 120 seconds of racing at 1x speed.
+  trackLength: 2400,
   halfWidth: 12,
   baseSpeed: 21,
   // Hard cap on speed (as a multiple of baseSpeed), however many boosts stack up.

@@ -159,7 +159,7 @@ export function buildScenery(scene, track) {
 
   // --- roadside billboards ---
   BILLBOARDS.forEach(([line1, line2, color], i) => {
-    const s = 55 + i * 97;
+    const s = 55 + i * ((track.length - 100) / BILLBOARDS.length);
     if (s > track.length - 30) return;
     const side = i % 2 ? -1 : 1;
     const board = buildBillboard(line1, line2, color);
