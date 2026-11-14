@@ -26,3 +26,9 @@ export function buildRoster(names, winners) {
 export function selectRacers(roster, absent = new Set()) {
   return roster.filter((entry) => entry.eligible && !absent.has(nameKey(entry.name))).map((entry) => entry.name);
 }
+
+/** A uniform immediate pick from the same eligible, present racers as a race. */
+export function pickRandomRacer(roster, absent = new Set(), rng = Math.random) {
+  const racers = selectRacers(roster, absent);
+  return racers.length >= 2 ? racers[Math.floor(rng() * racers.length)] : null;
+}

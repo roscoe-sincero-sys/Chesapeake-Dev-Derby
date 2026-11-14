@@ -174,9 +174,9 @@ export class Hud {
   }
 
   /** Shows the winner card (after a short pause so the finish can be seen). */
-  showWinner(name, kind, time, delay = 1900) {
+  showWinner(name, kind, time, delay = 1900, detail = '') {
     $('winner-name').textContent = name;
-    $('winner-kind').textContent = kind ? `raced as ${kind.emoji} ${kind.label}${time ? ` · ${time.toFixed(1)}s` : ''}` : '';
+    $('winner-kind').textContent = kind ? `raced as ${kind.emoji} ${kind.label}${time ? ` · ${time.toFixed(1)}s elapsed` : ''}` : detail;
     $('podium').replaceChildren();
     clearTimeout(this.resultsTimer);
     this.resultsTimer = setTimeout(() => {
