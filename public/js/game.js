@@ -8,7 +8,7 @@ import { RACER_KINDS, buildRacer, LABEL_Y } from './racers.js';
 import { buildObstacle, buildCrate, buildProjectile } from './obstacles.js';
 import { Particles } from './effects.js';
 import { emojiTexture } from './util3d.js';
-import { RaceSim, TUNING, shuffle } from './sim.js';
+import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
 
 const STEP = 1 / 60;
 const COUNTDOWN_LEAD_IN = 1.3; // seconds of camera sweep before "3"
@@ -64,6 +64,10 @@ export class Game {
     this.scene.add(this.track.build());
     this.scenery = buildScenery(this.scene, this.track);
     this.particles = new Particles(this.scene);
+    // The lobby fly-over (also behind the results card after a skipped race) shows a
+    // dressed course, with obstacles and item crates, rather than an empty bridge.
+    this.showcase = this.buildShowcase();
+    this.scene.add(this.showcase.group);
 
     this.phase = 'lobby';
     this.clock = 0;
@@ -107,8 +111,27 @@ export class Game {
    * Builds a new race for `names` and starts the countdown.
    * Returns the line-up: [{ id, name, color, kind }].
    */
+  /** A sample course layout (obstacles and crates, no racers) for the lobby fly-over. */
+  buildShowcase() {
+    const course = generateCourse();
+    const group = new THREE.Group();
+    const items = [];
+    for (const o of course.obstacles) {
+      const visual = buildObstacle(o, this.track);
+      group.add(visual.object);
+      items.push({ sim: o, visual });
+    }
+    for (const c of course.crates) {
+      const visual = buildCrate(c, this.track);
+      group.add(visual.object);
+      items.push({ sim: c, visual });
+    }
+    return { group, items };
+  }
+
   startRace(names, { rng = Math.random, timeScale = 1 } = {}) {
     this.clearRace();
+    this.showcase.group.visible = false;
     this.timeScale = timeScale;
     this.sim = new RaceSim({ names, rng });
     this.raceGroup = new THREE.Group();
@@ -171,6 +194,7 @@ export class Game {
     this.particles.clear();
     this.phase = 'lobby';
     this.camReady = false;
+    this.showcase.group.visible = true;
   }
 
   // ------------------------------------------------------------ main loop
@@ -184,6 +208,7 @@ export class Game {
 
     if (this.phase === 'lobby') {
       this.updateLobbyCamera(real);
+      for (const { sim, visual } of this.showcase.items) visual.update(sim, this.clock);
     } else if (this.phase === 'countdown') {
       this.updateCountdown(real);
     } else {

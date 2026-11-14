@@ -138,16 +138,17 @@ export function buildScenery(scene, track) {
   }
 
   // --- clouds ---
-  const cloudMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, emissive: '#b8c7d6', emissiveIntensity: 0.12, fog: false });
+  // Soft, painted cumulus on camera-facing sprites: billowy tops, flat shaded bases.
+  const cloudMats = Array.from({ length: 5 }, (_, v) => new THREE.SpriteMaterial({
+    map: cloudTexture(mulberry32(900 + v)),
+    fog: false,
+    transparent: true,
+    depthWrite: false,
+  }));
   for (let i = 0; i < 26; i++) {
-    const cloud = new THREE.Group();
-    const puffs = 3 + Math.floor(rng() * 4);
-    for (let k = 0; k < puffs; k++) {
-      const puff = ball(rand(7, 13), cloudMat, 1.5, 0.6, 1);
-      puff.castShadow = false;
-      puff.position.set(k * 9 - puffs * 4.5, rand(-1.5, 1.5), rand(-4, 4));
-      cloud.add(puff);
-    }
+    const width = rand(90, 170);
+    const cloud = new THREE.Sprite(cloudMats[i % cloudMats.length]);
+    cloud.scale.set(width, width * rand(0.42, 0.55), 1);
     cloud.position.set(rand(-380, 380), rand(75, 140), rand(120, -track.total - 250));
     const drift = rand(0.6, 1.6);
     const x0 = cloud.position.x;
@@ -167,10 +168,12 @@ export function buildScenery(scene, track) {
     // Keep the posts vertical even where the track is on a slope.
     const yaw = Math.atan2(-track.frame(s).tan.x, -track.frame(s).tan.z);
     board.rotation.set(0, yaw - side * 0.35, 0);
+    // Run the posts down from the board to the water below the bridge deck.
     const base = board.position.y;
-    board.userData.postHeight = base + 2;
-    board.children[0].scale.y = base + 2 + 6;
-    board.children[0].position.y = (6 - (base + 2)) / 2;
+    for (const post of board.userData.posts) {
+      post.scale.y = base + 2 + 6;
+      post.position.y = (6 - (base + 2)) / 2;
+    }
     root.add(board);
   });
 
@@ -346,6 +349,53 @@ function buildBuoy(red) {
   return buoy;
 }
 
+/** Paints one cumulus cloud: many overlapping soft puffs, a flattened base and a blue-grey underside. */
+function cloudTexture(rng) {
+  return canvasTexture(512, 256, (ctx, w, h) => {
+    const base = h * 0.74;
+    const puff = (x, y, r, alpha) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      g.addColorStop(0.55, `rgba(255,255,255,${alpha * 0.75})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    // A few big towers make the silhouette, then many small puffs roughen the edges.
+    const towers = 3 + Math.floor(rng() * 3);
+    for (let i = 0; i < towers; i++) {
+      const x = w * (0.22 + (0.56 * (i + 0.5)) / towers) + (rng() - 0.5) * 40;
+      const r = h * (0.24 + rng() * 0.16) * (1 - Math.abs(x / w - 0.5) * 0.9);
+      puff(x, base - r * 0.75, r, 0.95);
+    }
+    for (let i = 0; i < 70; i++) {
+      const u = rng() * 2 - 1;
+      const x = w / 2 + u * w * 0.38;
+      const lift = (1 - u * u) * h * 0.38;
+      const y = base - rng() * lift - h * 0.04;
+      puff(x, y, h * (0.06 + rng() * 0.12) * (1 - Math.abs(u) * 0.5), 0.55 + rng() * 0.35);
+    }
+    // Flatten the base.
+    ctx.globalCompositeOperation = 'destination-in';
+    const cut = ctx.createLinearGradient(0, base - h * 0.1, 0, base + h * 0.06);
+    cut.addColorStop(0, 'rgba(0,0,0,1)');
+    cut.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cut;
+    ctx.fillRect(0, 0, w, h);
+    // Shade the underside blue-grey, fading to bright white on top.
+    ctx.globalCompositeOperation = 'source-atop';
+    const shade = ctx.createLinearGradient(0, h * 0.15, 0, base);
+    shade.addColorStop(0, 'rgba(255,255,255,0)');
+    shade.addColorStop(0.6, 'rgba(218,227,238,0.3)');
+    shade.addColorStop(1, 'rgba(160,176,198,0.55)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+  });
+}
+
 function buildBillboard(line1, line2, color) {
   const texture = canvasTexture(512, 256, (ctx, w, h) => {
     ctx.fillStyle = '#f8f9fa';
@@ -372,7 +422,11 @@ function buildBillboard(line1, line2, color) {
   });
   const face = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, fog: false });
   const frame = mat('#343a40');
-  const post = cyl(0.3, 0.3, 1, mat('#868e96'), 8);
+  const steel = mat('#868e96');
+  // Two legs set behind the board, so nothing crosses the lettering on the front face.
+  const posts = [-3.2, 3.2].map((x) => at(cyl(0.25, 0.25, 1, steel, 8), x, 0, -0.5));
   const board = box(9, 4.5, 0.4, [frame, frame, frame, frame, face, frame]);
-  return group(post, at(board, 0, 6, 0));
+  const billboard = group(...posts, at(board, 0, 6, 0));
+  billboard.userData.posts = posts;
+  return billboard;
 }

@@ -40,15 +40,30 @@
             <a class="link" href="roster.html">Edit team list</a>
           </nav>
         </div>
-        <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.</p>
-        <p id="attendance-status" class="hint" role="status" hidden></p>
+        <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.
+          <span id="attendance-status" role="status" hidden></span></p>
         <ul id="roster"></ul>
       </section>
 
       <section id="recent-section" hidden>
-        <div class="section-head"><h2>Last three winners</h2></div>
+        <div class="section-head">
+          <h2>Last three winners</h2>
+          <button id="reset-winners" type="button" class="link" hidden>Reset list</button>
+        </div>
         <ol id="recent"></ol>
+        <p id="reset-status" class="hint" role="status" hidden></p>
       </section>
+
+      <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
+        <form method="dialog">
+          <h2 id="reset-title">Reset the last three winners?</h2>
+          <p id="reset-body">This clears the list, so everyone can race again, including recent winners. It can't be undone.</p>
+          <div class="dialog-actions">
+            <button value="cancel" type="submit" autofocus>Cancel</button>
+            <button value="reset" type="submit" class="danger">Reset list</button>
+          </div>
+        </form>
+      </dialog>
 
       <section class="speed-control" aria-labelledby="speed-label">
         <div class="section-head">
@@ -124,7 +139,7 @@
     <div id="results" hidden>
       <div class="panel results-card" role="dialog" aria-labelledby="winner-name">
         <div class="trophy" aria-hidden="true">🏆</div>
-        <p class="results-kicker">Leading the next team meeting</p>
+        <p class="results-kicker">Leading the team meeting</p>
         <h2 id="winner-name">Race results</h2>
         <p id="winner-kind" class="results-kind"></p>
         <ol id="podium"></ol>

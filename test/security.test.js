@@ -44,6 +44,7 @@ test('cross-origin and origin-less mutations cannot change stored data', async (
   const before = await snapshot(dir);
   for (const [route, method, body] of [
     ['/api/winners', 'POST', '{"name":"Ada"}'],
+    ['/api/winners', 'DELETE', '{}'],
     ['/api/names', 'PUT', '{"names":["Injected"]}'],
   ]) {
     for (const extra of [
@@ -68,7 +69,7 @@ test('JSON media type is mandatory even for same-origin writes', async (t) => {
   const { base, dir } = await launch(t);
   const before = await snapshot(dir);
   for (const [route, method, body] of [
-    ['/api/winners', 'POST', '{"name":"Ada"}'], ['/api/names', 'PUT', '{"names":[]}'],
+    ['/api/winners', 'POST', '{"name":"Ada"}'], ['/api/winners', 'DELETE', '{}'], ['/api/names', 'PUT', '{"names":[]}'],
   ]) {
     for (const type of [undefined, 'text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data', 'application/json.evil', 'application/json, text/plain']) {
       const headers = { Origin: base };

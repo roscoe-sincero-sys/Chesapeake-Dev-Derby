@@ -7,6 +7,7 @@
 //   GET  /api/state    -> { names, winners, warnings }
 //   PUT  /api/names    -> body { names: [...] } ; returns { names, warnings }
 //   POST /api/winners  -> body { name } ; returns { winners }
+//   DELETE /api/winners -> body {} ; clears the history, returns { winners: [] }
 
 import http from 'node:http';
 import path from 'node:path';
@@ -114,7 +115,7 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
       if (url.origin !== origin) return sendJson(res, 421, { error: 'Untrusted request target.' });
       const pathname = decodeURIComponent(url.pathname);
       const mutation = (pathname === '/api/names' && req.method === 'PUT') ||
-        (pathname === '/api/winners' && req.method === 'POST');
+        (pathname === '/api/winners' && (req.method === 'POST' || req.method === 'DELETE'));
       const session = pathname === '/api/session' && req.method === 'GET';
       if ((mutation || session) && !isSameOriginRequest(req, origin)) {
         return sendJson(res, 403, { error: 'A same-origin request is required.' });
@@ -180,6 +181,11 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         }
         const winners = await store.recordWinner(payload.name);
         return sendJson(res, 200, { winners });
+      }
+
+      if (pathname === '/api/winners' && req.method === 'DELETE') {
+        await readBody(req);
+        return sendJson(res, 200, { winners: await store.clearWinners() });
       }
 
       if (pathname.startsWith('/api/')) {
