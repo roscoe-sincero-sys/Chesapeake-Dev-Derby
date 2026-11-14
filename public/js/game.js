@@ -57,7 +57,7 @@ const CONFETTI = ['#f2b817', '#c5122f', '#ffffff', '#16130f', '#ff7b00', '#2b78c
 
 const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
 
-/** Real seconds after the winner crosses the line before the camera starts the course playback. */
+/** Real seconds after the last racer crosses the line before the camera starts the course playback. */
 export const PLAYBACK_DELAY = 2;
 /** Fly-over speed along the course (track units per real second), whatever the race speed was. */
 const FLYOVER_SPEED = 9;
@@ -304,7 +304,10 @@ export class Game {
 
     this.hooks.onFrame?.(sim);
 
-    if (this.phase === 'finished' && (this.sinceWinReal += real) >= PLAYBACK_DELAY) {
+    // The playback clock only starts once the whole field is home (sim.done: the last racer has
+    // crossed the line, or the stragglers' grace period after the win has run out).
+    if (this.phase === 'finished' && sim.done) this.sinceDoneReal += real;
+    if (this.phase === 'finished' && this.sinceDoneReal >= PLAYBACK_DELAY) {
       // Victory playback: fly the whole course at normal speed (the race's speed no longer applies),
       // starting from the start line, like the lobby fly-over.
       this.phase = 'playback';
@@ -392,7 +395,7 @@ export class Game {
         if (e.place === 1) {
           this.phase = 'finished';
           this.winnerAt = this.sim.time;
-          this.sinceWinReal = 0;
+          this.sinceDoneReal = 0;
           this.slowMo = 1.4;
           this.sfx.play('win', 0);
           // Winner's name tag always shows on top, even with the pack crowding round.

@@ -64,7 +64,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    the moment they cross the line. That file holds the last three winners; when it already has three,
    the new winner replaces the oldest.
 
-   Two seconds after the winner crosses the line, the camera starts a **victory playback**: a slow
+   Two seconds after the **last** racer crosses the line, the camera starts a **victory playback**: a slow
    fly-over of the whole course from the start line, at normal speed whatever the race length was, so
    everyone can read the billboards. The result card stays on screen.
 
