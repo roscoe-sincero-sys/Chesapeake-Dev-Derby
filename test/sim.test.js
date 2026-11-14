@@ -8,7 +8,7 @@ function names(n) {
   return Array.from({ length: n }, (_, i) => `Racer ${i + 1}`);
 }
 
-function runRace(n, seed, { maxTime = 240 } = {}) {
+function runRace(n, seed, { maxTime = 400 } = {}) {
   const sim = new RaceSim({ names: names(n), rng: mulberry32(seed) });
   const events = [];
   while (!sim.done && sim.time < maxTime) {
@@ -44,7 +44,7 @@ test('every race finishes with exactly one winner and unique places', () => {
       const places = sim.racers.map((r) => r.place).sort((a, b) => a - b);
       assert.deepEqual(places, Array.from({ length: n }, (_, i) => i + 1));
       assert.equal(sim.standings()[0], sim.winner, 'standings lead with the winner');
-      assert.ok(sim.winnerTime > 25 && sim.winnerTime < 120, `sensible race time (${sim.winnerTime.toFixed(1)}s)`);
+      assert.ok(sim.winnerTime > 90 && sim.winnerTime < 160, `about two minutes at 1x (${sim.winnerTime.toFixed(1)}s)`);
     }
   }
 });
@@ -62,7 +62,7 @@ test('the same seed replays the same race; different seeds differ', () => {
 test('racers stay inside the track and never go faster than the best boost allows', () => {
   const sim = new RaceSim({ names: names(30), rng: mulberry32(7) });
   const limit = TUNING.halfWidth - 1 + 1e-6;
-  while (!sim.done && sim.time < 240) {
+  while (!sim.done && sim.time < 400) {
     sim.step(DT);
     for (const r of sim.racers) {
       assert.ok(Math.abs(r.d) <= limit || r.stun?.kind === 'loop', `racer left the track: d=${r.d}`);
@@ -71,6 +71,14 @@ test('racers stay inside the track and never go faster than the best boost allow
     }
   }
   assert.ok(sim.done);
+});
+
+test('a typical race lasts about two minutes at 1x speed', () => {
+  let total = 0;
+  const runs = 10;
+  for (let seed = 1; seed <= runs; seed++) total += runRace(12, seed * 101).sim.winnerTime;
+  const average = total / runs;
+  assert.ok(average > 105 && average < 135, `average winning time ${average.toFixed(1)}s`);
 });
 
 test('races are eventful: obstacles hit, items picked up and used', () => {
@@ -182,7 +190,7 @@ test('list order gives no advantage (wins are spread across positions)', () => {
   const roster = names(n);
   for (let seed = 0; seed < races; seed++) {
     const sim = new RaceSim({ names: roster, rng: mulberry32(seed * 7919 + 13) });
-    while (!sim.done && sim.time < 240) sim.step(DT);
+    while (!sim.done && sim.time < 400) sim.step(DT);
     wins[roster.indexOf(sim.winner.name)]++;
   }
   const expected = races / n;

@@ -6,17 +6,18 @@ import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey } from './eligibility.js';
 import { mulberry32 } from './sim.js';
-import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed } from './lobby-settings.js';
+import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './lobby-settings.js';
 
 const $ = (id) => document.getElementById(id);
 
+
 // Optional URL switches, handy for demos and testing:
 //   ?seed=123   replay the same race every time
-//   ?speed=3    run the race faster (1 to 7)
+//   ?speed=4    starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
 const savedSettings = readLobbySettings();
-let speed = params.has('speed') ? normalizeSpeed(Number(params.get('speed')) || 2) : savedSettings.speed;
+let speed = params.has('speed') ? normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED) : savedSettings.speed;
 let attendanceRestored = savedSettings.absent.size > 0;
 let settingsSaved = true;
 
@@ -301,16 +302,22 @@ function init() {
   $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
 
   const slider = $('race-speed');
+  // The slider steps through the offered race lengths (longest on the left), not raw speeds.
+  slider.min = 0;
+  slider.max = RACE_LENGTHS.length - 1;
+  slider.step = 1;
   const showSpeed = () => {
-    speed = Number(slider.value);
-    const length = `About ${Math.round(50 / speed)} seconds${speed === 2 ? ' (default)' : ''}`;
+    const step = Number(slider.value);
+    speed = stepToSpeed(step);
+    const { seconds } = RACE_LENGTHS[step];
+    const length = `About ${seconds} seconds${speed === DEFAULT_SPEED ? ' (default)' : ''}`;
     $('speed-value').textContent = length;
     slider.setAttribute('aria-valuetext', length);
-    slider.style.setProperty('--fill', `${(speed - 1) / 6 * 100}%`);
+    slider.style.setProperty('--fill', `${(step / (RACE_LENGTHS.length - 1)) * 100}%`);
     saveLobbySettings();
     updateAttendanceStatus();
   };
-  slider.value = speed;
+  slider.value = speedToStep(speed);
   slider.addEventListener('input', showSpeed);
   showSpeed();
 

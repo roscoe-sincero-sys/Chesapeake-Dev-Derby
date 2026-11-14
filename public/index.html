@@ -53,16 +53,17 @@
       <section class="speed-control" aria-labelledby="speed-label">
         <div class="section-head">
           <label id="speed-label" for="race-speed">Race length</label>
-          <output id="speed-value" for="race-speed">About 25 seconds (default)</output>
+          <output id="speed-value" for="race-speed">About 60 seconds (default)</output>
         </div>
-        <input id="race-speed" type="range" min="1" max="7" step="1" value="2" list="race-speed-marks" />
+        <input id="race-speed" type="range" min="0" max="4" step="1" value="1" list="race-speed-marks" />
         <datalist id="race-speed-marks">
-          <option value="1" label="About 50 seconds"></option>
-          <option value="2" label="About 25 seconds (default)"></option>
-          <option value="4" label="About 13 seconds"></option>
-          <option value="7" label="About 7 seconds"></option>
+          <option value="0" label="120 seconds"></option>
+          <option value="1" label="60 seconds (default)"></option>
+          <option value="2" label="30 seconds"></option>
+          <option value="3" label="15 seconds"></option>
+          <option value="4" label="10 seconds"></option>
         </datalist>
-        <div class="length-scale" aria-hidden="true"><span>Longer</span><span>Shorter</span></div>
+        <div class="length-scale" aria-hidden="true"><span>120s</span><span>60s</span><span>30s</span><span>15s</span><span>10s</span></div>
       </section>
 
       <details id="guide">

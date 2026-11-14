@@ -4,7 +4,7 @@ Pick who leads the team meeting — by racing for it.
 
 Every name on your roster becomes a 3D kart racer (a browser tab, a blue crab, a hamburger menu…) and
 runs an obstacle course of web-developer hazards over the Chesapeake Bay. First across the line leads the
-meeting. A race takes about 50 seconds at 1x speed, or about 25 seconds at the default 2x.
+meeting. The **Race length** slider offers about 120, 60 (the default), 30, 15 or 10 seconds.
 
 Built with [Three.js](https://threejs.org/) and a tiny zero-dependency Node server.
 
@@ -36,11 +36,14 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** Set the **Race length** slider (1x to 7x, default 2x); its label estimates racing time. Everyone is listed with a checkbox. A ticked box means that person is racing.
+2. **Open the lobby.** Pick a **Race length** on the slider: about 120, 60 (default), 30, 15 or 10 seconds
+   of racing, not counting the short countdown. Everyone is listed with a checkbox. A ticked box means that
+   person is racing.
    - **Uncheck** anyone who is absent today. Attendance and race speed are kept in this browser tab
      through reloads and visits to **Edit team list**. Removed names are dropped from saved attendance;
      new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`
-     URL setting overrides the saved speed.
+     URL setting overrides the saved race length. A length saved by an older version of the slider moves
+     to the nearest of the five lengths.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
@@ -118,7 +121,7 @@ Handy for demos and testing:
 
 | Option      | Effect                                                    |
 | ----------- | --------------------------------------------------------- |
-| `?speed=3`  | Initial race speed (1 to 7; default 2)                  |
+| `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
 
 ## Tests
@@ -133,8 +136,11 @@ Uses Node's built-in test runner — no extra packages. Covers:
   three-winner history and its oldest-out rotation, and eligibility rules.
 - **`test/server.test.js`** — the HTTP API against a temporary data folder, input validation, and
   path-traversal protection.
-- **`test/sim.test.js`** — the race itself: every race finishes with one winner, every obstacle and item
-  comes into play, firewalls block exactly one hit, races replay from a seed, and outcomes are unbiased.
+- **`test/sim.test.js`** — the race itself: every race finishes with one winner, a typical race at 1x lasts
+  about two minutes, every obstacle and item comes into play, firewalls block exactly one hit, races replay
+  from a seed, and outcomes are unbiased.
+- **`test/lobby-settings.test.js`** — saved attendance and race length, the five slider lengths, and
+  snapping older or typed-in speeds to the nearest length.
 
 ## How it's put together
 
@@ -148,6 +154,7 @@ public/
   css/style.css
   js/main.js         Lobby logic, starts races, saves the winner
   js/eligibility.js  Who may race (last three winners sit out)
+  js/lobby-settings.js  Race lengths offered, and attendance/length kept for the browser tab
   js/sim.js          The race simulation — pure logic, no graphics
   js/game.js         Three.js scene, camera, and syncing models to the simulation
   js/track.js        The winding bridge and the (distance, offset) → 3D mapping
