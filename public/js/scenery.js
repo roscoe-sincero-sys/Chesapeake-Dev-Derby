@@ -7,17 +7,23 @@ import { mulberry32 } from './sim.js';
 
 const HORIZON = '#cfe8f7';
 
+// Each billboard: its lines of text (one to three, top to bottom) and a background colour.
+// The first line is the lead-in; later lines are the punchline. Spread evenly along the course.
 const BILLBOARDS = [
-  ['Welcome to', 'MERGE-LAND', '#c5122f'],
-  ['EXIT 404', 'Not Found', '#1f6f43'],
-  ['It works on', 'my machine™', '#3b3f8f'],
-  ['crabs && code', '|| nothing', '#8c390c'],
-  ['git commit -m', '"final_FINAL_v2"', '#24292f'],
-  ['Have you tried', 'clearing the cache?', '#0b7285'],
-  ['The Old Line State', 'localhost:4100', '#16130f'],
-  ['z-index:', '999999 !important', '#862e9c'],
-  ['Chesapeake Bay', 'now 100% responsive', '#1864ab'],
-  ['Ship it', 'on Friday at 5', '#a61e4d'],
+  [['Welcome to', 'MERGE-LAND'], '#c5122f'],
+  [['EXIT 404', 'Not Found'], '#1f6f43'],
+  [['It works on', 'my machine™'], '#3b3f8f'],
+  [['Ping me before you flush', 'via webhook'], '#5f3dc4'],
+  [['crabs && code', '|| nothing'], '#8c390c'],
+  [['git commit -m', '"final_FINAL_v2"'], '#24292f'],
+  [["I'll remake drag and drop.", 'Now with more drag', 'and no drop.'], '#c2255c'],
+  [['Have you tried', 'clearing the cache?'], '#0b7285'],
+  [['The Old Line State', 'localhost:4100'], '#16130f'],
+  [['Time travel as a service', 'We change server clocks', 'everywhere.'], '#2b8a3e'],
+  [['z-index:', '999999 !important'], '#862e9c'],
+  [['Chesapeake Bay', 'now 100% responsive'], '#1864ab'],
+  [['Security.', '12 min. 15 max characters.', 'Toughness has its limits.'], '#495057'],
+  [['Ship it', 'on Friday at 5'], '#a61e4d'],
 ];
 
 export function buildScenery(scene, track) {
@@ -159,11 +165,11 @@ export function buildScenery(scene, track) {
   }
 
   // --- roadside billboards ---
-  BILLBOARDS.forEach(([line1, line2, color], i) => {
+  BILLBOARDS.forEach(([lines, color], i) => {
     const s = 55 + i * ((track.length - 100) / BILLBOARDS.length);
     if (s > track.length - 30) return;
     const side = i % 2 ? -1 : 1;
-    const board = buildBillboard(line1, line2, color);
+    const board = buildBillboard(lines, color);
     track.place(board, s, side * (track.edge + 7.5), 0);
     // Keep the posts vertical even where the track is on a slope.
     const yaw = Math.atan2(-track.frame(s).tan.x, -track.frame(s).tan.z);
@@ -396,29 +402,49 @@ function cloudTexture(rng) {
   });
 }
 
-function buildBillboard(line1, line2, color) {
-  const texture = canvasTexture(512, 256, (ctx, w, h) => {
+/**
+ * A roadside billboard with one to three lines of text. Two-line boards keep the classic look
+ * (small lead-in, big monospace punchline); longer slogans use a bold sans-serif so they stay
+ * readable at speed. Every line shrinks until it fits the board.
+ */
+function buildBillboard(lines, color) {
+  const texture = canvasTexture(1024, 512, (ctx, w, h) => {
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, w, h);
-    roundRect(ctx, 10, 10, w - 20, h - 20, 18);
+    roundRect(ctx, 20, 20, w - 40, h - 40, 36);
     ctx.fillStyle = color;
     ctx.fill();
     ctx.fillStyle = MD.gold;
-    ctx.fillRect(10, h - 44, w - 20, 10);
+    ctx.fillRect(20, h - 88, w - 40, 20);
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const fit = (text, y, size, family, weight) => {
       let px = size;
       ctx.font = `${weight} ${px}px ${family}`;
-      while (ctx.measureText(text).width > w - 60 && px > 18) {
+      while (ctx.measureText(text).width > w - 120 && px > 36) {
         px -= 2;
         ctx.font = `${weight} ${px}px ${family}`;
       }
       ctx.fillText(text, w / 2, y);
     };
-    fit(line1, 78, 44, FONT_UI, 600);
-    fit(line2, 150, 62, FONT_MONO, 800);
+    // Text sits in the area above the gold stripe.
+    const top = 40;
+    const bottom = h - 100;
+    const [lead, ...rest] = lines;
+    if (lines.length === 1) {
+      fit(lead, (top + bottom) / 2, 124, FONT_MONO, 800);
+    } else if (lines.length === 2 && rest[0].length <= 20) {
+      fit(lead, top + (bottom - top) * 0.3, 88, FONT_UI, 600);
+      fit(rest[0], top + (bottom - top) * 0.72, 124, FONT_MONO, 800);
+    } else {
+      const step = (bottom - top) / lines.length;
+      lines.forEach((text, k) => {
+        const y = top + step * (k + 0.5);
+        if (k === 0) fit(text, y, 80, FONT_UI, 600);
+        else fit(text, y, 84, FONT_UI, 800);
+      });
+    }
   });
   const face = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, fog: false });
   const frame = mat('#343a40');
