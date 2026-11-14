@@ -207,7 +207,7 @@ function updateRunButton() {
   const racing = selectRacers(state.roster, state.absent).length;
   $('racer-count').textContent = `${racing} racing`;
   $('run').disabled = $('pick').disabled = racing < 2;
-  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win.`;
+  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it on your meeting screen.`;
 }
 
 function setAll(present) {

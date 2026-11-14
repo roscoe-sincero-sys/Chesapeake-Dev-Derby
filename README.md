@@ -6,6 +6,11 @@ Every name on your roster becomes a 3D kart racer (a browser tab, a blue crab, a
 runs an obstacle course of web-developer hazards over the Chesapeake Bay. First across the line leads the
 meeting. The **Race length** slider offers about 120, 60 (the default), 30, 15 or 10 seconds.
 
+**Run it on the meeting screen; everyone watches.** The derby is a presenter app: one person runs it on
+their own computer and shares that screen (or shows it on the room display). Participants do not open it
+on their own phones or laptops; the app only accepts connections from the computer it runs on, and every
+browser would run its own, different race anyway.
+
 Built with [Three.js](https://threejs.org/) and a tiny zero-dependency Node server.
 
 ## Quick start
@@ -168,8 +173,8 @@ test/                Unit and API tests
 ```
 
 The browser cannot write files, which is why there is a small server: it is the only thing that touches
-`data/winners.json`. It listens on `127.0.0.1` only, so it is not reachable from other machines unless
-you set `HOST=0.0.0.0`.
+`data/winners.json`. It listens on this computer only (`127.0.0.1` by default) and cannot be opened from
+other machines; see [Local server security](#local-server-security).
 
 The simulation (`sim.js`) works in simple track coordinates — distance along the course and sideways
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
@@ -185,6 +190,7 @@ the models to match, so the outcome is the same on a fast or slow machine.
 | Blank page / module errors               | Run `npm install` — Three.js is served from `node_modules`.            |
 | "3D is not available in this browser"    | WebGL is off. The race is decided off-screen and the winner still shown and saved. |
 | No sound                                 | Click the speaker button (or press **M**); the setting is remembered.  |
+| Others can't open the link on their phone | Expected: it is a presenter app. Share your screen in the meeting instead. |
 
 ## Local server security
 
