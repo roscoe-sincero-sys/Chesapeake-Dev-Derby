@@ -57,6 +57,11 @@ const CONFETTI = ['#f2b817', '#c5122f', '#ffffff', '#16130f', '#ff7b00', '#2b78c
 
 const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
 
+/** Real seconds after the winner crosses the line before the camera starts the course playback. */
+export const PLAYBACK_DELAY = 2;
+/** Fly-over speed along the course (track units per real second), whatever the race speed was. */
+const FLYOVER_SPEED = 9;
+
 export class Game {
   /**
    * @param {HTMLCanvasElement} canvas
@@ -85,6 +90,7 @@ export class Game {
     this.phase = 'lobby';
     this.clock = 0;
     this.timeScale = 1;
+    this.flyT = 0; // real seconds into the current fly-over
     this.sim = null;
     this.raceGroup = null;
     this.visuals = [];
@@ -208,6 +214,8 @@ export class Game {
     this.phase = 'lobby';
     this.camReady = false;
     this.showcase.group.visible = true;
+    // Back to normal speed: the lobby fly-over and scenery shouldn't run at the last race's speed.
+    this.timeScale = 1;
   }
 
   // ------------------------------------------------------------ main loop
@@ -220,6 +228,7 @@ export class Game {
     this.clock += dt;
 
     if (this.phase === 'lobby') {
+      this.flyT += real;
       this.updateLobbyCamera(real);
       for (const { sim, visual } of this.showcase.items) visual.update(sim, this.clock);
     } else if (this.phase === 'countdown') {
@@ -295,6 +304,27 @@ export class Game {
 
     this.hooks.onFrame?.(sim);
 
+    if (this.phase === 'finished' && (this.sinceWinReal += real) >= PLAYBACK_DELAY) {
+      // Victory playback: fly the whole course at normal speed (the race's speed no longer applies),
+      // starting from the start line, like the lobby fly-over.
+      this.phase = 'playback';
+      this.timeScale = 1;
+      this.flyT = 0;
+      this.camReady = false;
+    }
+
+    if (this.phase === 'finished' || this.phase === 'playback') {
+      if (sim.done && !this.doneReported) {
+        this.doneReported = true;
+        this.hooks.onDone?.(sim);
+      }
+    }
+    if (this.phase === 'playback') {
+      this.flyT += real;
+      this.updateLobbyCamera(real);
+      return;
+    }
+
     if (this.phase === 'finished') {
       this.confettiTimer -= dt;
       const sinceWin = sim.time - this.winnerAt;
@@ -303,10 +333,6 @@ export class Game {
         const w = sim.winner;
         const origin = this.track.point(w.s + (Math.random() - 0.5) * 10, w.d + (Math.random() - 0.5) * 12, 7 + Math.random() * 3, this._a);
         this.particles.burst(origin, { count: 26, colors: CONFETTI, speed: 6, up: 3, life: 3.2, size: 0.34, gravity: 5, flat: true, spread: 3 });
-      }
-      if (sim.done && !this.doneReported) {
-        this.doneReported = true;
-        this.hooks.onDone?.(sim);
       }
     }
 
@@ -366,6 +392,7 @@ export class Game {
         if (e.place === 1) {
           this.phase = 'finished';
           this.winnerAt = this.sim.time;
+          this.sinceWinReal = 0;
           this.slowMo = 1.4;
           this.sfx.play('win', 0);
           // Winner's name tag always shows on top, even with the pack crowding round.
@@ -574,9 +601,10 @@ export class Game {
   }
 
   updateLobbyCamera(dt) {
-    // Slow fly-over of the course while the lobby is open.
-    const s = (this.clock * 9) % (this.track.length - 60);
-    const pos = this.track.point(s - 34, Math.sin(this.clock * 0.25) * 12, 24 + Math.sin(this.clock * 0.4) * 4, this._a);
+    // Slow fly-over of the course (the lobby, and the victory playback), always at normal speed.
+    const t = this.flyT;
+    const s = (t * FLYOVER_SPEED) % (this.track.length - 60);
+    const pos = this.track.point(s - 34, Math.sin(t * 0.25) * 12, 24 + Math.sin(t * 0.4) * 4, this._a);
     const look = this.track.point(s + 34, 0, 0, this._b);
     // Snap (rather than glide the whole way back) when the loop restarts.
     if (this.camReady && this.camPos.distanceToSquared(pos) > 100 * 100) this.camReady = false;
