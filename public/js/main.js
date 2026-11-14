@@ -6,6 +6,7 @@ import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, nameKey } from './eligibility.js';
 import { mulberry32 } from './sim.js';
+import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed } from './lobby-settings.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,13 +15,16 @@ const $ = (id) => document.getElementById(id);
 //   ?speed=3    run the race faster (1 to 20)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
-let speed = Math.min(20, Math.max(1, Math.round(Number(params.get('speed')) || 2)));
+const savedSettings = readLobbySettings();
+let speed = params.has('speed') ? normalizeSpeed(Number(params.get('speed')) || 2) : savedSettings.speed;
+let attendanceRestored = savedSettings.absent.size > 0;
+let settingsSaved = true;
 
 const state = {
   names: [],
   winners: [],
   roster: [],
-  absent: new Set(), // nameKeys unticked in the lobby (kept while the page is open)
+  absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
   phase: 'lobby', // lobby | race | results
   pendingWinner: null,
 };
@@ -53,6 +57,8 @@ async function loadState() {
   try {
     const data = await api('/api/state');
     state.names = data.names;
+    state.absent = retainRosterAbsences(state.absent, state.names);
+    saveLobbySettings();
     state.winners = data.winners;
     state.roster = buildRoster(state.names, state.winners);
     status.className = '';
@@ -131,6 +137,8 @@ function renderLobby() {
         if (box.checked) state.absent.delete(key);
         else state.absent.add(key);
         li.classList.toggle('absent', !box.checked);
+        attendanceRestored = false;
+        saveLobbySettings();
         updateRunButton();
       });
     } else {
@@ -179,7 +187,21 @@ function renderLobby() {
   updateRunButton();
 }
 
+function saveLobbySettings() {
+  settingsSaved = writeLobbySettings({ absent: state.absent, speed });
+}
+
+function updateAttendanceStatus() {
+  const count = state.absent.size;
+  const parts = [];
+  if (count) parts.push(`${count} ${count === 1 ? 'person' : 'people'} ${attendanceRestored ? 'still ' : ''}marked absent.`);
+  if (!settingsSaved) parts.push('Browser storage is unavailable. Attendance and speed cannot be kept after leaving or reloading this page.');
+  $('attendance-status').textContent = parts.join(' ');
+  $('attendance-status').hidden = !parts.length;
+}
+
 function updateRunButton() {
+  updateAttendanceStatus();
   const racing = selectRacers(state.roster, state.absent).length;
   $('racer-count').textContent = `${racing} racing`;
   $('run').disabled = racing < 2;
@@ -187,11 +209,13 @@ function updateRunButton() {
 }
 
 function setAll(present) {
+  attendanceRestored = false;
   for (const entry of state.roster) {
     if (!entry.eligible) continue;
     if (present) state.absent.delete(nameKey(entry.name));
     else state.absent.add(nameKey(entry.name));
   }
+  saveLobbySettings();
   renderLobby();
 }
 
@@ -266,6 +290,8 @@ function init() {
     $('speed-value').textContent = `${speed}\u00d7`;
     slider.setAttribute('aria-valuetext', `${speed} times normal speed`);
     slider.style.setProperty('--fill', `${(speed - 1) / 19 * 100}%`);
+    saveLobbySettings();
+    updateAttendanceStatus();
   };
   slider.value = speed;
   slider.addEventListener('input', showSpeed);
@@ -299,6 +325,9 @@ function init() {
     }
   });
 
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && state.phase === 'lobby') loadState();
+  });
   loadState();
 }
 

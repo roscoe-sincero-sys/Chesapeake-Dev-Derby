@@ -37,7 +37,10 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
 2. **Open the lobby.** Set the **Race speed** slider from 1 to 20 (default 2); higher values finish sooner. Everyone is listed with a checkbox. A ticked box means that person is racing.
-   - **Untick** anyone who is absent today.
+   - **Untick** anyone who is absent today. Attendance and race speed are kept in this browser tab
+     through reloads and visits to **Modify List**. Removed names are dropped from saved attendance;
+     new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`
+     URL setting overrides the saved speed.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
