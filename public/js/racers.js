@@ -1,4 +1,5 @@
-// The racers: fourteen characters (web-dev things and Maryland wildlife), each riding a kart.
+// The racers: eleven web-dev characters, each riding a kart. (Maryland wildlife watches from the
+// grandstands; see audience.js.)
 // Models are built from simple shapes. They face -Z (forward); the chase camera sees +Z.
 
 import * as THREE from 'three';
@@ -12,7 +13,7 @@ export const RACER_SCALE = 1.45;
 export const LABEL_Y = 4.5;
 
 /** A pair of googly eyes looking forward (-Z). */
-function eyes(y, z, gap = 0.2, size = 0.11) {
+export function eyes(y, z, gap = 0.2, size = 0.11) {
   const white = mat('#ffffff', { roughness: 0.3 });
   const pupil = mat('#111111', { roughness: 0.3 });
   const g = new THREE.Group();
@@ -369,134 +370,6 @@ function stickyNavbar() {
   };
 }
 
-function baltimoreOriole() {
-  const orange = mat('#ff7b00', { roughness: 0.5 });
-  const black = mat('#15151a', { roughness: 0.5 });
-  const white = mat('#f8f9fa');
-  const body = at(ball(0.42, orange, 0.9, 0.95, 1.3), 0, 0.62, 0.05, -0.25);
-  const head = group(ball(0.29, black), at(cone(0.075, 0.34, mat('#9aa5b1'), 10), 0, -0.02, -0.4, -Math.PI / 2), eyes(0.06, -0.2, 0.16, 0.07));
-  head.position.set(0, 1.08, -0.42);
-  const wing = (side) => {
-    const w = group(at(box(0.08, 0.42, 0.8, black), 0, -0.2, 0.1), at(box(0.09, 0.08, 0.5, white), 0, -0.22, 0.12), at(box(0.09, 0.16, 0.22, orange), 0, -0.05, -0.22));
-    w.position.set(side * 0.4, 0.86, 0);
-    return w;
-  };
-  const left = wing(-1);
-  const right = wing(1);
-  const tail = at(box(0.34, 0.06, 0.6, black), 0, 0.5, 0.72, 0.35);
-  const tailTip = at(box(0.12, 0.065, 0.3, orange), 0.14, 0.45, 0.88, 0.35);
-  const tailTip2 = at(box(0.12, 0.065, 0.3, orange), -0.14, 0.45, 0.88, 0.35);
-  const leg = mat('#5c6b7a');
-  const g = group(body, head, left, right, tail, tailTip, tailTip2, at(cyl(0.03, 0.03, 0.3, leg, 6), -0.14, 0.13, 0), at(cyl(0.03, 0.03, 0.3, leg, 6), 0.14, 0.13, 0));
-  return {
-    object: g,
-    tick: (t) => {
-      const flap = Math.sin(t * 16) * 0.75;
-      left.rotation.z = -0.55 - flap;
-      right.rotation.z = 0.55 + flap;
-      head.rotation.x = Math.sin(t * 5) * 0.12;
-    },
-  };
-}
-
-function blueCrab() {
-  const shell = mat('#4f7f96', { roughness: 0.5 });
-  const blue = mat('#2b78c5', { roughness: 0.45 });
-  const red = mat('#e8452c', { roughness: 0.45 });
-  const belly = mat('#f1ede0');
-  const g = group(at(ball(0.62, shell, 1.3, 0.36, 0.82), 0, 0.5, 0), at(ball(0.56, belly, 1.25, 0.2, 0.78), 0, 0.38, 0));
-  for (const side of [-1, 1]) {
-    // Pointed sides of the shell.
-    g.add(at(cone(0.16, 0.5, shell, 8), side * 0.93, 0.5, 0, 0, 0, -side * Math.PI / 2));
-    // Walking legs and the paddle-shaped swimming leg at the back.
-    for (let i = 0; i < 3; i++) {
-      g.add(at(box(0.55, 0.06, 0.07, blue), side * 0.9, 0.3, -0.05 + i * 0.2, 0, 0, side * -0.7));
-    }
-    g.add(at(ball(0.16, blue, 1.5, 0.3, 0.9), side * 0.75, 0.36, 0.55, 0, side * 0.6, 0));
-    // Eye stalks.
-    g.add(at(cyl(0.03, 0.03, 0.26, shell, 6), side * 0.2, 0.72, -0.42));
-    g.add(at(ball(0.07, mat('#111')), side * 0.2, 0.88, -0.43));
-  }
-  const claw = (side) => {
-    const arm = at(box(0.14, 0.14, 0.55, blue), 0, 0, -0.25);
-    const palm = at(ball(0.2, blue, 0.9, 0.9, 1.4), 0, 0.02, -0.62);
-    const upper = at(box(0.1, 0.07, 0.42, red), 0, 0.1, -0.98, 0.25);
-    const lower = at(box(0.1, 0.07, 0.42, red), 0, -0.06, -0.98, -0.2);
-    const c = group(arm, palm, upper, lower);
-    c.position.set(side * 0.62, 0.55, -0.3);
-    c.rotation.set(0.5, -side * 0.5, 0);
-    c.userData = { upper, lower, side };
-    return c;
-  };
-  const claws = [claw(-1), claw(1)];
-  g.add(...claws);
-  return {
-    object: g,
-    tick: (t) => {
-      claws.forEach((c, i) => {
-        const snap = Math.max(0, Math.sin(t * 6 + i * Math.PI));
-        c.userData.upper.rotation.x = 0.1 + snap * 0.5;
-        c.rotation.x = 0.45 + Math.sin(t * 3 + i * 2) * 0.2;
-      });
-      g.rotation.z = Math.sin(t * 9) * 0.05;
-    },
-  };
-}
-
-function diamondbackTerrapin() {
-  const shell = drawnMat('terrapin-shell', 256, 128, (ctx, w, h) => {
-    ctx.fillStyle = '#6b6a4f';
-    ctx.fillRect(0, 0, w, h);
-    // Concentric diamond rings on each scute — the "diamondback".
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 8; col++) {
-        const cx = col * 32 + (row % 2 ? 16 : 0) + 16;
-        const cy = row * 40 + 22;
-        for (let ring = 3; ring >= 1; ring--) {
-          ctx.strokeStyle = ring % 2 ? '#d9cf9a' : '#3d3c2c';
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy - ring * 6);
-          ctx.lineTo(cx + ring * 5, cy);
-          ctx.lineTo(cx, cy + ring * 6);
-          ctx.lineTo(cx - ring * 5, cy);
-          ctx.closePath();
-          ctx.stroke();
-        }
-      }
-    }
-  });
-  const skin = drawnMat('terrapin-skin', 64, 64, (ctx, w, h) => {
-    ctx.fillStyle = '#c3ccd1';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#23262b';
-    for (let i = 0; i < 46; i++) {
-      ctx.beginPath();
-      ctx.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 1.8, 0, 7);
-      ctx.fill();
-    }
-  });
-  const g = group(at(ball(0.62, shell, 1.05, 0.62, 1.25), 0, 0.5, 0.05), at(ball(0.6, mat('#d8c98c'), 1, 0.22, 1.2), 0, 0.36, 0.05));
-  const head = group(ball(0.21, skin, 1, 0.9, 1.2), at(cyl(0.12, 0.14, 0.4, skin, 10), 0, -0.05, 0.3, Math.PI / 2), eyes(0.07, -0.16, 0.13, 0.06));
-  head.position.set(0, 0.6, -0.92);
-  g.add(head);
-  const legs = [];
-  for (const [x, z] of [[-0.62, -0.5], [0.62, -0.5], [-0.62, 0.6], [0.62, 0.6]]) {
-    const leg = at(ball(0.2, skin, 1.5, 0.35, 0.9), x, 0.3, z);
-    legs.push(leg);
-    g.add(leg);
-  }
-  g.add(at(cone(0.08, 0.4, skin, 8), 0, 0.36, 0.95, Math.PI / 2));
-  return {
-    object: g,
-    tick: (t) => {
-      head.position.z = -0.86 - Math.max(0, Math.sin(t * 2.2)) * 0.16;
-      head.rotation.y = Math.sin(t * 1.7) * 0.3;
-      legs.forEach((leg, i) => (leg.rotation.y = Math.sin(t * 8 + (i % 2 ? 0 : Math.PI)) * 0.5));
-    },
-  };
-}
-
 export const RACER_KINDS = [
   { id: 'browserTab', label: 'Browser tab', emoji: '🗂️', build: browserTab },
   { id: 'devTools', label: 'Dev tools panel', emoji: '🛠️', build: devTools },
@@ -509,9 +382,6 @@ export const RACER_KINDS = [
   { id: 'flexboxBox', label: 'Flexbox box', emoji: '📦', build: flexboxBox },
   { id: 'cookieBanner', label: 'Cookie banner', emoji: '🍪', build: cookieBanner },
   { id: 'stickyNavbar', label: 'Sticky navbar', emoji: '🍯', build: stickyNavbar },
-  { id: 'baltimoreOriole', label: 'Baltimore oriole', emoji: '🐦', build: baltimoreOriole },
-  { id: 'blueCrab', label: 'Blue crab', emoji: '🦀', build: blueCrab },
-  { id: 'diamondbackTerrapin', label: 'Diamondback terrapin', emoji: '🐢', build: diamondbackTerrapin },
 ];
 
 // ---------------------------------------------------------------- kart + racer
