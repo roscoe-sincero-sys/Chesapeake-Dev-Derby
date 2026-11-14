@@ -2,7 +2,7 @@
 
 Pick who leads the team meeting — by racing for it.
 
-Every name on your roster becomes a 3D kart racer (a browser tab, a blue crab, a hamburger menu…) and
+Every name on your roster becomes a 3D kart racer (a browser tab, a cookie banner, a hamburger menu…) and
 runs an obstacle course of web-developer hazards over the Chesapeake Bay. First across the line leads the
 meeting. The **Race length** slider offers about 120, 60 (the default), 30, 15 or 10 seconds.
 
@@ -80,11 +80,15 @@ present racers and saves the result with the same three-race exclusion. Both act
 
 ## What's on the track
 
-**Racers** — each name is dealt one at random; all 14 appear before any repeats:
+**Racers** — each name is dealt one at random; all 11 appear before any repeats:
 
 Browser tab · Dev tools panel · CSS stylesheet scroll · Hamburger menu · Responsive layout ·
-Hosting server · Domain name · Loading spinner · Flexbox box · Cookie banner · Sticky navbar ·
-Baltimore oriole · Blue crab · Diamondback terrapin
+Hosting server · Domain name · Loading spinner · Flexbox box · Cookie banner · Sticky navbar
+
+**Audience** — grandstands on both sides of the start and the finish are packed with Chesapeake
+wildlife cheering the racers on: blue crabs, ospreys, bald eagles, great blue herons, eastern oysters,
+ribbed mussels, diamondback terrapins, American beavers, North American river otters and northern
+watersnakes.
 
 **Obstacles**
 
@@ -168,7 +172,8 @@ public/
   js/game.js         Three.js scene, camera, and syncing models to the simulation
   js/track.js        The winding bridge and the (distance, offset) → 3D mapping
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
-  js/racers.js       The 14 racer models and their karts
+  js/racers.js       The 11 racer models and their karts
+  js/audience.js     Grandstands and the cheering wildlife
   js/obstacles.js    The 10 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card

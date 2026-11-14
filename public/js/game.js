@@ -137,7 +137,7 @@ export class Game {
     this.raceGroup = new THREE.Group();
     this.scene.add(this.raceGroup);
 
-    // Deal the 14 characters out so every one appears before any repeats.
+    // Deal the characters out so every one appears before any repeats.
     let bag = [];
     const hueOffset = rng() * 360;
     const n = this.sim.racers.length;

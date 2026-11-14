@@ -1,21 +1,22 @@
 // Everything around the track: sky, the bay, islands, lighthouses, sailboats,
-// channel buoys, clouds and roadside billboards.
+// channel buoys, clouds, roadside billboards and the wildlife grandstands.
 
 import * as THREE from 'three';
 import { mat, box, ball, cyl, cone, at, group, canvasTexture, FONT_MONO, FONT_UI, MD, roundRect } from './util3d.js';
 import { mulberry32 } from './sim.js';
+import { buildAudience } from './audience.js';
 
 const HORIZON = '#cfe8f7';
 
 // Each billboard: its lines of text (one to three, top to bottom) and a background colour.
 // The first line is the lead-in; later lines are the punchline. Spread evenly along the course.
 const BILLBOARDS = [
-  [['Welcome to', 'MERGE-LAND'], '#c5122f'],
+  [['Welcome to', 'MERGECONFLICTSTAN'], '#c5122f'],
   [['EXIT 404', 'Not Found'], '#1f6f43'],
   [['It works on', 'my machine™'], '#3b3f8f'],
   [['Ping me before you flush', 'via webhook'], '#5f3dc4'],
   [['crabs && code', '|| nothing'], '#8c390c'],
-  [['LICENSE EXPIRED?', "Let's roll back the server clock.", 'It worked on shareware trials.'], '#d9480f'],
+  [['LICENSE EXPIRED?', "Let's roll back", 'the server clock.'], '#d9480f'],
   [['git commit -m', '"final_FINAL_v2"'], '#24292f'],
   [["I'll remake drag and drop.", 'Now with more drag', 'and no drop.'], '#c2255c'],
   [['Have you tried', 'clearing the cache?'], '#0b7285'],
@@ -93,8 +94,13 @@ export function buildScenery(scene, track) {
     return track.isClearOf(p.x, p.z, clearance) ? p.setY(0) : null;
   };
 
+  // --- grandstands of cheering wildlife at the start and finish ---
+  const audience = buildAudience(track);
+  root.add(audience.object);
+  animated.push((t) => audience.update(t));
+
   // --- islands (some with lighthouses) ---
-  const occupied = [];
+  const occupied = [...audience.footprints];
   let lighthouses = 0;
   for (let s = -20; s < track.length + 60; s += 85) {
     const side = rng() < 0.5 ? -1 : 1;
@@ -135,9 +141,10 @@ export function buildScenery(scene, track) {
     const side = i % 2 ? 1 : -1;
     const p = spot(s, side, track.edge + rand(6, 10), 0);
     if (!p) continue;
+    const phase = rand(0, 6);
+    if (audience.near(s)) continue; // the grandstands stand here
     const buoy = buildBuoy(side < 0);
     buoy.position.copy(p);
-    const phase = rand(0, 6);
     animated.push((t) => {
       buoy.position.y = Math.sin(t * 1.8 + phase) * 0.15;
       buoy.rotation.z = Math.sin(t * 1.2 + phase) * 0.12;
