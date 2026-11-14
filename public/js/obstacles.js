@@ -1,9 +1,9 @@
-// 3D models for the eight obstacles, the item crates and thrown items.
+// 3D models for the ten obstacles, the item crates and thrown items.
 // Each builder returns { object, update(simObject, time) } and, where it
 // created its own geometry, a dispose() to call when the race is cleared.
 
 import * as THREE from 'three';
-import { mat, box, ball, cone, torus, disc, at, group, drawnMat, cachedTexture, makeSprite, nameTagTexture, emojiTexture, roundRect, FONT_MONO, FONT_UI } from './util3d.js';
+import { mat, box, ball, cone, torus, disc, plane, at, group, drawnMat, cachedTexture, makeSprite, nameTagTexture, emojiTexture, roundRect, FONT_MONO, FONT_UI } from './util3d.js';
 
 const signTextures = new Map();
 /** Floating label that always faces the camera. */
@@ -298,7 +298,117 @@ function exception(o) {
   };
 }
 
-const BUILDERS = { pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception };
+/** SSL Expired: a browser's "not private" warning page standing across the road. */
+function sslExpired(o) {
+  const width = o.dMax - o.dMin;
+  const face = drawnMat('ssl-expired', 512, 256, (ctx, w, h) => {
+    ctx.fillStyle = '#b3261e';
+    ctx.fillRect(0, 0, w, h);
+    // Address bar with a struck-through https.
+    ctx.fillStyle = '#f8d7da';
+    roundRect(ctx, 14, 12, w - 28, 44, 22);
+    ctx.fill();
+    ctx.fillStyle = '#b3261e';
+    ctx.font = `800 28px ${FONT_MONO}`;
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚠ Not secure   https://', 30, 35);
+    ctx.fillRect(238, 34, 130, 4);
+    // Warning body.
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 46px ${FONT_UI}`;
+    ctx.fillText('SSL EXPIRED', 22, 104);
+    ctx.font = `600 27px ${FONT_UI}`;
+    ctx.fillText('Your connection is not private', 22, 152);
+    ctx.fillStyle = '#ffd8d8';
+    ctx.font = `600 22px ${FONT_MONO}`;
+    ctx.fillText('NET::ERR_CERT_DATE_INVALID', 22, 192);
+    roundRect(ctx, 22, 212, 190, 32, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.fillStyle = '#b3261e';
+    ctx.font = `700 20px ${FONT_UI}`;
+    ctx.fillText('Back to safety', 40, 229);
+  });
+  const side = mat('#7a1712');
+  const wall = box(width, 3, 0.7, [side, side, side, side, face, face]);
+  const label = sign('SSL expired', '#ff8787', 5);
+  label.position.y = 4.1;
+  const object = group(at(wall, 0, 1.5, 0), label);
+  for (const x of [-width / 2, width / 2]) object.add(at(box(0.35, 3.4, 0.9, mat('#3a0d0a')), x, 1.7, 0));
+  return {
+    object,
+    update(_, t) {
+      label.position.y = 4.1 + Math.sin(t * 2 + o.id) * 0.15;
+    },
+  };
+}
+
+/** DO NOT MODIFY URLS: a striped road barricade with an error pit waiting just behind it. */
+function urlBarricade(o) {
+  const width = o.dMax - o.dMin;
+  const stripes = drawnMat('barricade-stripes', 512, 64, (ctx, w, h) => {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#f76707';
+    for (let x = -h; x < w + h; x += 64) {
+      ctx.beginPath();
+      ctx.moveTo(x, h);
+      ctx.lineTo(x + 32, h);
+      ctx.lineTo(x + 32 + h, 0);
+      ctx.lineTo(x + h, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+  const notice = drawnMat('barricade-notice', 512, 160, (ctx, w, h) => {
+    ctx.fillStyle = '#fff3bf';
+    ctx.fillRect(0, 0, w, h);
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = '#212529';
+    ctx.strokeRect(6, 6, w - 12, h - 12);
+    ctx.fillStyle = '#c92a2a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 50px ${FONT_UI}`;
+    ctx.fillText('DO NOT MODIFY URLS', w / 2, 62);
+    ctx.fillStyle = '#212529';
+    ctx.font = `600 24px ${FONT_UI}`;
+    ctx.fillText('— by order of Management —', w / 2, 118);
+  });
+  const dark = mat('#343a40');
+  const plank = (y) => at(box(width, 0.55, 0.22, [dark, dark, dark, dark, stripes, stripes]), 0, y, 0);
+  const object = group(plank(0.75), plank(1.6));
+  for (const x of [-width / 2 + 0.4, 0, width / 2 - 0.4]) {
+    object.add(at(box(0.25, 2.1, 0.25, dark), x, 1.05, 0));
+    object.add(at(box(0.25, 0.2, 1.6, dark), x, 0.1, 0));
+  }
+  for (const x of [-width / 2 + 0.4, width / 2 - 0.4]) {
+    const lamp = at(ball(0.22, mat('#ffa94d', { emissive: '#ff922b', emissiveIntensity: 1.6 })), x, 2.3, 0);
+    lamp.castShadow = false;
+    object.add(lamp);
+  }
+  const board = box(Math.min(width - 1, 7), 2.2, 0.2, [dark, dark, dark, dark, notice, notice]);
+  object.add(at(board, 0, 3.2, 0));
+
+  // The error pit the route now drops you into, just past the barricade (forward is -Z).
+  const hole = drawnMat('error-pit', 256, 128, (ctx, w, h) => {
+    ctx.fillStyle = '#05060a';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
+    ctx.fillStyle = 'rgba(255, 107, 107, 0.55)';
+    ctx.font = `800 40px ${FONT_MONO}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ERROR', w / 2, h / 2 + 2);
+  }, { basic: true, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  const pit = plane(width, 3.2, hole);
+  object.add(at(pit, 0, 0.05, -2.3, -Math.PI / 2));
+  return { object, update() {} };
+}
+
+const BUILDERS = { pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception, sslExpired, urlBarricade };
 
 /** Builds the model for a simulation obstacle and places it on the track. */
 export function buildObstacle(o, track) {

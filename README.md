@@ -86,6 +86,8 @@ Baltimore oriole · Blue crab · Diamondback terrapin
 | Redirect loop       | Round and round, twice                                        |
 | Null pointer        | A sweeping mouse cursor that turns you into `null`            |
 | Unhandled exception | A mine that throws everyone nearby (and re-arms)              |
+| SSL Expired         | A "Your connection is not private" page stops you for a moment |
+| DO NOT MODIFY URLS  | A barricade that drops you into an error pit for a few seconds |
 
 **Items** — picked up from the spinning `{?}` crates:
 
@@ -96,6 +98,8 @@ Baltimore oriole · Blue crab · Diamondback terrapin
 | 🛡️ Firewall    | Blocks the next obstacle or attack                                  |
 | 🐛 Bug         | Thrown at the racer directly ahead; they spin out                   |
 | 💥 Force Push  | Homes in on the leader — only racers in the back half get these     |
+| 🔐 Renewed Certificate | Immune to SSL Expired for 20 seconds                        |
+| ↩️ ?returnUrl= | Lets you through the next DO NOT MODIFY URLS barricade (used up by it) |
 
 ## Is it fair?
 
@@ -149,7 +153,7 @@ public/
   js/track.js        The winding bridge and the (distance, offset) → 3D mapping
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
   js/racers.js       The 14 racer models and their karts
-  js/obstacles.js    The 8 obstacle models, item crates, thrown items
+  js/obstacles.js    The 10 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card
   js/audio.js        Synthesised sound effects

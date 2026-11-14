@@ -18,6 +18,13 @@ const HIT_TEXT = {
   exception: (r) => `Unhandled exception threw ${who(r)}`,
   bug: (r, by) => `${who(by)} threw a bug 🐛 at ${who(r)}`,
   forcePush: (r, by) => `${who(by)} force-pushed 💥 over ${who(r)}`,
+  sslExpired: (r) => `${who(r)} hit SSL Expired — your connection is not private`,
+  urlBarricade: (r) => `${who(r)} hit DO NOT MODIFY URLS and dropped into the error pit`,
+};
+
+const PASS_TEXT = {
+  renewedCert: (r) => `${who(r)}'s renewed certificate 🔐 sailed through SSL Expired`,
+  returnUrl: (r) => `${who(r)} used ?returnUrl= ↩️ to pass DO NOT MODIFY URLS`,
 };
 
 const ZONE_TEXT = {
@@ -34,6 +41,8 @@ const STUN_ICON = {
   exception: '💥',
   bug: '🐛',
   forcePush: '💥',
+  sslExpired: '🔓',
+  urlBarricade: '🚧',
 };
 
 export class Hud {
@@ -120,6 +129,8 @@ export class Hud {
       else if (r.stun) extra = STUN_ICON[r.stun.cause] || '💫';
       else if (r.item) extra = ITEM_INFO[r.item].emoji;
       else if (r.shield > 0) extra = '🛡️';
+      else if (r.returnUrl) extra = ITEM_INFO.returnUrl.emoji;
+      else if (r.certT > 0) extra = ITEM_INFO.renewedCert.emoji;
       else if (r.boostT > 0) extra = '🔥';
       if (extra !== row.text) {
         row.text = extra;
@@ -147,6 +158,9 @@ export class Hud {
         break;
       case 'block':
         this.line(`${who(e.racer)}'s firewall 🛡️ blocked ${e.cause === 'bug' || e.cause === 'forcePush' ? `${who(e.by)}'s attack` : 'the hit'}`);
+        break;
+      case 'pass':
+        this.line(PASS_TEXT[e.item]?.(e.racer));
         break;
       case 'lead':
         this.line(`${who(e.racer)} takes the lead!`, true);

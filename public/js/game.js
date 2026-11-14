@@ -19,6 +19,8 @@ export const ITEM_INFO = {
   firewall: { emoji: '🛡️', label: 'Firewall' },
   bug: { emoji: '🐛', label: 'Bug' },
   forcePush: { emoji: '💥', label: 'Force Push' },
+  renewedCert: { emoji: '🔐', label: 'Renewed Certificate' },
+  returnUrl: { emoji: '↩️', label: '?returnUrl=' },
 };
 
 const HIT_EMOTE = {
@@ -32,9 +34,11 @@ const HIT_EMOTE = {
   forcePush: '💥',
   infiniteScroll: '📜',
   slowLoad: '⏳',
+  sslExpired: '🔓',
+  urlBarricade: '🚧',
 };
 
-const HIT_SOUND = { pit404: 'fall', redirectLoop: 'loop', nullPointer: 'null', exception: 'hit', forcePush: 'explode' };
+const HIT_SOUND = { pit404: 'fall', redirectLoop: 'loop', nullPointer: 'null', exception: 'hit', forcePush: 'explode', sslExpired: 'null', urlBarricade: 'fall' };
 
 const CONFETTI = ['#f2b817', '#c5122f', '#ffffff', '#16130f', '#ff7b00', '#2b78c5'];
 
@@ -283,7 +287,7 @@ export class Game {
       case 'use':
         this.emote(visual, ITEM_INFO[e.item].emoji);
         if (e.item === 'coffee' || e.item === 'breeze') this.sfx.play('boost');
-        else if (e.item === 'firewall') this.sfx.play('shield');
+        else if (e.item === 'firewall' || e.item === 'renewedCert' || e.item === 'returnUrl') this.sfx.play('shield');
         else this.sfx.play(e.wasted ? 'boost' : 'throw');
         break;
       case 'hit': {
@@ -300,6 +304,12 @@ export class Game {
         this.emote(visual, '🛡️');
         this.sfx.play('block');
         this.sparkle(e.racer.s, e.racer.d, 1.2, ['#66d9e8', '#ffffff'], 18);
+        break;
+      case 'pass':
+        // Drove straight through an obstacle thanks to the matching item.
+        this.emote(visual, ITEM_INFO[e.item].emoji);
+        this.sfx.play('block');
+        this.sparkle(e.racer.s, e.racer.d, 1.2, ['#8ce99a', '#ffffff'], 18);
         break;
       case 'explode':
         this.sfx.play('explode');
@@ -370,6 +380,7 @@ export class Game {
         const st = r.stun;
         const p = Math.min(1, st.t / st.dur);
         switch (st.kind) {
+          case 'errorPit':
           case 'fall':
             if (p < 0.4) {
               const q = p / 0.4;
@@ -389,6 +400,7 @@ export class Game {
             body.rotation.y = (1 - (1 - p) * (1 - p)) * Math.PI * 4;
             body.position.y = Math.sin(p * Math.PI) * 0.5;
             break;
+          case 'cert':
           case 'conflict':
             body.position.x = Math.sin(st.t * 55) * 0.13 * (1 - p);
             body.rotation.x = 0.3 * (1 - p);
