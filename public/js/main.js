@@ -4,7 +4,7 @@ import { Game, runHeadless } from './game.js';
 import { Hud } from './hud.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
-import { buildRoster, selectRacers, pickRandomRacer, nameKey } from './eligibility.js';
+import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './lobby-settings.js';
 
@@ -25,11 +25,18 @@ const state = {
   names: [],
   winners: [],
   roster: [],
+  shown: new Map(), // nameKey -> on-screen name (email addresses shortened when unambiguous)
+  raceNames: new Map(), // on-screen name -> stored name, for the race in progress
   absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
   phase: 'lobby', // lobby | race | results
   pendingWinner: null,
   raceStartedAt: null,
 };
+
+/** The on-screen form of a stored name. */
+const show = (name) => state.shown.get(nameKey(name)) ?? name;
+/** The stored name behind a name shown in the race. */
+const stored = (name) => state.raceNames.get(name) ?? name;
 
 const sfx = new Sfx();
 const hud = new Hud();
@@ -59,6 +66,7 @@ async function loadState() {
   try {
     const data = await api('/api/state');
     state.names = data.names;
+    state.shown = displayNames(state.names);
     state.absent = retainRosterAbsences(state.absent, state.names);
     saveLobbySettings();
     state.winners = data.winners;
@@ -105,7 +113,7 @@ async function saveWinner(name) {
     });
     state.winners = data.winners;
     state.pendingWinner = null;
-    hud.saveStatus(`Saved. ${name} sits out the next three races.`, 'ok');
+    hud.saveStatus(`Saved. ${show(name)} sits out the next three races.`, 'ok');
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -122,7 +130,7 @@ function formatDate(iso) {
 function renderLobby() {
   const list = $('roster');
   list.replaceChildren();
-  for (const entry of state.roster) {
+  for (const entry of sortByDisplayName(state.roster, state.shown)) {
     const key = nameKey(entry.name);
     const li = document.createElement('li');
     const label = document.createElement('label');
@@ -130,7 +138,8 @@ function renderLobby() {
     box.type = 'checkbox';
     const name = document.createElement('span');
     name.className = 'name';
-    name.textContent = entry.name;
+    name.textContent = show(entry.name);
+    name.title = entry.name; // full name on hover (shortened addresses, or long names cut off by the tile)
     label.append(box, name);
 
     if (entry.eligible) {
@@ -158,7 +167,7 @@ function renderLobby() {
       text.className = 'who';
       text.append(name, badge);
       label.append(text);
-      label.title = `${entry.name} won recently — eligible again in ${wait} race${wait === 1 ? '' : 's'}.`;
+      label.title = `${show(entry.name)} won recently — eligible again in ${wait} race${wait === 1 ? '' : 's'}.`;
     }
     li.append(label);
     list.append(li);
@@ -174,7 +183,7 @@ function renderLobby() {
   }
   [...state.winners].reverse().forEach((winner) => {
     const li = document.createElement('li');
-    li.textContent = `🏆 ${winner.name}`;
+    li.textContent = `🏆 ${show(winner.name)}`;
     const when = formatDate(winner.date);
     if (when) {
       const span = document.createElement('span');
@@ -261,8 +270,9 @@ function setAll(present) {
 
 function run() {
   if (state.phase !== 'lobby') return;
-  const racers = selectRacers(state.roster, state.absent);
+  const racers = selectRacers(state.roster, state.absent).map(show);
   if (racers.length < 2) return;
+  state.raceNames = new Map(selectRacers(state.roster, state.absent).map((name) => [show(name), name]));
   sfx.unlock();
   const rng = seed === null ? Math.random : mulberry32(seed);
   state.phase = 'race';
@@ -276,7 +286,7 @@ function run() {
     hud.showWinner(sim.winner.name, null, elapsed, 0, `Race completed off-screen in ${elapsed.toFixed(1)}s.`);
     sim.standings().slice(1, 3).forEach((r, i) => hud.podium(i + 2, r.name));
     state.phase = 'results';
-    saveWinner(sim.winner.name);
+    saveWinner(stored(sim.winner.name));
     return;
   }
 
@@ -292,7 +302,7 @@ function pick() {
   if (!winner) return;
   state.phase = 'results';
   $('lobby').hidden = true;
-  hud.showWinner(winner, null, null, 0, 'Random pick - race skipped.');
+  hud.showWinner(show(winner), null, null, 0, 'Random pick - race skipped.');
   saveWinner(winner);
 }
 
@@ -323,7 +333,7 @@ function init() {
           const elapsed = (performance.now() - state.raceStartedAt) / 1000;
           hud.showWinner(racer.name, kind, elapsed, 2600 / speed);
           // Save immediately, so the result is recorded even if the tab is closed.
-          saveWinner(racer.name);
+          saveWinner(stored(racer.name));
         },
       },
       sfx,
