@@ -182,3 +182,10 @@ Roster and winner writes also require `Content-Type: application/json`. These ch
 untrusted web pages; they do not authenticate other programs running on your computer.
 
 The game and roster editor cannot be embedded in frames. Top-level browser navigation is unchanged.
+
+## Contributors
+
+AI development assistance:
+
+- **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
+- **Claude (Anthropic)** - development assistance.
