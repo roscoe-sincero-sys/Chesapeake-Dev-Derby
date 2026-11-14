@@ -188,4 +188,15 @@ The game and roster editor cannot be embedded in frames. Top-level browser navig
 AI development assistance:
 
 - **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
-- **Claude (Anthropic)** - development assistance.
+- **Claude (Anthropic)** - initial developer.
+
+Claude's initial development statistics, as reported by the project owner:
+
+| Metric | Value |
+| --- | --- |
+| Console completion time | 40m 18s |
+| Total duration (API) | 31m 36s |
+| Total duration (wall) | 1h 12m 37s |
+| Lines added | 6,170 |
+| Lines removed | 2 |
+| Total cost | $13.31 |
