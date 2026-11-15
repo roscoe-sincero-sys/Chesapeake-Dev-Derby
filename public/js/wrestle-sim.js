@@ -121,7 +121,7 @@ export function crowdSigns(names, rng = Math.random) {
     ['15 mins lasts', 'for', 'three hours'],
     ['I CAME FOR THE 15-MINUTE MEETING'],
     ["Let's all watch", pick(), 'click dead greyed out buttons.'],
-    ['I made a BUG', `I gave it to ${pick()}`, 'Stay away from him!'],
+    ['I made a BUG', 'I gave it to', pick()],
     ['I’m just here to say “NO BLOCKERS”'],
     ['WE HAVE 2 MINUTES LEFT. WHO’S LEADING?'],
     ['ANYTHING for the PARKING LOT?'],
