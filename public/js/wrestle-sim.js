@@ -117,7 +117,7 @@ export function crowdSigns(names, rng = Math.random) {
   return [
     [`${pick().toUpperCase()} FAN CLUB`],
     ['HANUMAN WAS HERE'],
-    ['I hot-fixed the DB.', `I blame ${pick()}`, 'for not being clear.'],
+    ['I blame', pick(), 'for not being clear.'],
     ['15 mins lasts', 'for', 'three hours'],
     ['I CAME FOR THE 15-MINUTE MEETING'],
     ["Let's all watch", pick(), 'click dead greyed out buttons.'],
