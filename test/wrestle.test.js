@@ -132,11 +132,14 @@ test('crowd signs: all twelve, and the random-wrestler signs pick different wres
     assert.ok(text.includes('DRAG & DROP 2.0 / THE ONLY WORKING DROP IS A BODY SLAM'));
     assert.deepEqual([signs[2][0], signs[2][2]], ['I blame', 'for not being clear.']);
     assert.deepEqual(signs[6].slice(0, 2), ['I made a BUG', 'I gave it to']);
-    // The four name slots: fan club, "I blame", the greyed-out buttons, "I gave it to".
+    assert.equal(signs[0][1], 'FAN CLUB');
+    assert.equal(signs[0][0], signs[0][0].toUpperCase());
+    assert.deepEqual(signs[5].slice(1), ['clicks dead buttons', 'as a hobby.']);
+    // The four name slots: fan club, "I blame", dead buttons, "I gave it to".
     const picked = [
-      signs[0][0].replace(/ FAN CLUB$/, ''),
+      signs[0][0],
       signs[2][1],
-      signs[5][1],
+      signs[5][0],
       signs[6][2],
     ];
     assert.equal(new Set(picked.map((n) => n.toUpperCase())).size, 4, `four different wrestlers: ${picked}`);
@@ -144,7 +147,7 @@ test('crowd signs: all twelve, and the random-wrestler signs pick different wres
   }
   // Only two wrestlers: names are reused, alternating.
   const two = crowdSigns(['Ada', 'Grace'], mulberry32(3));
-  const names2 = [two[0][0].replace(/ FAN CLUB$/, ''), two[2][1], two[5][1], two[6][2]];
+  const names2 = [two[0][0], two[2][1], two[5][0], two[6][2]];
   assert.equal(new Set(names2.map((n) => n.toUpperCase())).size, 2);
   assert.equal(names2[0].toUpperCase(), names2[2].toUpperCase());
   assert.equal(names2[1], names2[3]);

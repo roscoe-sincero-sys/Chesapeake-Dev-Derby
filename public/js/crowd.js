@@ -215,10 +215,10 @@ export class Crowd {
   signTexture(lines) {
     const words = [];
     for (const line of lines) {
-      // Wrap long lines at about 16 characters.
+      // Keep the lines as written; only wrap the really long ones (over 22 characters) at a space.
       let current = '';
       for (const word of line.split(' ')) {
-        if (current && (current + ' ' + word).length > 16) {
+        if (current && (current + ' ' + word).length > 22) {
           words.push(current);
           current = word;
         } else current = current ? `${current} ${word}` : word;
