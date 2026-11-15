@@ -155,3 +155,36 @@ test('crowd signs: all fifteen, and the random-wrestler signs pick different wre
   assert.equal(names2[0].toUpperCase(), names2[2].toUpperCase());
   assert.equal(names2[1], names2[3]);
 });
+
+// ---------------------------------------------------------------- hidden sign Easter eggs
+
+test('hidden Easter eggs: some signs change when a wrestler has a particular name', async () => {
+  const { crowdSigns } = await import('../public/js/wrestle-sim.js');
+  const text = (names) => crowdSigns(names, mulberry32(7)).map((s) => s.join(' / '));
+  const plain = text(['Ada', 'Grace', 'Linus', 'Hedy']);
+  assert.ok(plain.some((s) => /^I blame \/ .+ \/ for not being clear\.$/.test(s)));
+  assert.ok(plain.some((s) => s.endsWith(' / clicks dead buttons / as a hobby.')));
+  assert.ok(plain.includes('WEIGHT CLASS / 12–15 CHARS / ONLY!'));
+  assert.ok(plain.includes("LET'S ROLL BACK THE CLOCK!"));
+
+  // Megha: the "not being clear" sign.
+  const megha = text(['Ada', 'Megha', 'Linus']);
+  assert.ok(megha.includes('I blame / Megha again for / not being clear.'));
+  // Paul (also inside a longer name, any case): the dead buttons sign.
+  const paul = text(['Ada', 'paul schiro', 'Linus']);
+  assert.ok(paul.includes("Let's Watch Paul / click dead buttons"));
+  assert.ok(!paul.some((s) => s.includes('as a hobby.')));
+  // Sharmila, even as an email address: the weight class sign.
+  const sharmila = text(['Ada', 'sharmila.parthiban@example.gov', 'Linus']);
+  assert.ok(sharmila.includes('I order all wrestlers / must weigh / 12 to 15 chars only!'));
+  assert.ok(!sharmila.includes('WEIGHT CLASS / 12–15 CHARS / ONLY!'));
+  // Betcy: the roll-back-the-clock sign.
+  const betcy = text(['BETCY', 'Ada']);
+  assert.ok(betcy.includes("Can you hear me? / I can't hear you / Can you hear me?"));
+  assert.ok(!betcy.includes("LET'S ROLL BACK THE CLOCK!"));
+
+  // All four at once: still 15 signs, and the two signs that still name someone pick different wrestlers.
+  const all = crowdSigns(['Megha', 'Paul', 'Sharmila', 'Betcy'], mulberry32(9));
+  assert.equal(all.length, 15);
+  assert.notEqual(all[0][0].toUpperCase(), all[6][2].toUpperCase(), 'fan club and bug signs name different wrestlers');
+});
