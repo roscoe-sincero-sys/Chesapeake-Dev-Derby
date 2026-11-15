@@ -188,3 +188,27 @@ test('hidden Easter eggs: some signs change when a wrestler has a particular nam
   assert.equal(all.length, 15);
   assert.notEqual(all[0][0].toUpperCase(), all[6][2].toUpperCase(), 'fan club and bug signs name different wrestlers');
 });
+
+test('hidden Easter egg: a wrestler named "Ruchie …" turns three signs into Megha\'s', async () => {
+  const { crowdSigns } = await import('../public/js/wrestle-sim.js');
+  const text = (names) => crowdSigns(names, mulberry32(11)).map((s) => s.join(' / '));
+  for (const ruchie of ['Ruchie Sharma', 'ruchie s', 'RUCHIE   X']) {
+    const signs = text(['Ada', ruchie, 'Linus']);
+    assert.ok(signs.includes('GODDESS MEGHA / FAN CLUB'), ruchie);
+    assert.ok(signs.includes('I got blamed AGAIN / for not being clear.'), ruchie);
+    assert.ok(signs.includes('Megha smashes another BUG!'), ruchie);
+    assert.ok(!signs.some((s) => s.startsWith('I made a BUG')), ruchie);
+    assert.equal(signs.length, 15);
+  }
+  // It takes priority over the Megha egg; other eggs still apply.
+  const both = text(['Megha', 'Ruchie Megha', 'Paul']);
+  assert.ok(both.includes('I got blamed AGAIN / for not being clear.'));
+  assert.ok(!both.includes('I blame / Megha again for / not being clear.'));
+  assert.ok(both.includes("Let's Watch Paul / click dead buttons"));
+  // "Ruchie %" needs the space: these don't count.
+  for (const not of ['Ruchie', 'Ruchieee', 'ruchie.k@example.gov', 'Ann Ruchie Lee']) {
+    const signs = text(['Ada', not]);
+    assert.ok(!signs.includes('GODDESS MEGHA / FAN CLUB'), not);
+    assert.ok(signs.some((s) => s.startsWith('I made a BUG / I gave it to')), not);
+  }
+});

@@ -117,10 +117,14 @@ export function crowdSigns(names, rng = Math.random) {
   // Hidden Easter eggs: a sign changes when someone in the match has a particular name (anywhere
   // in it, any case, so "sharmila.parthiban@…" counts). A changed sign doesn't use up a name pick.
   const has = (who) => names.some((n) => String(n).toLowerCase().includes(who));
-  const fanClub = [pick().toUpperCase(), 'FAN CLUB'];
-  const blame = has('megha') ? ['I blame', 'Megha again for', 'not being clear.'] : ['I blame', pick(), 'for not being clear.'];
+  // Megha's nickname: a wrestler named "Ruchie …" (as in SQL LIKE 'Ruchie %': Ruchie, a space, then
+  // anything; any case) turns three signs into Megha's own. It takes priority over the Megha egg.
+  const ruchie = names.some((n) => /^ruchie /i.test(String(n).trim()));
+  const fanClub = ruchie ? ['GODDESS MEGHA', 'FAN CLUB'] : [pick().toUpperCase(), 'FAN CLUB'];
+  const blame = ruchie ? ['I got blamed AGAIN', 'for not being clear.']
+    : has('megha') ? ['I blame', 'Megha again for', 'not being clear.'] : ['I blame', pick(), 'for not being clear.'];
   const deadButtons = has('paul') ? ["Let's Watch Paul", 'click dead buttons'] : [pick(), 'clicks dead buttons', 'as a hobby.'];
-  const bug = ['I made a BUG', 'I gave it to', pick()];
+  const bug = ruchie ? ['Megha smashes another BUG!'] : ['I made a BUG', 'I gave it to', pick()];
   return [
     fanClub,
     ['HANUMAN WAS HERE'],
