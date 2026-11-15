@@ -7,6 +7,7 @@ import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI 
 import { planMatch, PACE } from './wrestle-sim.js';
 import { buildWrestler, pose } from './wrestlers.js';
 import { Particles } from './effects.js';
+import { Crowd } from './crowd.js';
 
 const MAT_Y = 1.3; // height of the ring canvas
 const HALF = 6; // ring half-width, to the ropes
@@ -170,40 +171,8 @@ export class WrestleMatch {
       });
     }
 
-    // A crowd in the dark beyond the barricade, as instanced blocks with heads.
-    const crowd = new THREE.Group();
-    const bodyGeo = new THREE.CapsuleGeometry(0.32, 0.5, 4, 8);
-    const headGeo = new THREE.SphereGeometry(0.24, 10, 8);
-    const spots = [];
-    for (let row = 0; row < 4; row++) {
-      const r = 13 + row * 1.6;
-      const count = Math.round(2 * Math.PI * r / 1.0);
-      for (let i = 0; i < count; i++) {
-        const a = (i / count) * Math.PI * 2 + row * 0.3;
-        spots.push([Math.cos(a) * r, row * 0.7, Math.sin(a) * r]);
-      }
-    }
-    const bodies = new THREE.InstancedMesh(bodyGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), spots.length);
-    const heads = new THREE.InstancedMesh(headGeo, new THREE.MeshStandardMaterial({ color: '#c08a5a', roughness: 0.7 }), spots.length);
-    const m = new THREE.Matrix4();
-    const shirt = new THREE.Color();
-    spots.forEach(([x, y, z], i) => {
-      m.makeTranslation(x, y + 0.75, z);
-      bodies.setMatrixAt(i, m);
-      bodies.setColorAt(i, shirt.setHSL(Math.random(), 0.55, 0.45));
-      m.makeTranslation(x, y + 1.5, z);
-      heads.setMatrixAt(i, m);
-    });
-    crowd.add(bodies, heads);
-    for (let row = 0; row < 4; row++) {
-      const r = 13 + row * 1.6;
-      const step = new THREE.Mesh(new THREE.RingGeometry(r - 0.8, r + 0.8, 64), mat('#262c3d'));
-      step.rotation.x = -Math.PI / 2;
-      step.position.y = row * 0.7 + 0.01;
-      crowd.add(step);
-    }
-    this.crowd = crowd;
-    scene.add(crowd);
+    // The crowd: varied fans, hand-lettered signs, reacting to the action (crowd.js).
+    this.crowd = new Crowd(scene, this.plan.wrestlers.map((w) => w.name));
   }
 
   texture(w, h, draw) {
@@ -251,7 +220,7 @@ export class WrestleMatch {
     }
     this.separate();
     for (const w of this.wrestlers) this.place(w);
-    this.crowd.position.y = Math.abs(Math.sin(t * 4)) * 0.05;
+    this.crowd.update(t);
     this.updateCamera(dt, beat);
     this.particles.update(dt);
   }
@@ -515,6 +484,7 @@ export class WrestleMatch {
         this.particles.burst(new THREE.Vector3(landing.x, 0.3, landing.z), { count: 16, colors: ['#adb5bd', '#6c757d'], speed: 3, up: 1.5, life: 0.7, size: 0.13, gravity: 6 });
         v.out = true;
         v.outAt = landing;
+        this.crowd.ringOut(landing.x, landing.z, t);
         v.outSince = 0;
       }
       this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final });
@@ -536,6 +506,7 @@ export class WrestleMatch {
       if (h.kind.style === 'showman') {
         h.heading += 0.04;
         pose(h.rig, { armsUp: 1, spread: 0.5, walk: t * 6, stride: 0.1 });
+        if (!this.fired.has(`showman:${b.start}`)) this.crowd.showman(t);
         this.emit(`showman:${b.start}`, { type: 'showman', wrestler: h });
       } else {
         h.heading = lerpAngle(h.heading, headingTo(h.x, h.z, landing.x, landing.z), 0.1);
@@ -576,6 +547,7 @@ export class WrestleMatch {
     } else if (since < 1.9) {
       // Teetering over the top rope.
       const k = (since - 0.9) / 1.0;
+      if (!this.fired.has(`close:${b.start}`)) this.crowd.closeCall(pw.x, pw.z, t);
       this.emit(`close:${b.start}`, { type: 'closeCall', wrestler: w, other: o });
       w.x = pw.x;
       w.z = pw.z;
@@ -609,6 +581,7 @@ export class WrestleMatch {
     w.tie = null;
     if (!this.fired.has('victory')) {
       this.sfx?.play('win', 0);
+      this.crowd.victory(t);
       this.onWinner(w);
     }
     this.emit('victory', { type: 'victory', winner: w });
@@ -708,6 +681,7 @@ export class WrestleMatch {
   dispose() {
     for (const w of this.wrestlers) w.rig.dispose();
     for (const t of this.textures) t.dispose();
+    this.crowd.dispose();
     this.particles.clear();
   }
 }

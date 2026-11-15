@@ -104,3 +104,28 @@ export function planMatch(names, rng = Math.random) {
   beats.push({ type: 'victory', winner, start: t, end: t + PACE.victory });
   return { wrestlers, order, winner, beats, duration: t };
 }
+
+/**
+ * The hand-lettered signs in the crowd: one card per entry, each a list of lines. Some name a random
+ * wrestler; each of those picks a different wrestler while there are enough, then names are reused.
+ * Text is as the meeting asked for it; long lines are wrapped when the sign is drawn.
+ */
+export function crowdSigns(names, rng = Math.random) {
+  const pool = shuffle([...names], rng);
+  let next = 0;
+  const pick = () => pool[next++ % pool.length];
+  return [
+    [`${pick().toUpperCase()} FAN CLUB`],
+    ['HANUMAN WAS HERE'],
+    ['I hot-fixed the DB.', `I blame ${pick()}`, 'for not being clear.'],
+    ['15 mins lasts', 'for', 'three hours'],
+    ['I CAME FOR THE 15-MINUTE MEETING'],
+    ["Let's all watch", pick(), 'click dead greyed out buttons.'],
+    ['I made a BUG', `I gave it to ${pick()}`, 'Stay away from him!'],
+    ['I’m just here to say “NO BLOCKERS”'],
+    ['WE HAVE 2 MINUTES LEFT. WHO’S LEADING?'],
+    ['ANYTHING for the PARKING LOT?'],
+    ["LET'S ROLL BACK THE CLOCK!"],
+    ['DRAG & DROP 2.0', 'THE ONLY WORKING DROP IS A BODY SLAM'],
+  ];
+}

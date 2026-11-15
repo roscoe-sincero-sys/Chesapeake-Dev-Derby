@@ -110,6 +110,14 @@ Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a
 | Shikhandi | violet, pointed crown, round shield | catches charging wrestlers off balance |
 | Satyaki | teal, a peacock feather in his crown, sword | fast, and lives on the ropes |
 
+**The crowd** fills four tiers around the ring: low-poly fans of every build, sitting, standing, leaning
+forward, arms crossed, clapping or with both hands up, in caps, turbans, buns and Maryland scarves. They
+react: the section nearest a ring-out leans back with hands up, the section by a close call leans in, a
+few fans stand and cheer a beat after Duryodhana plays to the crowd, and everyone is on their feet for
+the winner. Twelve hand-lettered signs are held up around the stands, from "HANUMAN WAS HERE" to
+"WE HAVE 2 MINUTES LEFT. WHO’S LEADING?"; four of them name a wrestler from the match (a different one
+each while there are enough wrestlers).
+
 It is a battle royal: everyone starts in the ring, and you're out when you go over the top rope and land
 on the floor. The last one left **leads today's standup**.
 
@@ -259,6 +267,7 @@ public/
   js/wrestle-sim.js  Let’s Wrestle Instead: the battle royal's rules and script (pure logic)
   js/wrestle.js      The wrestling ring, camera and choreography
   js/wrestlers.js    The Mahabharata wrestler models and their poses
+  js/crowd.js        The reacting crowd and its hand-lettered signs
   js/obstacles.js    The 11 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card

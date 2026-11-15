@@ -117,3 +117,33 @@ test('wrestlers stand on the ring: feet touch the floor and never go through it,
     assert.ok(lowestFoot(rig) >= -0.002, `${kind.label} sitting: foot through the floor`);
   }
 });
+
+// ---------------------------------------------------------------- crowd signs (issue #68 comment)
+
+test('crowd signs: all twelve, and the random-wrestler signs pick different wrestlers before reusing', async () => {
+  const { crowdSigns } = await import('../public/js/wrestle-sim.js');
+  const four = ['Roscoe', 'Sincero', 'legion', 'I Cause Lags'];
+  for (let seed = 1; seed <= 20; seed++) {
+    const signs = crowdSigns(four, mulberry32(seed));
+    assert.equal(signs.length, 12);
+    const text = signs.map((s) => s.join(' / '));
+    assert.ok(text.includes('HANUMAN WAS HERE'));
+    assert.ok(text.includes('15 mins lasts / for / three hours'));
+    assert.ok(text.includes('DRAG & DROP 2.0 / THE ONLY WORKING DROP IS A BODY SLAM'));
+    // The four name slots: fan club, "I blame", the greyed-out buttons, "I gave it to".
+    const picked = [
+      signs[0][0].replace(/ FAN CLUB$/, ''),
+      signs[2][1].replace(/^I blame /, ''),
+      signs[5][1],
+      signs[6][1].replace(/^I gave it to /, ''),
+    ];
+    assert.equal(new Set(picked.map((n) => n.toUpperCase())).size, 4, `four different wrestlers: ${picked}`);
+    for (const n of picked) assert.ok(four.some((f) => f.toUpperCase() === n.toUpperCase()));
+  }
+  // Only two wrestlers: names are reused, alternating.
+  const two = crowdSigns(['Ada', 'Grace'], mulberry32(3));
+  const names2 = [two[0][0].replace(/ FAN CLUB$/, ''), two[2][1].replace(/^I blame /, ''), two[5][1], two[6][1].replace(/^I gave it to /, '')];
+  assert.equal(new Set(names2.map((n) => n.toUpperCase())).size, 2);
+  assert.equal(names2[0].toUpperCase(), names2[2].toUpperCase());
+  assert.equal(names2[1], names2[3]);
+});
