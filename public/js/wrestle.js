@@ -147,6 +147,8 @@ export class WrestleMatch {
     });
     const topMat = new THREE.MeshStandardMaterial({ map: canvasTop, roughness: 0.9 });
     const apronMat = new THREE.MeshStandardMaterial({ map: apron, roughness: 0.8 });
+    // Owned by this match (unlike the shared util3d shapes and colours), so freed in dispose().
+    this.ownedMaterials = [topMat, apronMat];
     const ring = box(2 * HALF + 1, MAT_Y, 2 * HALF + 1, [apronMat, apronMat, topMat, apronMat, apronMat, apronMat]);
     ring.position.y = MAT_Y / 2;
     ring.receiveShadow = true;
@@ -678,10 +680,20 @@ export class WrestleMatch {
     return cx * f.ux + cz * f.uz >= 0 ? 1 : -1;
   }
 
+  /**
+   * Frees everything this match created on the GPU: the lights (and the key light's shadow map), the
+   * ring's own materials and textures, each wrestler's own materials and shapes, the crowd and the
+   * particles. Shapes and colours shared through util3d.js stay cached for the race and lobby.
+   */
   dispose() {
+    this.scene.traverse((o) => {
+      if (o.isLight) o.dispose();
+    });
     for (const w of this.wrestlers) w.rig.dispose();
     for (const t of this.textures) t.dispose();
+    for (const m of this.ownedMaterials) m.dispose();
     this.crowd.dispose();
-    this.particles.clear();
+    this.particles.dispose();
+    this.scene.clear();
   }
 }

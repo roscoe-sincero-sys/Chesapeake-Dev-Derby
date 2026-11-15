@@ -43,6 +43,8 @@ function humanoid(look, belt) {
   const bulk = look.bulk ?? 1;
   const skin = new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.48, metalness: 0.02 });
   const shade = new THREE.MeshStandardMaterial({ color: new THREE.Color(look.skin).multiplyScalar(0.82), roughness: 0.5 });
+  // Materials made for this wrestler alone (everything else is shared through util3d.js).
+  const owned = [skin, shade];
   const gold = mat(GOLD, { metalness: 0.75, roughness: 0.28 });
   const cloth = mat(look.dhoti, { roughness: 0.85 });
   const border = mat(look.border ?? GOLD, { roughness: 0.55, metalness: 0.2 });
@@ -130,6 +132,7 @@ function humanoid(look, belt) {
     // A cape hanging down the back: the back half of a surface of revolution.
     const profile = [[0.08, -0.55], [0.32 * bulk, -0.5], [0.3 * bulk, 0.2], [0.2 * bulk, 0.68]].map(([r, y]) => new THREE.Vector2(r, y));
     const cape = new THREE.Mesh(new THREE.LatheGeometry(profile, 16, -Math.PI / 2, Math.PI), new THREE.MeshStandardMaterial({ color: look.cape, roughness: 0.9, side: THREE.DoubleSide }));
+    owned.push(cape.material);
     cape.scale.set(1.05, 1, 0.55);
     cape.position.set(0, 0.05, 0.1);
     torso.add(cape);
@@ -248,7 +251,7 @@ function humanoid(look, belt) {
 
   const build = look.build ?? 1;
   root.scale.setScalar(build);
-  return { root, hips, torso, head, arms, legs, height: 2.45 * build };
+  return { root, hips, torso, head, arms, legs, height: 2.45 * build, owned };
 }
 
 const LOOKS = {
@@ -313,9 +316,10 @@ export function buildWrestler(kind, color, name) {
       tag.material.dispose();
       asTag.material.dispose();
       rig.root.traverse((o) => {
-        // Lathes (dhoti, cape) are built per wrestler; everything else is shared by util3d.
+        // Lathes (dhoti, skirt, cape) are built per wrestler; other shapes are shared by util3d.
         if (o.geometry?.type === 'LatheGeometry') o.geometry.dispose();
       });
+      for (const m of rig.owned) m.dispose();
     },
   };
 }

@@ -79,9 +79,10 @@ export class Crowd {
       step.rotation.x = -Math.PI / 2;
       step.position.y = row * 0.7 + 0.01;
       this.group.add(step);
+      if (!row) continue; // the front tier sits on the floor: no riser
       const riser = new THREE.Mesh(new THREE.CylinderGeometry(r - 0.8, r - 0.8, 0.7, 72, 1, true), new THREE.MeshStandardMaterial({ color: '#1b2030', roughness: 0.95, side: THREE.DoubleSide }));
       riser.position.y = row * 0.7 - 0.34;
-      if (row) this.group.add(riser);
+      this.group.add(riser);
     }
   }
 
@@ -415,8 +416,10 @@ export class Crowd {
   }
 
   dispose() {
+    this.group.removeFromParent();
     for (const t of this.textures) t.dispose();
     this.group.traverse((o) => {
+      if (o.isInstancedMesh) o.dispose(); // instance buffers
       o.geometry?.dispose();
       if (o.material) [].concat(o.material).forEach((mat) => mat.dispose());
     });

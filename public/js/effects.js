@@ -91,6 +91,15 @@ export class Particles {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
+  /** Frees the particle mesh (its instance buffers), geometry and material, e.g. when a match ends. */
+  dispose() {
+    this.mesh.removeFromParent();
+    this.mesh.geometry.dispose();
+    this.mesh.material.dispose();
+    this.mesh.dispose();
+    this.items = [];
+  }
+
   clear() {
     for (const p of this.items) {
       this.mesh.setMatrixAt(p.index, this.hidden);
