@@ -89,8 +89,8 @@ A second way to pick: **🤼 Let’s Wrestle Instead**, at the far right of the 
 used when **2 to 10** teammates are checked; otherwise it is greyed out, and hovering over it (or tabbing
 to it) says "You need 2 to 10 wrestlers."
 
-The checked teammates enter a wrestling ring as Mahabharata wrestlers, each with their name floating
-above them. So far the cast is **Bhima** (power wrestler, two-handed overhead toss), **Jarasandha**
+The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
+their name floating above them. During the match the corner button reads **Quit match** (it saves nothing). So far the cast is **Bhima** (power wrestler, two-handed overhead toss), **Jarasandha**
 (grappler, king of Magadha), **Duryodhana** (showman, plays to the crowd after a ring-out) and **Arjuna**
 (precision wrestler, slips free); each name is dealt one, and all four appear before any repeats.
 

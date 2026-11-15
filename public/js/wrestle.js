@@ -126,10 +126,16 @@ export class WrestleMatch {
       ctx.fillRect(0, 0, w, 10);
       ctx.fillRect(0, h - 10, w, 10);
       ctx.fillStyle = '#ffffff';
-      ctx.font = `900 60px ${FONT_UI}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText("LET'S WRESTLE INSTEAD", w / 2, h / 2 + 3);
+      const title = 'KURUKSHETRA BATTLE ROYAL';
+      let px = 64;
+      ctx.font = `900 ${px}px ${FONT_UI}`;
+      while (ctx.measureText(title).width > w - 80 && px > 30) {
+        px -= 2;
+        ctx.font = `900 ${px}px ${FONT_UI}`;
+      }
+      ctx.fillText(title, w / 2, h / 2 + 3);
     });
     const topMat = new THREE.MeshStandardMaterial({ map: canvasTop, roughness: 0.9 });
     const apronMat = new THREE.MeshStandardMaterial({ map: apron, roughness: 0.8 });
@@ -492,9 +498,10 @@ export class WrestleMatch {
       const since = t - b.landAt;
       v.x = landing.x;
       v.z = landing.z;
-      v.y = 0;
-      v.heading = headingTo(v.x, v.z, 0, 0) + Math.PI;
       const sitUp = ease((since - 0.7) / 0.6);
+      // Lying on the back, lifted by half the body's depth so nothing sinks into the floor.
+      v.y = 0.26 * v.rig.root.scale.y * (1 - sitUp);
+      v.heading = headingTo(v.x, v.z, 0, 0) + Math.PI;
       v.pitch = -Math.PI / 2 * (1 - sitUp);
       v.tagDrop = -1.4 * (1 - sitUp) - 0.9 * sitUp;
       pose(v.rig, { sit: sitUp, spread: 0.4 * (1 - sitUp), look: 0.3 });

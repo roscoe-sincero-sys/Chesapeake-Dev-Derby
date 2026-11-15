@@ -85,3 +85,30 @@ test('the match has its own pacing: length depends only on the number of wrestle
   assert.equal(timed[0].end, PACE.intro);
   for (const b of plan.beats) assert.ok(b.end > b.start);
 });
+
+// ---------------------------------------------------------------- feet on the floor (issue #68 comment)
+
+test('wrestlers stand on the ring: feet touch the floor and never go through it, in every pose', async () => {
+  const { buildRig, pose, lowestFoot } = await import('../public/js/wrestlers.js');
+  const poses = {
+    neutral: {},
+    ...Object.fromEntries([0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6].map((p) => [`walk ${p}`, { walk: p, stride: 0.7, guard: 0.8, crouch: 0.25 }])),
+    crouch: { crouch: 0.35, armsForward: 1, lean: 0.3 },
+    deepCrouch: { crouch: 1 },
+    overhead: { armsUp: 1, crouch: 0.2 },
+    flail: { flail: 1, spread: 0.6, walk: 2 },
+    teeter: { lean: -0.95, flail: 1, crouch: 0.15 },
+    victory: { armsUp: 1, spread: 0.35, walk: 1, stride: 0.15 },
+  };
+  for (const kind of WRESTLER_KINDS) {
+    const rig = buildRig(kind);
+    for (const [name, p] of Object.entries(poses)) {
+      pose(rig, p);
+      const low = lowestFoot(rig);
+      assert.ok(low >= -0.002, `${kind.label} ${name}: foot ${low.toFixed(3)} below the floor`);
+      assert.ok(low <= 0.02, `${kind.label} ${name}: floating ${low.toFixed(3)} above the floor`);
+    }
+    pose(rig, { sit: 1 });
+    assert.ok(lowestFoot(rig) >= -0.002, `${kind.label} sitting: foot through the floor`);
+  }
+});

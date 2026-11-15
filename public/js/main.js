@@ -317,6 +317,7 @@ function run() {
 
   const lineup = game.startRace(racers, { rng, timeScale: speed });
   hud.begin(lineup);
+  $('quit').textContent = '✕ Quit race';
   $('quit').hidden = false;
 }
 
@@ -368,6 +369,7 @@ function wrestle() {
     },
   });
   hud.beginWrestle(lineup);
+  $('quit').textContent = '✕ Quit match';
   $('quit').hidden = false;
 }
 
