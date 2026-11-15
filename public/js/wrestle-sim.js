@@ -6,6 +6,7 @@
 // depends only on the number of wrestlers; the lobby's Race length slider does not affect it.
 
 import { shuffle } from './sim.js';
+import { SIGN_VARIANTS } from './sign-variants.js';
 
 export const MIN_WRESTLERS = 2;
 export const MAX_WRESTLERS = 10;
@@ -110,16 +111,18 @@ export function planMatch(names, rng = Math.random) {
  * wrestler; each of those picks a different wrestler while there are enough, then names are reused.
  * Text is as the meeting asked for it; long lines are wrapped when the sign is drawn.
  */
-export function crowdSigns(names, rng = Math.random) {
+export function crowdSigns(names, rng = Math.random, variants = SIGN_VARIANTS) {
   const pool = shuffle([...names], rng);
   let next = 0;
   const pick = () => pool[next++ % pool.length];
-  // Hidden Easter eggs: a sign changes when someone in the match has a particular name (anywhere
-  // in it, any case, so "sharmila.parthiban@…" counts). A changed sign doesn't use up a name pick.
-  const has = (who) => names.some((n) => String(n).toLowerCase().includes(who));
+  // A sign may be swapped for a variant (sign-variants.js); a swapped sign doesn't use up a name pick.
+  const variant = (key) => {
+    const v = variants[key];
+    return v && names.some((n) => String(n).toLowerCase().includes(v.match)) ? [...v.lines] : null;
+  };
   const fanClub = [pick().toUpperCase(), 'FAN CLUB'];
-  const blame = has('megha') ? ['I blame', 'Megha again for', 'not being clear.'] : ['I blame', pick(), 'for not being clear.'];
-  const deadButtons = has('paul') ? ["Let's Watch Paul", 'click dead buttons'] : [pick(), 'clicks dead buttons', 'as a hobby.'];
+  const blame = variant('blame') ?? ['I blame', pick(), 'for not being clear.'];
+  const deadButtons = variant('deadButtons') ?? [pick(), 'clicks dead buttons', 'as a hobby.'];
   const bug = ['I made a BUG', 'I gave it to', pick()];
   return [
     fanClub,
@@ -132,10 +135,10 @@ export function crowdSigns(names, rng = Math.random) {
     ['I’m just here to say “NO BLOCKERS”'],
     ['WE HAVE 2 MINUTES LEFT. WHO’S LEADING?'],
     ['ANYTHING for the PARKING LOT?'],
-    has('betcy') ? ['Can you hear me?', "I can't hear you", 'Can you hear me?'] : ["LET'S ROLL BACK THE CLOCK!"],
+    variant('clock') ?? ["LET'S ROLL BACK THE CLOCK!"],
     ['DRAG & DROP 2.0', 'THE ONLY WORKING DROP', 'IS A BODY SLAM'],
     ['800-COLUMN TABLE', 'KEEP SCROLLING →'],
     ['200 GB. TABLE', 'HEAVYWEIGHT CHAMP.'],
-    has('sharmila') ? ['I order all wrestlers', 'must weigh', '12 to 15 chars only!'] : ['WEIGHT CLASS', '12–15 CHARS', 'ONLY!'],
+    variant('weightClass') ?? ['WEIGHT CLASS', '12–15 CHARS', 'ONLY!'],
   ];
 }

@@ -3,3 +3,4 @@ node_modules/
 /data/names.json
 /data/winners.json
 /data/history.json
+/_site/

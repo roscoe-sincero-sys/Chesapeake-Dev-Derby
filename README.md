@@ -13,6 +13,9 @@ browser would run its own, different race anyway.
 
 Built with [Three.js](https://threejs.org/) and a tiny zero-dependency Node server.
 
+**Try the demo:** <https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>: a browser-only copy
+with sample names; see [Online demo](#online-demo).
+
 ## Quick start
 
 You need [Node.js](https://nodejs.org/) 18 or newer.
@@ -249,6 +252,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
 server.js            Serves the game; GET /api/version, GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
 CHANGELOG.md         What changed in each version
 lib/store.js         Reads names.json, reads/writes winners.json and history.json
+scripts/build-demo.mjs  Builds the GitHub Pages demo into _site/ (npm run build:demo)
+.github/workflows/pages.yml  Tests, builds and deploys the demo on pushes to main
 data/names.json      Your roster (created by Edit team list; not committed)
 data/winners.json    Last three winners (written by the game)
 data/history.json    Every result, with date, time and race/skip (written by the game)
@@ -257,6 +262,10 @@ public/
   history.html       Winner history page (js/history.js)
   css/style.css
   js/main.js         Lobby logic, starts races, saves the winner
+  js/api.js          Sends API requests to the server, or to the demo store in the online demo
+  js/config.js       DEMO switch (false here; the demo build replaces this file)
+  js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
+  js/demo-api.js     The online demo's in-browser store (localStorage)
   js/eligibility.js  Who may race (last three winners sit out)
   js/lobby-settings.js  Race lengths offered, and attendance/length kept for the browser tab
   js/sim.js          The race simulation — pure logic, no graphics
@@ -283,6 +292,37 @@ other machines; see [Local server security](#local-server-security).
 The simulation (`sim.js`) works in simple track coordinates — distance along the course and sideways
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
 the models to match, so the outcome is the same on a fast or slow machine.
+
+## Online demo
+
+A public, browser-only demo runs on GitHub Pages at
+<https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>. Anyone can try the race, **Skip race, just
+pick** and **Let's Wrestle Instead** without installing anything.
+
+- **Sample team:** it starts with characters from the Maranao epic *Maharadia Lawana*: Radia Mangandiri,
+  Radia Mangawarna, Potre Malaila Ganding, Laksamana, Maharadia Lawana and Kabayan.
+- **Saved in the browser only:** visitors can edit the team list, reset the last three winners and see the
+  full history. All of it is kept in that browser (`localStorage`); nothing is sent anywhere, and a
+  different browser starts again from the sample team. A **Demo** label in the lobby says so.
+- **Same rules as the presenter app:** the demo uses the same code for the team list limits, calendar
+  labels, the last three winners and the history (`public/js/data-rules.js`, shared with `lib/store.js`).
+- **Never real names:** the demo is built from `public/` only. It contains no files from `data/`.
+
+**How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
+`npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
+repository's **Deployments → github-pages**. Pull requests run the tests and the build without deploying.
+The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
+
+To build and look at the demo yourself:
+
+```bash
+npm run build:demo     # writes _site/ (ignored by git)
+npx serve _site        # or any static file server
+```
+
+The build copies `public/`, adds Three.js's single-file module, and swaps in a `js/config.js` that turns on
+demo mode. Pages use relative links, so the same files work at `/` in the presenter app and under
+`/Chesapeake-Dev-Derby/` on GitHub Pages.
 
 ## Troubleshooting
 

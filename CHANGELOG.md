@@ -7,6 +7,21 @@ to release.
 
 ## [Unreleased]
 
+### Added
+- **Online demo on GitHub Pages:** a public, browser-only copy at
+  <https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>.
+  - Starts with characters from *Maharadia Lawana*; edits, winners and history are saved only in the
+    visitor's browser.
+  - A **Demo** label in the lobby.
+  - Published by a GitHub Actions workflow on every push to `main` (tests first), listed under
+    **Deployments → github-pages**.
+  - `npm run build:demo` builds it locally into `_site/`.
+
+### Changed
+- Pages use relative links and a relative Three.js import map, so they also work under a sub-path.
+- The team list, winner and history rules moved to `public/js/data-rules.js`, shared by the server and
+  the demo. The presenter app behaves as before.
+
 ## [1.0.0] - 2026-11-15
 
 The first versioned release: everything up to this point.

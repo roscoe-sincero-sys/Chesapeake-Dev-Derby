@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
     <script type="importmap">
-      { "imports": { "three": "/vendor/three/build/three.module.js" } }
+      { "imports": { "three": "./vendor/three/build/three.module.js" } }
     </script>
   </head>
   <body>
@@ -23,8 +23,9 @@
       <header class="lobby-head">
         <div class="flag-chip" aria-hidden="true"></div>
         <div>
-          <h1>Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span></h1>
+          <h1>Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span id="demo-badge" class="demo-badge" title="A browser-only demo: names and results are saved only in this browser." hidden>Demo</span></h1>
           <p class="tagline">First across the line leads the team meeting.</p>
+          <p id="demo-note" class="demo-note" hidden>Demo: names and results are saved only in this browser. Nothing is sent anywhere.</p>
         </div>
       </header>
 
