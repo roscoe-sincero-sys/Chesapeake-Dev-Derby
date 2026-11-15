@@ -1,4 +1,5 @@
 node_modules/
 *.tmp
+/data/names.json
 /data/winners.json
 /data/history.json

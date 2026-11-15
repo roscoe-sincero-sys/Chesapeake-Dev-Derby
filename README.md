@@ -32,7 +32,10 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 ## Running a meeting pick
 
-1. **Edit the team list** using **Edit team list** in the lobby (one name per line), or in [`data/names.json`](data/names.json) — up to 30 names:
+1. **Edit the team list** using **Edit team list** in the lobby (one name per line), or in `data/names.json` — up to 30 names.
+   A fresh copy of the repo has no team list yet: the lobby says it can't find `data/names.json`, and
+   saving from **Edit team list** creates it. The file stays on your computer; like the winner files, it
+   is listed in `.gitignore` so your team's names are never committed:
 
    ```json
    { "names": ["Ada", "Grace", "Linus"] }
@@ -185,7 +188,7 @@ Uses Node's built-in test runner — no extra packages. Covers:
 ```
 server.js            Serves the game; GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
 lib/store.js         Reads names.json, reads/writes winners.json and history.json
-data/names.json      Your roster (edit this)
+data/names.json      Your roster (created by Edit team list; not committed)
 data/winners.json    Last three winners (written by the game)
 data/history.json    Every result, with date, time and race/skip (written by the game)
 public/
@@ -220,7 +223,7 @@ the models to match, so the outcome is the same on a fast or slow machine.
 
 | Problem                                  | Fix                                                                    |
 | ---------------------------------------- | ---------------------------------------------------------------------- |
-| "Could not load the roster"              | `data/names.json` is missing or not valid JSON. Fix it, click Retry.   |
+| "Could not load the team list"           | `data/names.json` is missing or not valid JSON. Use **Edit team list** to save a list (this creates the file), or fix the file and click Retry. |
 | "Could not save the winner"              | The server stopped. Run `npm start` again, then click **Retry save**.  |
 | "Port 4100 is already in use"            | Another copy is running, or use `PORT=4101 npm start`.                 |
 | Blank page / module errors               | Run `npm install` — Three.js is served from `node_modules`.            |
@@ -262,3 +265,12 @@ Claude's initial development statistics, as reported by the project owner:
 | Fable 5.2 usage (high effort) | 29% |
 
 See [initial build usage](usage.md) for the token breakdown, tool calls, and cost notes.
+
+## License
+
+Copyright 2026 Roscoe Sincero. Licensed under the [Apache License, Version 2.0](LICENSE); see
+[NOTICE](NOTICE) for attribution. You may not use these files except in compliance with the License.
+Unless required by applicable law or agreed to in writing, the software is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+[Three.js](https://threejs.org/) is a separate dependency under the MIT License.
