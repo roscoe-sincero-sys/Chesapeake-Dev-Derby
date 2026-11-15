@@ -246,7 +246,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
 ## How it's put together
 
 ```
-server.js            Serves the game; GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
+server.js            Serves the game; GET /api/version, GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
+CHANGELOG.md         What changed in each version
 lib/store.js         Reads names.json, reads/writes winners.json and history.json
 data/names.json      Your roster (created by Edit team list; not committed)
 data/winners.json    Last three winners (written by the game)
@@ -308,6 +309,40 @@ Roster and winner writes also require `Content-Type: application/json`. These ch
 untrusted web pages; they do not authenticate other programs running on your computer.
 
 The game and roster editor cannot be embedded in frames. Top-level browser navigation is unchanged.
+
+## Versioning
+
+The derby uses [semantic versioning](https://semver.org/): **MAJOR.MINOR.PATCH**.
+
+- **PATCH** (1.0.0 → 1.0.1): fixes only, nothing new to learn.
+- **MINOR** (1.0.0 → 1.1.0): new things that don't change how existing ones work, such as a new item,
+  obstacle, billboard or character.
+- **MAJOR** (1.0.0 → 2.0.0): changes that break something people rely on, such as the data file formats
+  or the API.
+
+The version lives in one place, the `version` in [`package.json`](package.json). The server reads it
+when it starts and serves it at `GET /api/version`, and the lobby shows it next to the app's name
+(e.g. **v1.0.0**). Restart the derby after changing it.
+
+**Releasing a version**
+
+1. On the branch for the release, bump the version without committing or tagging yet:
+
+   ```
+   npm version minor --no-git-tag-version   (or patch / major)
+   ```
+
+   This updates both `package.json` and `package-lock.json`.
+2. In [`CHANGELOG.md`](CHANGELOG.md), move the notes under **Unreleased** into a new section for the
+   version, with today's date.
+3. Open the PR as usual. After it's merged, tag the release on `main`:
+
+   ```
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+
+   Optionally, add a GitHub release from that tag.
 
 ## Contributors
 

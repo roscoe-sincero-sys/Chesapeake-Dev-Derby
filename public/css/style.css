@@ -911,3 +911,18 @@ button.wrestle[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; filte
   #countdown.callout { white-space: normal; text-align: center; width: calc(100vw - 32px); }
   #hud.wrestling #ring-roster { font-size: 12px; }
 }
+
+/* App version, next to the name in the lobby. */
+.app-version {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  vertical-align: middle;
+  letter-spacing: 0;
+}
