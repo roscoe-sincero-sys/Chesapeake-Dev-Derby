@@ -418,6 +418,20 @@ function backToLobby() {
   $('run').focus({ preventScroll: true });
 }
 
+/** Shows the app's version next to its name in the lobby (stays hidden if the server doesn't say). */
+async function showVersion() {
+  try {
+    const { version } = await api('/api/version');
+    if (typeof version !== 'string' || !version) return;
+    const el = $('app-version');
+    el.textContent = `v${version}`;
+    el.title = `Version ${version}`;
+    el.hidden = false;
+  } catch {
+    /* an older server without /api/version: just leave it out */
+  }
+}
+
 function init() {
   try {
     game = new Game(
@@ -447,6 +461,7 @@ function init() {
   }
 
   $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
+  showVersion();
   $('guide-wrestlers').textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
 
   const slider = $('race-speed');

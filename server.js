@@ -4,6 +4,7 @@
 //   1. serves the game (public/) and Three.js (node_modules/three)
 //   2. reads data/names.json and reads/writes data/winners.json
 //
+//   GET  /api/version  -> { version } from package.json (shown next to the app name in the lobby)
 //   GET  /api/state    -> { names, winners, warnings }
 //   PUT  /api/names    -> body { names: [...] } ; returns { names, warnings }
 //   GET  /api/history  -> { history } every recorded result, newest first
@@ -12,7 +13,7 @@
 
 import http from 'node:http';
 import path from 'node:path';
-import { createReadStream } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { exec } from 'node:child_process';
@@ -21,6 +22,9 @@ import { openBrowserUnlessConnected } from './lib/browser-session.js';
 import { trustedOrigin, isSameOriginRequest, isJsonRequest } from './lib/request-security.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+
+/** The app's version: package.json is the single source of truth (see Versioning in the README). */
+export const VERSION = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -153,6 +157,10 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
           }
         });
         return;
+      }
+
+      if (pathname === '/api/version' && req.method === 'GET') {
+        return sendJson(res, 200, { version: VERSION });
       }
 
       if (pathname === '/api/state' && req.method === 'GET') {

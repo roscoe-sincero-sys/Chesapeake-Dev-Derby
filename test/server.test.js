@@ -195,3 +195,15 @@ test('a wrestling win is recorded in the history with mode "wrestle"', async (t)
   const state = await (await fetch(`${base}/api/state`)).json();
   assert.deepEqual(state.winners.map((w) => w.name), ['Linus'], 'and the winner sits out like any other');
 });
+
+test('GET /api/version reports the version from package.json', async (t) => {
+  const { base } = await startServer(t);
+  const res = await fetch(`${base}/api/version`);
+  assert.equal(res.status, 200);
+  const { version } = await res.json();
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(version, pkg.version);
+  assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, 'semantic version');
+  const lock = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'));
+  assert.equal(lock.version, pkg.version, 'package-lock.json agrees');
+});
