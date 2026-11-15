@@ -188,3 +188,38 @@ test('hidden Easter eggs: some signs change when a wrestler has a particular nam
   assert.equal(all.length, 15);
   assert.notEqual(all[0][0].toUpperCase(), all[6][2].toUpperCase(), 'fan club and bug signs name different wrestlers');
 });
+
+// ---------------------------------------------------------------- thrown out: landing (issue #74)
+
+test('a thrown wrestler bounces twice off the floor, each bounce smaller, then lies still', async () => {
+  const { bounce, BOUNCES } = await import('../public/js/wrestle.js');
+  const samples = Array.from({ length: 200 }, (_, i) => bounce(i * 0.005));
+  assert.ok(samples.every((h) => h >= 0), 'never below the floor');
+  assert.equal(bounce(0), 0, 'lands at the floor');
+  const peak = (from, to) => Math.max(...samples.filter((_, i) => i * 0.005 >= from && i * 0.005 < to));
+  const first = peak(0, BOUNCES[0].end);
+  const second = peak(BOUNCES[0].end, BOUNCES[1].end);
+  assert.ok(first > 0.3, `first bounce ${first}`);
+  assert.ok(second > 0.05 && second < first / 2, `second bounce ${second} is smaller`);
+  assert.ok(bounce(BOUNCES[0].end) < 1e-9, 'touches down between bounces');
+  assert.equal(bounce(BOUNCES[1].end + 0.01), 0, 'then lies still');
+  assert.equal(bounce(5), 0);
+});
+
+test('lying on their back, every wrestler rests on their body, not propped up on a mace, bow or shield', async () => {
+  const { buildRig, pose, lowestBodyPoint } = await import('../public/js/wrestlers.js');
+  const THREE = await import('three');
+  for (const kind of WRESTLER_KINDS) {
+    const rig = buildRig(kind);
+    rig.root.rotation.order = 'YXZ';
+    rig.root.rotation.set(Math.PI / 2, 0, 0); // on the back, face up, as after a throw
+    pose(rig, { spread: 0.4, look: 0.3 });
+    // Settle the body onto the floor (y = 0) the way the arena does.
+    rig.root.position.y -= lowestBodyPoint(rig);
+    rig.root.updateMatrixWorld(true);
+    assert.ok(Math.abs(lowestBodyPoint(rig)) < 1e-6, `${kind.label}: body touches the floor`);
+    // The torso itself is close to the floor (no hovering on gear): its underside within 0.12.
+    const torso = new THREE.Box3().setFromObject(rig.torso.children[1], true);
+    assert.ok(torso.min.y < 0.12 * rig.root.scale.y, `${kind.label}: back ${torso.min.y.toFixed(2)} above the floor`);
+  }
+});
