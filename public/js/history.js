@@ -81,3 +81,14 @@ async function load() {
 
 $('reload-history').addEventListener('click', load);
 load();
+
+// The same slow fly-over of the course as the lobby and Edit team list, without making the
+// history depend on WebGL: if 3D is unavailable the page just keeps its plain background.
+Promise.all([import('./game.js'), import('./audio.js')])
+  .then(([{ Game }, { Sfx }]) => {
+    new Game(document.getElementById('scene'), {}, new Sfx());
+  })
+  .catch((err) => {
+    document.getElementById('scene').hidden = true;
+    console.warn('3D background is unavailable.', err);
+  });

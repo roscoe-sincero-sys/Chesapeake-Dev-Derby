@@ -6,8 +6,12 @@
   <title>Winner history - Chesapeake Dev Derby</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
   <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three/build/three.module.js" } }
+  </script>
 </head>
 <body class="editor-page">
+  <canvas id="scene" aria-hidden="true"></canvas>
   <main class="panel editor history">
     <a href="/">Back to lobby</a>
     <h1>Winner history</h1>
