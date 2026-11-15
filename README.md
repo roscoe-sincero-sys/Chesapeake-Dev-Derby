@@ -68,7 +68,8 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
-3. Click **Start race** (or press **Enter**). You need at least two racers.
+3. Click **Start race** (or press **Enter**). You need at least two racers. When the lobby opens, keyboard focus
+   is already on **Start race**; on Full history and Edit team list it starts on **Back to lobby**.
 
 4. Watch the race. The result shows actual elapsed racing time, excluding the countdown. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
    the moment they cross the line. That file holds the last three winners; when it already has three,

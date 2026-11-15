@@ -1,3 +1,6 @@
+// Keyboard users start on the first control on the page.
+document.getElementById('back-to-lobby').focus();
+
 const form = document.getElementById('roster-form');
 const names = document.getElementById('names');
 const save = document.getElementById('save-names');
