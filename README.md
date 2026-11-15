@@ -140,6 +140,7 @@ watersnakes.
 | 📋 Eight-Minute Audit | Locks the rival ahead's controls for 8 seconds: no steering round obstacles, no crates, no items. *"Access limited pending audit."* |
 | 🎰 Production Roulette | Reverses the rival ahead's steering for 6 seconds, so they swerve towards trouble. *"Oops. That was pr0dI."* |
 | 🎭 Security Theater | Locks the rival ahead to 12–15 mph for 6 seconds. *"Vahi says you're going too fast."* |
+| 📊 800-Column Table | Dropped behind you, in the lane of a rival close behind ("Finally, a use for it."). As rows pour in it grows sideways until it takes up half the track, leaving narrow gaps to squeeze through. Hit it and you bounce off and lose any item you were holding. *"You're wasting disk space."* It stays for 18 seconds (at most four on the track at once); the racer who dropped it can't hit it, and a Firewall blocks it. Racers near the front get it more often. |
 
 The four office-politics items are thrown at the nearest racer ahead (within range), so the leader never
 gets them. A Firewall blocks them like any other attack. Seconds are race time, so they pass faster at

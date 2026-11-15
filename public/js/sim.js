@@ -18,7 +18,7 @@ export const OBSTACLE_TYPES = [
   'urlBarricade',
 ];
 
-export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater'];
+export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater', 'columnTable'];
 
 /** Thrown items that leave the target with a lasting effect instead of a stun. */
 export const STATUS_ITEMS = ['audit', 'roulette', 'theater'];
@@ -47,6 +47,7 @@ export const TUNING = {
     exception: 0.5,
     sslExpired: 0.5,
     urlBarricade: 0.5,
+    columnTable: 0.75, // a dropped 800-Column Table: big and hard to miss, so usually seen in time
   },
   stun: {
     fall: 1.7, // 404 pit
@@ -60,7 +61,15 @@ export const TUNING = {
     bug: 1.3,
     forcePush: 1.7,
     notClear: 1.9, // You Are Not Being Clear: spinning out trying to clarify
+    bounce: 1.3, // bounced off an 800-Column Table
   },
+  // 800-Column Table, dropped behind a kart: grows sideways as rows pour in, to half the track.
+  tableDropBehind: 4, // how far behind the dropper it lands
+  tableStartWidth: 1.5,
+  tableGrowTime: 2.5, // seconds to reach full width
+  tableLife: 18, // seconds before it is finally dropped from the schema
+  maxTables: 4, // at most this many on the track at once
+  tableReach: 35, // aims for the lane of a rival this close behind
   // Lasting effects from thrown items (seconds).
   auditDuration: 8, // Eight-Minute Audit: controls locked
   rouletteDuration: 6, // Production Roulette: steering reversed
@@ -238,6 +247,8 @@ export function rollItem(rankFraction, rng = Math.random) {
     audit: f > 0.05 ? 0.4 + 0.8 * f : 0,
     roulette: f > 0.05 ? 0.4 + 0.8 * f : 0,
     theater: f > 0.05 ? 0.4 + 0.8 * f : 0,
+    // Dropped behind you, so it suits racers near the front.
+    columnTable: 0.3 + 0.6 * (1 - f),
   };
   let total = 0;
   for (const k of ITEM_TYPES) total += weights[k];
@@ -270,6 +281,7 @@ export class RaceSim {
     this.leaderId = -1;
     this.lastLeadEvent = 0;
     this.nextProjectileId = 1;
+    this.nextDropId = 100000; // ids for obstacles dropped during the race
 
     const course = generateCourse(rng, length, halfWidth);
     this.obstacles = course.obstacles;
@@ -359,7 +371,22 @@ export class RaceSim {
   }
 
   updateCourse(dt) {
+    const T = TUNING;
     for (const o of this.obstacles) {
+      if (o.type === 'columnTable' && o.active) {
+        // Rows pour in and the table grows sideways, centred where it was dropped.
+        o.age += dt;
+        const width = o.fullWidth <= T.tableStartWidth ? o.fullWidth
+          : Math.min(o.fullWidth, T.tableStartWidth + (o.fullWidth - T.tableStartWidth) * (o.age / T.tableGrowTime));
+        o.dMin = o.d - width / 2;
+        o.dMax = o.d + width / 2;
+        if (o.age >= T.tableLife) {
+          o.active = false;
+          o.cooldown = Infinity; // gone for good
+          this.emit('expire', { obstacle: o });
+        }
+        continue;
+      }
       if (o.type === 'nullPointer') {
         o.d = o.amp * Math.sin(o.phase + this.time * o.rate);
         o.dMin = o.d - o.r;
@@ -573,6 +600,16 @@ export class RaceSim {
       case 'exception':
         this.explode(o);
         break;
+      case 'columnTable': {
+        if (o.owner === r) break; // you know where you left it
+        const had = r.item || (r.returnUrl ? 'returnUrl' : null);
+        if (this.applyHit(r, 'bounce', 'columnTable', { by: o.owner, table: o, lost: had })) {
+          // Bounced off, and anything you were holding went flying.
+          r.item = null;
+          r.returnUrl = false;
+        }
+        break;
+      }
       case 'sslExpired':
         // A renewed certificate stays valid for every checkpoint until it runs out.
         if (r.certT > 0) this.emit('pass', { racer: r, obstacle: o, item: 'renewedCert' });
@@ -610,7 +647,7 @@ export class RaceSim {
    * Stuns a racer. Returns true if the hit landed, false if it was blocked
    * by a firewall or the racer was already out of action.
    */
-  applyHit(r, kind, cause, { center = null, by = null, duration = null } = {}) {
+  applyHit(r, kind, cause, { center = null, by = null, duration = null, ...extra } = {}) {
     if (r.finished || r.stun) return false;
     if (r.shield > 0) {
       r.shield = 0;
@@ -630,7 +667,7 @@ export class RaceSim {
     };
     r.boostT = 0;
     r.hits++;
-    this.emit('hit', { racer: r, kind, cause, by });
+    this.emit('hit', { racer: r, kind, cause, by, ...extra });
     return true;
   }
 
@@ -671,6 +708,11 @@ export class RaceSim {
       r.s = st.cs + Math.cos(angle) * radius;
       r.d = st.cd + Math.sin(angle) * radius;
       r.v = 0;
+    } else if (st.kind === 'bounce') {
+      // Knocked back off the table, then a moment to recover.
+      r.v = 0;
+      if (p < 0.35) r.s -= 9 * (1 - p / 0.35) * dt;
+      r.s -= belt * dt;
     } else if (st.kind === 'spin') {
       // Skid forward while spinning out.
       r.v = Math.max(st.v0 * 0.25, r.v - TUNING.brake * dt);
@@ -729,6 +771,24 @@ export class RaceSim {
     } else if (item === 'returnUrl') {
       r.returnUrl = true;
       use();
+    } else if (item === 'columnTable') {
+      // Wait for a rival close behind to drop it in front of, but don't sit on it for ever.
+      let rival = null;
+      for (const other of this.racers) {
+        if (other === r || other.finished || other.s >= r.s || r.s - other.s > TUNING.tableReach) continue;
+        if (!rival || other.s > rival.s) rival = other;
+      }
+      const tables = this.obstacles.filter((o) => o.type === 'columnTable' && o.active).length;
+      if (tables >= TUNING.maxTables) {
+        // The schema is full: nowhere to put another one, so it turns into a small boost instead.
+        if (r.itemHeld > 3) {
+          boost(1.25, 1.5);
+          use({ wasted: true });
+        }
+      } else if (rival || r.itemHeld > 3) {
+        const table = this.dropTable(r, rival);
+        use({ target: rival, obstacle: table });
+      }
     } else {
       // Thrown items need someone to throw them at.
       let target = null;
@@ -753,6 +813,44 @@ export class RaceSim {
         use({ wasted: true });
       }
     }
+  }
+
+  /**
+   * Drops an 800-Column Table just behind `r`, in `rival`'s lane if one is close behind
+   * (otherwise its own). It starts narrow and grows to half the track's width, kept on the track,
+   * so there is only a narrow gap on one side or both.
+   */
+  dropTable(r, rival = null) {
+    const T = TUNING;
+    const hw = this.halfWidth;
+    const fullWidth = hw; // half of the 2 * halfWidth track
+    const centre = clamp(rival ? rival.d : r.d, -hw + fullWidth / 2, hw - fullWidth / 2);
+    const s = r.s - T.tableDropBehind;
+    const halfLen = 0.7;
+    const table = {
+      id: this.nextDropId++,
+      type: 'columnTable',
+      shape: 'rect',
+      s,
+      d: centre,
+      halfLen,
+      sMin: s - halfLen,
+      sMax: s + halfLen,
+      dMin: centre - T.tableStartWidth / 2,
+      dMax: centre + T.tableStartWidth / 2,
+      fullWidth,
+      age: 0,
+      owner: r,
+      active: true,
+      cooldown: 0,
+    };
+    // Keep the obstacle list sorted by sMin, and every racer's place in it.
+    let index = this.obstacles.findIndex((o) => o.sMin > table.sMin);
+    if (index === -1) index = this.obstacles.length;
+    this.obstacles.splice(index, 0, table);
+    for (const other of this.racers) if (other.oi > index) other.oi++;
+    this.emit('drop', { racer: r, obstacle: table, target: rival });
+    return table;
   }
 
   updateProjectiles(dt) {

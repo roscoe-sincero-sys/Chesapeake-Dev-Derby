@@ -415,7 +415,68 @@ function urlBarricade(o) {
   return { object, update() {} };
 }
 
-const BUILDERS = { pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception, sslExpired, urlBarricade };
+/**
+ * 800-Column Table, dropped by a racer: a slab of spreadsheet that grows sideways as rows pour in.
+ * Built at width 1 and stretched every frame to the simulation's current width.
+ */
+function columnTable(o) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f8f9fa';
+  ctx.fillRect(0, 0, 512, 128);
+  ctx.fillStyle = '#2f9e44';
+  ctx.fillRect(0, 0, 512, 30);
+  ctx.strokeStyle = '#ced4da';
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 512; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  for (let y = 30; y <= 128; y += 24) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(512, y);
+    ctx.stroke();
+  }
+  ctx.font = `700 13px ${FONT_MONO}`;
+  ctx.textBaseline = 'middle';
+  for (let c = 0; c < 8; c++) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`col_${String(c * 100 + 1 + (o.id % 97)).padStart(3, '0')}`, c * 64 + 6, 16);
+    ctx.fillStyle = '#868e96';
+    for (let row = 0; row < 4; row++) ctx.fillText(row % 2 ? 'NULL' : '', c * 64 + 10, 42 + row * 24);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  const face = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+  const edge = mat('#2f9e44');
+  const slab = box(1, 1.7, 1.2, [edge, edge, edge, edge, face, face]);
+  slab.position.y = 0.85;
+  const label = sign('800-Column Table', '#69db7c', 4.2);
+  label.position.y = 2.6;
+  const object = group(slab, label);
+  return {
+    object,
+    update(sim, t) {
+      object.visible = sim.active;
+      const width = Math.max(0.01, sim.dMax - sim.dMin);
+      slab.scale.x = width;
+      texture.repeat.x = width / 8; // more columns as it grows, not stretched ones
+      label.position.y = 2.6 + Math.sin(t * 2 + o.id) * 0.12;
+    },
+    dispose() {
+      texture.dispose();
+      face.dispose();
+    },
+  };
+}
+
+const BUILDERS = { pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception, sslExpired, urlBarricade, columnTable };
 
 /** Builds the model for a simulation obstacle and places it on the track. */
 export function buildObstacle(o, track) {
