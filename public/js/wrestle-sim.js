@@ -114,21 +114,28 @@ export function crowdSigns(names, rng = Math.random) {
   const pool = shuffle([...names], rng);
   let next = 0;
   const pick = () => pool[next++ % pool.length];
+  // Hidden Easter eggs: a sign changes when someone in the match has a particular name (anywhere
+  // in it, any case, so "sharmila.parthiban@…" counts). A changed sign doesn't use up a name pick.
+  const has = (who) => names.some((n) => String(n).toLowerCase().includes(who));
+  const fanClub = [pick().toUpperCase(), 'FAN CLUB'];
+  const blame = has('megha') ? ['I blame', 'Megha again for', 'not being clear.'] : ['I blame', pick(), 'for not being clear.'];
+  const deadButtons = has('paul') ? ["Let's Watch Paul", 'click dead buttons'] : [pick(), 'clicks dead buttons', 'as a hobby.'];
+  const bug = ['I made a BUG', 'I gave it to', pick()];
   return [
-    [pick().toUpperCase(), 'FAN CLUB'],
+    fanClub,
     ['HANUMAN WAS HERE'],
-    ['I blame', pick(), 'for not being clear.'],
+    blame,
     ['15 mins lasts', 'for', 'three hours'],
     ['I CAME FOR THE 15-MINUTE MEETING'],
-    [pick(), 'clicks dead buttons', 'as a hobby.'],
-    ['I made a BUG', 'I gave it to', pick()],
+    deadButtons,
+    bug,
     ['I’m just here to say “NO BLOCKERS”'],
     ['WE HAVE 2 MINUTES LEFT. WHO’S LEADING?'],
     ['ANYTHING for the PARKING LOT?'],
-    ["LET'S ROLL BACK THE CLOCK!"],
+    has('betcy') ? ['Can you hear me?', "I can't hear you", 'Can you hear me?'] : ["LET'S ROLL BACK THE CLOCK!"],
     ['DRAG & DROP 2.0', 'THE ONLY WORKING DROP', 'IS A BODY SLAM'],
     ['800-COLUMN TABLE', 'KEEP SCROLLING →'],
     ['200 GB. TABLE', 'HEAVYWEIGHT CHAMP.'],
-    ['WEIGHT CLASS', '12–15 CHARS', 'ONLY!'],
+    has('sharmila') ? ['I order all wrestlers', 'must weigh', '12 to 15 chars only!'] : ['WEIGHT CLASS', '12–15 CHARS', 'ONLY!'],
   ];
 }
