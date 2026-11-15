@@ -41,6 +41,7 @@ const HIT_EMOTE = {
   slowLoad: '⏳',
   sslExpired: '🔓',
   urlBarricade: '🚧',
+  columnTable: '📊',
   notClear: '🌫️',
   bigTable: '📊',
 };
@@ -374,6 +375,15 @@ export class Game {
         this.sfx.play('block');
         this.sparkle(e.racer.s, e.racer.d, 1.2, ['#66d9e8', '#ffffff'], 18);
         break;
+      case 'bulkLoad':
+        // BULK LOAD IN PROGRESS: the table starts to expand.
+        this.sfx.play('null');
+        this.sparkle(e.obstacle.s, e.obstacle.d, 1.5, ['#2f9e44', '#ffffff', '#ffd43b'], 14);
+        break;
+      case 'truncate':
+        this.sfx.play('shield');
+        this.sparkle(e.obstacle.s, e.obstacle.d, 1, ['#2f9e44', '#ffffff', '#ced4da'], 26);
+        break;
       case 'status':
         // Office politics landed: audit, roulette or theater.
         this.emote(visual, ITEM_INFO[e.effect].emoji);
@@ -478,6 +488,11 @@ export class Game {
             body.scale.set(1 + (1 - squash) * 0.45, squash, 1 + (1 - squash) * 0.45);
             break;
           }
+          case 'bounce':
+            // Rebound off the table: a hop backwards, nose up.
+            body.position.y = Math.sin(Math.min(1, p / 0.45) * Math.PI) * 1.2;
+            body.rotation.x = -0.45 * Math.max(0, 1 - p / 0.45);
+            break;
           case 'spin':
             body.rotation.y = (1 - (1 - p) * (1 - p)) * Math.PI * 4;
             body.position.y = Math.sin(p * Math.PI) * 0.5;

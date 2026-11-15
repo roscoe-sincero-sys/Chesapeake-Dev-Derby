@@ -1,4 +1,4 @@
-// 3D models for the ten obstacles, the item crates and thrown items.
+// 3D models for the eleven obstacles, the item crates and thrown items.
 // Each builder returns { object, update(simObject, time) } and, where it
 // created its own geometry, a dispose() to call when the race is cleared.
 
@@ -415,7 +415,80 @@ function urlBarricade(o) {
   return { object, update() {} };
 }
 
-const BUILDERS = { pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception, sslExpired, urlBarricade };
+/**
+ * 800-Column Table: a slab of spreadsheet jutting in from the edge of the track. During the bulk
+ * load it is stretched every frame to the simulation's current width (more columns, not wider ones).
+ */
+function columnTable(o) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f8f9fa';
+  ctx.fillRect(0, 0, 512, 128);
+  ctx.fillStyle = '#2f9e44';
+  ctx.fillRect(0, 0, 512, 30);
+  ctx.strokeStyle = '#ced4da';
+  ctx.lineWidth = 2;
+  for (let x = 0; x <= 512; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 128);
+    ctx.stroke();
+  }
+  for (let y = 30; y <= 128; y += 24) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(512, y);
+    ctx.stroke();
+  }
+  ctx.font = `700 13px ${FONT_MONO}`;
+  ctx.textBaseline = 'middle';
+  for (let c = 0; c < 8; c++) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`col_${String(c * 100 + 1 + (o.id % 97)).padStart(3, '0')}`, c * 64 + 6, 16);
+    ctx.fillStyle = '#868e96';
+    for (let row = 0; row < 4; row++) ctx.fillText(row % 2 ? 'NULL' : '', c * 64 + 10, 42 + row * 24);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  const face = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+  const edge = mat('#2f9e44');
+  const slab = box(1, 1.7, 1.2, [edge, edge, edge, edge, face, face]);
+  slab.position.y = 0.85;
+  const idleSign = sign('800-Column Table', '#69db7c', 4.2);
+  const loadSign = sign('BULK LOAD IN PROGRESS', '#ffd43b', 5.2);
+  loadSign.visible = false;
+  const object = group(slab, idleSign, loadSign);
+  const d0 = o.d; // where buildObstacle placed the object; the table's centre moves as it widens
+  const show = (sim, t) => {
+    const width = Math.max(0.01, sim.dMax - sim.dMin);
+    const x = (sim.dMin + sim.dMax) / 2 - d0;
+    slab.scale.x = width;
+    slab.position.x = x;
+    texture.repeat.x = width / 8;
+    const loading = sim.state === 'loading';
+    idleSign.visible = !loading;
+    loadSign.visible = loading;
+    const label = loading ? loadSign : idleSign;
+    label.position.set(x, 2.7 + Math.sin(t * (loading ? 8 : 2) + o.id) * (loading ? 0.08 : 0.12), 0);
+  };
+  show(o, 0);
+  return {
+    object,
+    update(sim, t) {
+      object.visible = sim.active;
+      show(sim, t);
+    },
+    dispose() {
+      texture.dispose();
+      face.dispose();
+    },
+  };
+}
+
+const BUILDERS = { columnTable, pit404, brokenLink, mergeConflict, infiniteScroll, slowLoad, redirectLoop, nullPointer, exception, sslExpired, urlBarricade };
 
 /** Builds the model for a simulation obstacle and places it on the track. */
 export function buildObstacle(o, track) {

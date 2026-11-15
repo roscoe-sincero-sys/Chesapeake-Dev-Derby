@@ -360,3 +360,83 @@ test('the leader never gets a 200GB Table, and they flatten people in real races
   }
   assert.ok(flattened > 0, 'nobody was ever flattened');
 });
+
+// ---------------------------------------------------------------- 800-Column Table obstacle (issue #55)
+
+function tableRace(seed) {
+  const sim = new RaceSim({ names: names(3), rng: mulberry32(seed) });
+  const table = sim.obstacles.find((o) => o.type === 'columnTable');
+  return { sim, table };
+}
+
+test('the 800-Column Table juts in from one edge until the first racer comes near', () => {
+  const { sim, table } = tableRace(31);
+  assert.equal(table.state, 'idle');
+  assert.ok(Math.abs(table.dMax - table.dMin - TUNING.tableJut) < 1e-9, 'only juts into the track');
+  assert.ok(Math.abs(Math.abs(table.edge) - TUNING.halfWidth) < 1e-9 && (table.dMin === table.edge || table.dMax === table.edge), 'anchored to an edge');
+  for (const r of sim.racers) r.s = table.sMin - TUNING.tableTrigger - 5;
+  sim.updateCourse(0.1);
+  assert.equal(table.state, 'idle', 'nobody close yet');
+  sim.racers[1].s = table.sMin - 5;
+  sim.updateCourse(0.1);
+  assert.equal(table.state, 'loading');
+  const e = sim.drainEvents().find((x) => x.type === 'bulkLoad');
+  assert.equal(e.racer, sim.racers[1], 'the first racer to come close sets it off');
+});
+
+test('BULK LOAD grows it to half the track from its edge, then it is truncated after 10 seconds', () => {
+  const { sim, table } = tableRace(32);
+  sim.racers[0].s = table.sMin - 3;
+  sim.updateCourse(0.05);
+  const mid = [];
+  for (let t = 0; t < 9.5; t += 0.05) {
+    sim.updateCourse(0.05);
+    if (Math.abs(t - 1) < 0.03) mid.push(table.dMax - table.dMin);
+  }
+  assert.ok(mid[0] > TUNING.tableJut && mid[0] < TUNING.halfWidth, 'still growing after a second (a fast racer can beat it)');
+  assert.ok(Math.abs(table.dMax - table.dMin - TUNING.halfWidth) < 1e-9, 'fills half the track');
+  assert.ok(table.dMin >= -TUNING.halfWidth - 1e-9 && table.dMax <= TUNING.halfWidth + 1e-9, 'stays on the track');
+  assert.ok(table.dMin === table.edge || table.dMax === table.edge, 'still anchored to its edge');
+  assert.equal(table.active, true);
+  for (let i = 0; i < 20; i++) sim.updateCourse(0.05);
+  assert.equal(table.state, 'truncated');
+  assert.equal(table.active, false, 'the track is fully open again');
+  assert.ok(sim.drainEvents().some((x) => x.type === 'truncate'));
+  for (let i = 0; i < 200; i++) sim.updateCourse(0.05);
+  assert.equal(table.active, false, 'and it never comes back');
+});
+
+test('clipping the table bounces you back and loses your items; a firewall saves them', () => {
+  const { sim, table } = tableRace(33);
+  const [a, b] = sim.racers;
+  a.s = table.s;
+  a.item = 'coffee';
+  a.returnUrl = true;
+  sim.triggerObstacle(a, table);
+  assert.equal(a.stun.kind, 'bounce');
+  assert.equal(a.item, null);
+  assert.equal(a.returnUrl, false);
+  const hit = sim.drainEvents().find((x) => x.type === 'hit');
+  assert.equal(hit.cause, 'columnTable');
+  assert.equal(hit.lost, 'coffee');
+  const before = a.s;
+  for (let i = 0; i < 20; i++) sim.updateStun(a, DT, 0);
+  assert.ok(a.s < before - 1, 'knocked backwards');
+  b.shield = 10;
+  b.item = 'bug';
+  sim.triggerObstacle(b, table);
+  assert.equal(b.stun, null);
+  assert.equal(b.item, 'bug');
+});
+
+test('800-Column Tables load, get clipped and are truncated in real races', () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 8; seed++) {
+    for (const e of runRace(12, seed * 47).events) {
+      if (e.type === 'bulkLoad') seen.add('bulkLoad');
+      if (e.type === 'truncate') seen.add('truncate');
+      if (e.type === 'hit' && e.cause === 'columnTable') seen.add('clip');
+    }
+  }
+  for (const k of ['bulkLoad', 'truncate', 'clip']) assert.ok(seen.has(k), `never saw ${k}`);
+});

@@ -16,6 +16,7 @@ export const OBSTACLE_TYPES = [
   'exception',
   'sslExpired',
   'urlBarricade',
+  'columnTable',
 ];
 
 export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater', 'bigTable'];
@@ -47,6 +48,7 @@ export const TUNING = {
     exception: 0.5,
     sslExpired: 0.5,
     urlBarricade: 0.5,
+    columnTable: 0.6,
   },
   stun: {
     fall: 1.7, // 404 pit
@@ -61,7 +63,14 @@ export const TUNING = {
     forcePush: 1.7,
     notClear: 1.9, // You Are Not Being Clear: spinning out trying to clarify
     flatten: 1.8, // squashed flat under a 200GB Table
+    bounce: 1.1, // clipped the 800-Column Table
   },
+  // 800-Column Table: juts in from one edge until the first racer comes close, then BULK LOAD
+  // IN PROGRESS widens it to half the track; 10 seconds later it is truncated and the track reopens.
+  tableJut: 2.5, // how far it sticks into the track before it is triggered
+  tableTrigger: 16, // the first racer this close (before it) starts the bulk load
+  tableGrowTime: 2.2, // seconds to expand to half the track
+  tableLife: 10, // seconds from the bulk load until it is truncated
   // Lasting effects from thrown items (seconds).
   auditDuration: 8, // Eight-Minute Audit: controls locked
   rouletteDuration: 6, // Production Roulette: steering reversed
@@ -193,6 +202,14 @@ export function generateCourse(rng = Math.random, length = TUNING.trackLength, h
       const [a, b] = band(0.5);
       rect('sslExpired', 'rect', s, 0.8, a, b);
       return 4;
+    },
+    // A table jutting in from one edge; it expands once the first racer comes near.
+    columnTable(s) {
+      const side = rng() < 0.5 ? -1 : 1;
+      const edge = side * halfWidth;
+      const inner = edge - side * TUNING.tableJut;
+      rect('columnTable', 'rect', s, 0.7, Math.min(edge, inner), Math.max(edge, inner), { side, edge, state: 'idle', age: 0 });
+      return 6;
     },
     // A barricade across just over half the road, with an error pit behind it.
     urlBarricade(s) {
@@ -363,6 +380,7 @@ export class RaceSim {
 
   updateCourse(dt) {
     for (const o of this.obstacles) {
+      if (o.type === 'columnTable') this.updateTable(o, dt);
       if (o.type === 'nullPointer') {
         o.d = o.amp * Math.sin(o.phase + this.time * o.rate);
         o.dMin = o.d - o.r;
@@ -381,6 +399,33 @@ export class RaceSim {
         c.respawn -= dt;
         if (c.respawn <= 0) c.active = true;
       }
+    }
+  }
+
+  /** Wakes, grows and finally truncates an 800-Column Table. */
+  updateTable(o, dt) {
+    const T = TUNING;
+    if (o.state === 'idle') {
+      const trigger = this.racers.find((r) => !r.finished && r.s < o.sMin && r.s > o.sMin - T.tableTrigger);
+      if (!trigger) return;
+      o.state = 'loading';
+      o.age = 0;
+      this.emit('bulkLoad', { obstacle: o, racer: trigger });
+    }
+    if (o.state !== 'loading') return;
+    o.age += dt;
+    // Rows pour in: the table widens from its edge towards the middle until it fills half the track.
+    const full = this.halfWidth;
+    const width = Math.min(full, T.tableJut + (full - T.tableJut) * (o.age / T.tableGrowTime));
+    const inner = o.edge - o.side * width;
+    o.dMin = Math.min(o.edge, inner);
+    o.dMax = Math.max(o.edge, inner);
+    o.d = (o.dMin + o.dMax) / 2;
+    if (o.age >= T.tableLife) {
+      o.state = 'truncated';
+      o.active = false;
+      o.cooldown = Infinity; // TRUNCATE TABLE: gone for good
+      this.emit('truncate', { obstacle: o });
     }
   }
 
@@ -576,6 +621,15 @@ export class RaceSim {
       case 'exception':
         this.explode(o);
         break;
+      case 'columnTable': {
+        // Clipped the table: bounced back, and anything you were holding went flying.
+        const lost = r.item || (r.returnUrl ? 'returnUrl' : null);
+        if (this.applyHit(r, 'bounce', 'columnTable', { lost })) {
+          r.item = null;
+          r.returnUrl = false;
+        }
+        break;
+      }
       case 'sslExpired':
         // A renewed certificate stays valid for every checkpoint until it runs out.
         if (r.certT > 0) this.emit('pass', { racer: r, obstacle: o, item: 'renewedCert' });
@@ -613,7 +667,7 @@ export class RaceSim {
    * Stuns a racer. Returns true if the hit landed, false if it was blocked
    * by a firewall or the racer was already out of action.
    */
-  applyHit(r, kind, cause, { center = null, by = null, duration = null } = {}) {
+  applyHit(r, kind, cause, { center = null, by = null, duration = null, ...extra } = {}) {
     if (r.finished || r.stun) return false;
     if (r.shield > 0) {
       r.shield = 0;
@@ -633,7 +687,7 @@ export class RaceSim {
     };
     r.boostT = 0;
     r.hits++;
-    this.emit('hit', { racer: r, kind, cause, by });
+    this.emit('hit', { racer: r, kind, cause, by, ...extra });
     return true;
   }
 
@@ -674,6 +728,11 @@ export class RaceSim {
       r.s = st.cs + Math.cos(angle) * radius;
       r.d = st.cd + Math.sin(angle) * radius;
       r.v = 0;
+    } else if (st.kind === 'bounce') {
+      // Knocked back off the table, then a moment to recover.
+      r.v = 0;
+      if (p < 0.35) r.s -= 8 * (1 - p / 0.35) * dt;
+      r.s -= belt * dt;
     } else if (st.kind === 'spin') {
       // Skid forward while spinning out.
       r.v = Math.max(st.v0 * 0.25, r.v - TUNING.brake * dt);
