@@ -21,6 +21,7 @@ const HIT_TEXT = {
   sslExpired: (r) => `${who(r)} hit SSL Expired — your connection is not private`,
   urlBarricade: (r) => `${who(r)} hit DO NOT MODIFY URLS and dropped into the error pit`,
   notClear: (r, by) => `${who(by)} told ${who(r)} “You Are Not Being Clear” 🌫️ — “It's your fault.”`,
+  bigTable: (r, by) => `${who(by)} threw a 200GB Table 📊 and flattened ${who(r)} — “You're wasting disk space.”`,
 };
 
 const STATUS_TEXT = {
@@ -51,6 +52,7 @@ const STUN_ICON = {
   sslExpired: '🔓',
   urlBarricade: '🚧',
   notClear: '🌫️',
+  bigTable: '📊',
 };
 
 export class Hud {

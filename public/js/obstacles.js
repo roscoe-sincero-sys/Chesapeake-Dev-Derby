@@ -459,6 +459,46 @@ export function buildCrate(crate, track) {
 export function buildProjectile(kind) {
   const glyph = { bug: '🐛', notClear: '🌫️', audit: '📋', roulette: '🎰', theater: '🎭' }[kind];
   if (glyph) return makeSprite(emojiTexture(glyph), 1.9, 1.9);
+  if (kind === 'bigTable') {
+    // A slab of spreadsheet with its size on the front.
+    const table = cachedTexture('big-table', 256, 160, (ctx, w, h) => {
+      roundRect(ctx, 4, 4, w - 8, h - 8, 12);
+      ctx.fillStyle = '#f8f9fa';
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = '#2f9e44';
+      ctx.fillRect(0, 0, w, 34);
+      ctx.strokeStyle = '#ced4da';
+      ctx.lineWidth = 2;
+      for (let x = 0; x <= w; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 34);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 34; y <= h; y += 21) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#2b8a3e';
+      roundRect(ctx, 4, 4, w - 8, h - 8, 12);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `800 24px ${FONT_MONO}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SELECT *', w / 2, 19);
+      ctx.fillStyle = '#c92a2a';
+      ctx.font = `900 52px ${FONT_MONO}`;
+      ctx.fillText('200GB', w / 2, 100);
+    });
+    return makeSprite(table, 3.2, 2);
+  }
   const texture = cachedTexture('force-push', 256, 96, (ctx, w, h) => {
     roundRect(ctx, 4, 8, w - 8, h - 16, 30);
     ctx.fillStyle = '#c92a2a';

@@ -18,7 +18,7 @@ export const OBSTACLE_TYPES = [
   'urlBarricade',
 ];
 
-export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater'];
+export const ITEM_TYPES = ['coffee', 'breeze', 'firewall', 'bug', 'forcePush', 'renewedCert', 'returnUrl', 'notClear', 'audit', 'roulette', 'theater', 'bigTable'];
 
 /** Thrown items that leave the target with a lasting effect instead of a stun. */
 export const STATUS_ITEMS = ['audit', 'roulette', 'theater'];
@@ -60,6 +60,7 @@ export const TUNING = {
     bug: 1.3,
     forcePush: 1.7,
     notClear: 1.9, // You Are Not Being Clear: spinning out trying to clarify
+    flatten: 1.8, // squashed flat under a 200GB Table
   },
   // Lasting effects from thrown items (seconds).
   auditDuration: 8, // Eight-Minute Audit: controls locked
@@ -238,6 +239,8 @@ export function rollItem(rankFraction, rng = Math.random) {
     audit: f > 0.05 ? 0.4 + 0.8 * f : 0,
     roulette: f > 0.05 ? 0.4 + 0.8 * f : 0,
     theater: f > 0.05 ? 0.4 + 0.8 * f : 0,
+    // Thrown at the rival ahead, like the bug.
+    bigTable: f > 0.05 ? 0.5 + 0.9 * f : 0,
   };
   let total = 0;
   for (const k of ITEM_TYPES) total += weights[k];
@@ -741,7 +744,8 @@ export class RaceSim {
           if (other === r || other.finished || other.s <= r.s) continue;
           if (!target || other.s < target.s) target = other;
         }
-        const range = item === 'bug' ? 45 : TUNING.throwRange;
+        // The bug and the 200GB Table are lobbed at whoever is just ahead; the office politics reach further.
+        const range = item === 'bug' || item === 'bigTable' ? 45 : TUNING.throwRange;
         if (target && target.s - r.s > range) target = null;
       }
       if (target) {
@@ -776,8 +780,8 @@ export class RaceSim {
         if (STATUS_ITEMS.includes(p.kind)) {
           this.applyStatus(target, p.kind, { by: p.from });
         } else {
-          const kind = p.kind === 'forcePush' ? 'blast' : 'spin';
-          this.applyHit(target, kind, p.kind, { by: p.from, duration: TUNING.stun[p.kind] });
+          const kind = p.kind === 'forcePush' ? 'blast' : p.kind === 'bigTable' ? 'flatten' : 'spin';
+          this.applyHit(target, kind, p.kind, { by: p.from, duration: TUNING.stun[p.kind === 'bigTable' ? 'flatten' : p.kind] });
         }
       } else {
         p.s += (ds / dist) * move;

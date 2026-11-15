@@ -315,3 +315,48 @@ test('the leader never gets the office-politics items, and they turn up in real 
   }
   for (const item of ['notClear', 'audit', 'roulette', 'theater']) assert.ok(landed.has(item), `${item} never landed`);
 });
+
+// ---------------------------------------------------------------- 200GB Table (issue #53)
+
+test('a 200GB Table is thrown at the rival ahead and flattens them for a bit', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(23) });
+  const [a, b] = sim.racers;
+  const events = throwAt(sim, a, b, 'bigTable');
+  assert.ok(events.some((e) => e.type === 'use' && e.item === 'bigTable' && e.target === b));
+  assert.equal(b.stun.kind, 'flatten');
+  assert.equal(b.stun.cause, 'bigTable');
+  assert.equal(b.stun.dur, TUNING.stun.flatten);
+  assert.ok(events.some((e) => e.type === 'hit' && e.cause === 'bigTable' && e.by === a));
+  assert.equal(b.v, 0);
+  sim.updateStun(b, 0.5, 0);
+  assert.equal(b.v, 0, 'stays flat until it wears off');
+});
+
+test('a 200GB Table only reaches a rival close ahead, like the bug, and a firewall blocks it', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(24) });
+  const [a, b] = sim.racers;
+  a.item = 'bigTable';
+  a.itemDelay = 0;
+  a.s = 100;
+  a.rank = 1; // not the leader (a leader with nobody in range turns it into a boost)
+  b.s = 160; // too far ahead
+  sim.updateItems(a, 0.1, 0.5);
+  assert.equal(a.item, 'bigTable', 'held until someone is in range');
+  b.s = 130;
+  b.shield = 10;
+  sim.updateItems(a, 0.1, 0.5);
+  assert.equal(a.item, null);
+  for (let i = 0; i < 30 && sim.projectiles.length; i++) sim.updateProjectiles(DT);
+  assert.equal(b.stun, null);
+  assert.ok(sim.drainEvents().some((e) => e.type === 'block' && e.cause === 'bigTable'));
+});
+
+test('the leader never gets a 200GB Table, and they flatten people in real races', () => {
+  const rng = mulberry32(25);
+  for (let i = 0; i < 2000; i++) assert.notEqual(rollItem(0, rng), 'bigTable');
+  let flattened = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    for (const e of runRace(12, seed * 43).events) if (e.type === 'hit' && e.cause === 'bigTable') flattened++;
+  }
+  assert.ok(flattened > 0, 'nobody was ever flattened');
+});

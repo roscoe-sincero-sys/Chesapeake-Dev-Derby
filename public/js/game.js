@@ -25,6 +25,7 @@ export const ITEM_INFO = {
   audit: { emoji: '📋', label: 'Eight-Minute Audit' },
   roulette: { emoji: '🎰', label: 'Production Roulette' },
   theater: { emoji: '🎭', label: 'Security Theater' },
+  bigTable: { emoji: '📊', label: '200GB Table' },
 };
 
 const HIT_EMOTE = {
@@ -41,6 +42,7 @@ const HIT_EMOTE = {
   sslExpired: '🔓',
   urlBarricade: '🚧',
   notClear: '🌫️',
+  bigTable: '📊',
 };
 
 /** Icon over a racer while a lasting effect is on them. */
@@ -51,7 +53,7 @@ export function statusIcon(r) {
   return null;
 }
 
-const HIT_SOUND = { pit404: 'fall', redirectLoop: 'loop', nullPointer: 'null', exception: 'hit', forcePush: 'explode', sslExpired: 'null', urlBarricade: 'fall' };
+const HIT_SOUND = { bigTable: 'explode', pit404: 'fall', redirectLoop: 'loop', nullPointer: 'null', exception: 'hit', forcePush: 'explode', sslExpired: 'null', urlBarricade: 'fall' };
 
 const CONFETTI = ['#f2b817', '#c5122f', '#ffffff', '#16130f', '#ff7b00', '#2b78c5'];
 
@@ -470,6 +472,12 @@ export class Game {
               v.root.visible = Math.floor(st.t * 14) % 2 === 0 || q > 0.8;
             }
             break;
+          case 'flatten': {
+            // Squashed flat by a 200GB Table, then pops back into shape at the end.
+            const squash = p < 0.8 ? 0.22 : 0.22 + 0.78 * ((p - 0.8) / 0.2);
+            body.scale.set(1 + (1 - squash) * 0.45, squash, 1 + (1 - squash) * 0.45);
+            break;
+          }
           case 'spin':
             body.rotation.y = (1 - (1 - p) * (1 - p)) * Math.PI * 4;
             body.position.y = Math.sin(p * Math.PI) * 0.5;
@@ -573,7 +581,9 @@ export class Game {
         this.projectileVisuals.set(p.id, sprite);
         this.raceGroup.add(sprite);
       }
-      const height = p.kind !== 'forcePush' ? 1.6 + Math.sin(p.t * 14) * 0.3 : 3 + Math.sin(Math.min(1, p.t / 1.2) * Math.PI) * 2.5;
+      // Heavy things (force push, a 200GB Table) are lobbed in an arc; light ones skim along.
+      const lobbed = p.kind === 'forcePush' || p.kind === 'bigTable';
+      const height = !lobbed ? 1.6 + Math.sin(p.t * 14) * 0.3 : 3 + Math.sin(Math.min(1, p.t / 1.2) * Math.PI) * 2.5;
       this.track.point(p.s, p.d, height, sprite.position);
       if (p.kind === 'forcePush' && Math.random() < 0.6) {
         this.particles.burst(sprite.position, { count: 1, colors: ['#ff6b6b', '#ffe066'], speed: 1, up: 1, life: 0.4, size: 0.25, gravity: 0 });
