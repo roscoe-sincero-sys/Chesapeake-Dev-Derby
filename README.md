@@ -41,6 +41,13 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    { "names": ["Ada", "Grace", "Linus"] }
    ```
 
+   **Pasting from a calendar invite?** Labels that calendar apps put on their own line in an attendee
+   list are ignored, so only the people end up on the team: Organizer, Required, Optional, response
+   statuses (Accepted, Tentative, Declined, No response…) and work locations (Home, Office, In office,
+   Telework, Remote, In person, Out of office). They're matched against the whole line, ignoring case and
+   surrounding brackets or colons, so `(Optional)` and `Telework:` are skipped too, but a name like
+   "Homer" is kept. The editor says how many were skipped.
+
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 

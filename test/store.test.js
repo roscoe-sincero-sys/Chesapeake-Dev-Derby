@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parseNames, parseWinners, addWinner, createStore, MAX_NAMES } from '../lib/store.js';
+import { parseNames, parseWinners, addWinner, createStore, MAX_NAMES, isCalendarLabel } from '../lib/store.js';
 import { buildRoster, selectRacers, nameKey } from '../public/js/eligibility.js';
 
 async function tempDir(t) {
@@ -111,4 +111,30 @@ test('selectRacers leaves out recent winners and anyone unticked', () => {
   assert.deepEqual(selectRacers(roster, new Set([nameKey('linus')])), ['Ada', 'Hedy']);
   // Unticking cannot make a recent winner eligible, and ticking is the default.
   assert.deepEqual(selectRacers(roster, new Set([nameKey('Grace')])), ['Ada', 'Linus', 'Hedy']);
+});
+
+// ---------------------------------------------------------------- calendar labels (issue #57)
+
+test('calendar labels pasted from an invite are left out of the team list', () => {
+  const pasted = [
+    'Roscoe Sincero', 'Organizer',
+    'robert.whetzel@maryland.gov', 'Optional', 'Telework',
+    'Fiona Hinman', 'Home',
+    'Frank Siano', 'Office', 'Required',
+    '(Optional)', 'telework:', 'ACCEPTED', 'Didn’t respond', '  In   office ',
+  ];
+  const { names, warnings } = parseNames(pasted);
+  assert.deepEqual(names, ['Roscoe Sincero', 'robert.whetzel@maryland.gov', 'Fiona Hinman', 'Frank Siano']);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /^11 calendar labels were ignored \(/);
+  for (const label of ['Organizer', 'Optional', 'Telework', 'Home', 'Office']) assert.match(warnings[0], new RegExp(label));
+});
+
+test('only whole-line labels are skipped, never names that merely contain one', () => {
+  for (const name of ['Homer', 'Officer Krupke', 'Theo Office', 'Remy', 'Accepted Smith', 'organizer@example.com', 'Home Depot Liaison']) {
+    assert.equal(isCalendarLabel(name), false, name);
+  }
+  for (const label of ['Organizer', 'organiser', 'OPTIONAL', '(Required)', 'Telework:', 'Home', 'Office', 'Out of office', 'Tentative', 'Declined', 'No response']) {
+    assert.equal(isCalendarLabel(label), true, label);
+  }
 });
