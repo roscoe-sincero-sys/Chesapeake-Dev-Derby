@@ -61,7 +61,9 @@ form.addEventListener('submit', async (event) => {
     status.textContent = `Could not save the team list: ${err.message}`;
   } finally {
     save.disabled = names.disabled = false;
-    save.focus();
+    save.focus({ preventScroll: true });
+    // On short screens, bring the result into view instead of leaving it below the fold.
+    status.scrollIntoView({ block: 'nearest' });
   }
 });
 load();
