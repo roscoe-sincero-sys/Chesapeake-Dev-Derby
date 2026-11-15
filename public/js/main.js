@@ -20,6 +20,7 @@ const savedSettings = readLobbySettings();
 let speed = params.has('speed') ? normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED) : savedSettings.speed;
 let attendanceRestored = savedSettings.absent.size > 0;
 let settingsSaved = true;
+let initialFocusDone = false;
 
 const state = {
   names: [],
@@ -87,6 +88,7 @@ async function loadState() {
       status.append(list);
     }
     renderLobby();
+    focusLobbyOnce();
   } catch (err) {
     status.className = 'error';
     status.textContent = `Could not load the team list: ${err.message} `;
@@ -233,6 +235,21 @@ async function resetWinners() {
     status.className = 'hint error-text';
     status.textContent = `Could not reset the list: ${err.message}`;
   }
+}
+
+/**
+ * When the lobby first opens, put keyboard focus on Start race, so Enter still starts the race.
+ * If there aren't enough racers yet, use the first usable control in the lobby panel instead.
+ * Only on first load, and never if the user has already moved focus somewhere.
+ */
+function focusLobbyOnce() {
+  if (initialFocusDone) return;
+  initialFocusDone = true;
+  if (document.activeElement && document.activeElement !== document.body) return;
+  const target = !$('run').disabled
+    ? $('run')
+    : $('lobby').querySelector('button:not([disabled]):not([hidden]), a[href], input:not([disabled]), summary');
+  target?.focus({ preventScroll: true });
 }
 
 function saveLobbySettings() {

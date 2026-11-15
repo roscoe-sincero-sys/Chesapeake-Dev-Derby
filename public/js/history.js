@@ -4,6 +4,9 @@ import { displayNames, nameKey } from './eligibility.js';
 
 const $ = (id) => document.getElementById(id);
 
+// Keyboard users start on the first control on the page.
+$('back-to-lobby').focus();
+
 const MODE = {
   race: '🏁 Race',
   skip: '🎲 Skip',
