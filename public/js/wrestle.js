@@ -39,6 +39,8 @@ export class WrestleMatch {
     this.onWinner = onWinner;
     this.t = 0;
     this.fired = new Set();
+    this.tagFade = 1; // name tags fade to 0 once the results card is up
+    this.tagsFading = false;
     this.textures = [];
 
     this.scene = new THREE.Scene();
@@ -191,6 +193,11 @@ export class WrestleMatch {
 
   // ------------------------------------------------------------ main loop
 
+  /** Fades out every floating name tag over about half a second (when the results card appears). */
+  fadeNameTags() {
+    this.tagsFading = true;
+  }
+
   emit(key, event) {
     if (this.fired.has(key)) return;
     this.fired.add(key);
@@ -199,6 +206,7 @@ export class WrestleMatch {
 
   update(dt) {
     this.t += dt;
+    if (this.tagsFading) this.tagFade = Math.max(0, this.tagFade - dt / 0.5);
     const t = this.t;
     if (t > 0.5 && !this.fired.has('bell')) {
       this.sfx?.play('bell', 0);
@@ -365,8 +373,9 @@ export class WrestleMatch {
     r.asTag.scale.set(2.0 * s, 0.5 * s, 1);
     r.asTag.position.y = r.height + 0.42 + (1 - s) * 0.3;
     r.tag.position.y = r.height + 0.42 + 0.53 * s + (1 - s) * 0.3 + 0.1;
-    const fade = w.out ? 0.55 : 1;
+    const fade = (w.out ? 0.55 : 1) * this.tagFade;
     if (r.tag.material.opacity !== fade) r.tag.material.opacity = r.asTag.material.opacity = fade;
+    r.tags.visible = fade > 0;
   }
 
   // ------------------------------------------------------------ scripted moments
