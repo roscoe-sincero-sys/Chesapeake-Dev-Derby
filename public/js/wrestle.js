@@ -21,6 +21,22 @@ const clamp01 = (k) => Math.max(0, Math.min(1, k));
 const headingTo = (fromX, fromZ, toX, toZ) => Math.atan2(-(toX - fromX), -(toZ - fromZ));
 const lerpAngle = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
 
+// A thrown wrestler lands flat on the back (pitch +π/2: face up), then bounces twice.
+const ON_BACK = Math.PI / 2;
+export const BOUNCES = [
+  { end: 0.34, height: 0.45 },
+  { end: 0.56, height: 0.13 },
+];
+/** Height of the bounce `since` seconds after landing: two arcs, each smaller than the last. */
+export function bounce(since) {
+  let start = 0;
+  for (const b of BOUNCES) {
+    if (since < b.end) return since < 0 ? 0 : b.height * Math.sin((Math.PI * (since - start)) / (b.end - start));
+    start = b.end;
+  }
+  return 0;
+}
+
 // How each roster style shows in the ring.
 const QUICK = new Set(['duck', 'rebound']); // Abhimanyu and Satyaki move faster
 const LIFTERS = new Set(['overhead', 'illusion']); // Bhima and the towering Ghatotkacha throw overhead
@@ -40,6 +56,7 @@ export class WrestleMatch {
     this.t = 0;
     this.fired = new Set();
     this.tagFade = 1; // name tags fade to 0 once the results card is up
+    this.box = new THREE.Box3();
     this.tagsFading = false;
     this.textures = [];
 
@@ -366,6 +383,14 @@ export class WrestleMatch {
     r.root.rotation.z = w.roll ?? 0;
     r.root.scale.setScalar(w.baseScale * (w.pulse ?? 1));
     r.root.visible = !w.flicker;
+    // Thrown wrestlers (and those sitting at ringside) rest on the floor: measure the body's actual
+    // lowest point and lift it there. Sitting is measured once; it doesn't change.
+    if (w.ground) {
+      r.root.position.y += this.groundLift(w) + (w.hop ?? 0);
+    } else if (w.out) {
+      w.outLift ??= this.groundLift(w);
+      r.root.position.y += w.outLift;
+    }
     r.tags.position.set(w.x, Math.max(w.y, w.out ? 0 : MAT_Y) + (w.tagDrop ?? 0), w.z);
     // Keep name tags a steady size on screen: smaller when the camera moves in close.
     const s = Math.max(0.32, Math.min(1, this.camera.position.distanceTo(r.root.position) / 15));
@@ -376,6 +401,16 @@ export class WrestleMatch {
     const fade = (w.out ? 0.55 : 1) * this.tagFade;
     if (r.tag.material.opacity !== fade) r.tag.material.opacity = r.asTag.material.opacity = fade;
     r.tags.visible = fade > 0;
+  }
+
+  /** How far to lift a wrestler so the lowest point of the body rests on the ring or the floor. */
+  groundLift(w) {
+    const r = w.rig;
+    const overRing = Math.abs(r.root.position.x) < HALF + 0.5 && Math.abs(r.root.position.z) < HALF + 0.5;
+    const floor = overRing ? MAT_Y : 0;
+    r.root.updateMatrixWorld(true);
+    this.box.setFromObject(r.root, true); // exact, from the vertices
+    return Math.max(0, floor - this.box.min.y);
   }
 
   // ------------------------------------------------------------ scripted moments
@@ -467,7 +502,7 @@ export class WrestleMatch {
         x = start.x - f.nx * 0.6 * q;
         z = start.z - f.nz * 0.6 * q;
         y = MAT_Y + 1.9 * q;
-        flip = -0.4 * q;
+        flip = 0.4 * q; // leaning back, held overhead
         pose(h.rig, { armsUp: q, crouch: 0.2 * (1 - q) });
       } else {
         // ...then out over the ropes (everyone else shoves straight through).
@@ -476,16 +511,21 @@ export class WrestleMatch {
         x = from.x + (landing.x - from.x) * q;
         z = from.z + (landing.z - from.z) * q;
         y = from.y + (0.25 - from.y) * q + (overhead ? 1.6 : 2.9) * 4 * q * (1 - q);
-        flip = hipToss ? -0.3 : -0.4 - q * Math.PI * 1.1;
-        // Karna and Shikhandi send them cartwheeling sideways instead of over backwards.
-        v.roll = hipToss ? q * Math.PI * 1.1 : 0;
+        // Over backwards: from leaning back to flat on the back as they reach the floor.
+        const from0 = overhead ? 0.4 : 0.3;
+        flip = from0 + (ON_BACK - from0) * ease(q);
+        // Karna and Shikhandi send them through one full cartwheel, still landing on the back.
+        v.roll = hipToss ? ease(q) * Math.PI * 2 : 0;
         pose(h.rig, overhead ? { armsUp: 1 - q * 0.4, spread: q * 0.3 } : hipToss ? { armsForward: 1, twist: 0.8 * q, crouch: 0.3 } : { armsForward: 1.2, lean: 0.45 * (1 - q) });
       }
       v.x = x;
       v.z = z;
       v.y = y;
       v.pitch = flip;
+      v.heading = headingTo(v.x, v.z, 0, 0); // facing the ring: their back goes over the ropes first
       v.tagDrop = -1.4;
+      v.ground = true; // never let any part of the body pass through the ring or the floor
+      v.hop = 0;
       pose(v.rig, { flail: 1, spread: 0.6, walk: t * 8 });
     } else {
       // Landed outside: flat on the back, then sitting up, while the camera holds.
@@ -503,15 +543,27 @@ export class WrestleMatch {
       v.roll = 0;
       v.pulse = h.pulse = 1;
       h.flicker = false;
-      v.x = landing.x;
-      v.z = landing.z;
-      const sitUp = ease((since - 0.7) / 0.6);
-      // Lying on the back, lifted by half the body's depth so nothing sinks into the floor.
-      v.y = 0.26 * v.rig.root.scale.y * (1 - sitUp);
-      v.heading = headingTo(v.x, v.z, 0, 0) + Math.PI;
-      v.pitch = -Math.PI / 2 * (1 - sitUp);
+      // The impact carries them a little further out as they bounce.
+      const slide = 0.7 * (1 - Math.exp(-since * 5));
+      v.x = landing.x + f.nx * slide;
+      v.z = landing.z + f.nz * slide;
+      // Two bounces off the floor, each smaller than the last, then still.
+      const hop = bounce(since);
+      if (since >= BOUNCES[0].end && !this.fired.has(`bounce:${b.start}`)) {
+        this.fired.add(`bounce:${b.start}`);
+        this.sfx?.play('hit', 0);
+        this.particles.burst(new THREE.Vector3(v.x, 0.2, v.z), { count: 8, colors: ['#adb5bd', '#6c757d'], speed: 2, up: 1, life: 0.5, size: 0.1, gravity: 6 });
+      }
+      const sitUp = ease((since - 0.95) / 0.6);
+      // Rest on the floor (place() lifts the body onto it), then bounce up from there.
+      v.y = 0;
+      v.hop = hop;
+      v.ground = true;
+      v.heading = headingTo(v.x, v.z, 0, 0);
+      // Flat on the back (the bounce rocks them a little), then sitting up facing the ring.
+      v.pitch = (ON_BACK - hop * 0.5) * (1 - sitUp);
       v.tagDrop = -1.4 * (1 - sitUp) - 0.9 * sitUp;
-      pose(v.rig, { sit: sitUp, spread: 0.4 * (1 - sitUp), look: 0.3 });
+      pose(v.rig, { sit: sitUp, spread: 0.4 * (1 - sitUp) + hop * 0.8, flail: hop > 0.05 ? 0.3 : 0, walk: t * 6, look: 0.3 });
       // The thrower: Duryodhana plays to the crowd; everyone else squares up again.
       h.y = MAT_Y;
       if (h.kind.style === 'showman') {
@@ -527,6 +579,8 @@ export class WrestleMatch {
         h.mode = 'roam';
         h.target = null;
         v.pitch = 0;
+        v.ground = false;
+        v.hop = 0;
       }
     }
   }
