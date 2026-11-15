@@ -262,3 +262,12 @@ Claude's initial development statistics, as reported by the project owner:
 | Fable 5.2 usage (high effort) | 29% |
 
 See [initial build usage](usage.md) for the token breakdown, tool calls, and cost notes.
+
+## License
+
+Copyright 2026 Roscoe Sincero. Licensed under the [Apache License, Version 2.0](LICENSE); see
+[NOTICE](NOTICE) for attribution. You may not use these files except in compliance with the License.
+Unless required by applicable law or agreed to in writing, the software is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+[Three.js](https://threejs.org/) is a separate dependency under the MIT License.
