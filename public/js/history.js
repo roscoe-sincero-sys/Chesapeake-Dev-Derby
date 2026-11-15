@@ -1,6 +1,7 @@
 // Winner history page: every recorded result, newest first, with how it was decided.
 
 import { displayNames, nameKey } from './eligibility.js';
+import { apiFetch } from './api.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,7 +17,7 @@ const MODE = {
 async function request(url) {
   let response;
   try {
-    response = await fetch(url);
+    response = await apiFetch(url);
   } catch {
     throw new Error('Lost connection to the app. Ask the host to restart it, then tap Retry.');
   }

@@ -8,7 +8,8 @@
   "scripts": {
     "start": "node server.js",
     "open": "node server.js --open",
-    "test": "node --test"
+    "test": "node --test",
+    "build:demo": "node scripts/build-demo.mjs"
   },
   "engines": {
     "node": ">=18"

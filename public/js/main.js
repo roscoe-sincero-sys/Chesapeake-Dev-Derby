@@ -7,6 +7,7 @@ import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName } from './eligibility.js';
 import { mulberry32 } from './sim.js';
+import { apiFetch, DEMO } from './api.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './lobby-settings.js';
 
 const $ = (id) => document.getElementById(id);
@@ -49,7 +50,7 @@ let game = null;
 async function api(path, options) {
   let response;
   try {
-    response = await fetch(path, options);
+    response = await apiFetch(path, options);
   } catch {
     throw new Error('Lost connection to the app. Ask the host to restart it, then tap Retry.');
   }
@@ -462,6 +463,11 @@ function init() {
 
   $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
   showVersion();
+  if (DEMO) {
+    // The public demo: say so, and that everything stays in this browser.
+    $('demo-badge').hidden = false;
+    $('demo-note').hidden = false;
+  }
   $('guide-wrestlers').textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
 
   const slider = $('race-speed');

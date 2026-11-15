@@ -7,13 +7,13 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
   <link rel="stylesheet" href="css/style.css" />
   <script type="importmap">
-    { "imports": { "three": "/vendor/three/build/three.module.js" } }
+    { "imports": { "three": "./vendor/three/build/three.module.js" } }
   </script>
 </head>
 <body class="editor-page">
   <canvas id="scene" aria-hidden="true"></canvas>
   <main class="panel editor">
-    <a id="back-to-lobby" href="/">Back to lobby</a>
+    <a id="back-to-lobby" href="./">Back to lobby</a>
     <h1>Edit team list</h1>
     <p>Add, rename, or remove people below. Changes apply to the next race. Recent winner history is kept.</p>
     <form id="roster-form">
@@ -22,7 +22,7 @@
       <textarea id="names" rows="11" aria-describedby="names-hint" disabled></textarea>
       <div class="editor-actions">
         <button id="save-names" type="submit" class="primary" disabled>Save team list</button>
-        <a href="/">Return to lobby</a>
+        <a href="./">Return to lobby</a>
         <button id="reload-names" type="button" hidden>Retry loading</button>
       </div>
     </form>

@@ -1,6 +1,8 @@
 // Keyboard users start on the first control on the page.
 document.getElementById('back-to-lobby').focus();
 
+import { apiFetch } from './api.js';
+
 const form = document.getElementById('roster-form');
 const names = document.getElementById('names');
 const save = document.getElementById('save-names');
@@ -11,7 +13,7 @@ let dirty = false;
 async function request(url, options) {
   let response;
   try {
-    response = await fetch(url, options);
+    response = await apiFetch(url, options);
   } catch {
     throw new Error('Lost connection to the app. Ask the host to restart it, then tap Retry.');
   }
