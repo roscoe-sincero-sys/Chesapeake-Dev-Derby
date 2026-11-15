@@ -126,9 +126,9 @@ export function crowdSigns(names, rng = Math.random) {
     ['WE HAVE 2 MINUTES LEFT. WHO’S LEADING?'],
     ['ANYTHING for the PARKING LOT?'],
     ["LET'S ROLL BACK THE CLOCK!"],
-    ['DRAG & DROP 2.0', 'THE ONLY WORKING DROP IS A BODY SLAM'],
+    ['DRAG & DROP 2.0', 'THE ONLY WORKING DROP', 'IS A BODY SLAM'],
     ['800-COLUMN TABLE', 'KEEP SCROLLING →'],
     ['200 GB. TABLE', 'HEAVYWEIGHT CHAMP.'],
-    ['WEIGHT CLASS', '12–15 CHARACTERS', '16? OVER THE TOP ROPE!'],
+    ['WEIGHT CLASS', '12–15 CHARS', 'ONLY!'],
   ];
 }

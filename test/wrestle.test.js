@@ -129,10 +129,10 @@ test('crowd signs: all fifteen, and the random-wrestler signs pick different wre
     const text = signs.map((s) => s.join(' / '));
     assert.ok(text.includes('HANUMAN WAS HERE'));
     assert.ok(text.includes('15 mins lasts / for / three hours'));
-    assert.ok(text.includes('DRAG & DROP 2.0 / THE ONLY WORKING DROP IS A BODY SLAM'));
+    assert.ok(text.includes('DRAG & DROP 2.0 / THE ONLY WORKING DROP / IS A BODY SLAM'));
     assert.ok(text.includes('800-COLUMN TABLE / KEEP SCROLLING →'));
     assert.ok(text.includes('200 GB. TABLE / HEAVYWEIGHT CHAMP.'));
-    assert.ok(text.includes('WEIGHT CLASS / 12–15 CHARACTERS / 16? OVER THE TOP ROPE!'));
+    assert.ok(text.includes('WEIGHT CLASS / 12–15 CHARS / ONLY!'));
     assert.deepEqual([signs[2][0], signs[2][2]], ['I blame', 'for not being clear.']);
     assert.deepEqual(signs[6].slice(0, 2), ['I made a BUG', 'I gave it to']);
     assert.equal(signs[0][1], 'FAN CLUB');
