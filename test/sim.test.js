@@ -316,80 +316,47 @@ test('the leader never gets the office-politics items, and they turn up in real 
   for (const item of ['notClear', 'audit', 'roulette', 'theater']) assert.ok(landed.has(item), `${item} never landed`);
 });
 
-// ---------------------------------------------------------------- 800-Column Table (issue #53)
+// ---------------------------------------------------------------- 200GB Table (issue #53)
 
-test('an 800-Column Table lands behind the dropper, in a close rival\'s lane, and grows to half the track', () => {
-  const sim = new RaceSim({ names: names(3), rng: mulberry32(21) });
+test('a 200GB Table is thrown at the rival ahead and flattens them for a bit', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(23) });
   const [a, b] = sim.racers;
-  a.s = 300; a.d = 0;
-  b.s = 285; b.d = -5;
-  a.item = 'columnTable';
+  const events = throwAt(sim, a, b, 'bigTable');
+  assert.ok(events.some((e) => e.type === 'use' && e.item === 'bigTable' && e.target === b));
+  assert.equal(b.stun.kind, 'flatten');
+  assert.equal(b.stun.cause, 'bigTable');
+  assert.equal(b.stun.dur, TUNING.stun.flatten);
+  assert.ok(events.some((e) => e.type === 'hit' && e.cause === 'bigTable' && e.by === a));
+  assert.equal(b.v, 0);
+  sim.updateStun(b, 0.5, 0);
+  assert.equal(b.v, 0, 'stays flat until it wears off');
+});
+
+test('a 200GB Table only reaches a rival close ahead, like the bug, and a firewall blocks it', () => {
+  const sim = new RaceSim({ names: names(2), rng: mulberry32(24) });
+  const [a, b] = sim.racers;
+  a.item = 'bigTable';
   a.itemDelay = 0;
-  sim.updateItems(a, 0.1, 0);
+  a.s = 100;
+  a.rank = 1; // not the leader (a leader with nobody in range turns it into a boost)
+  b.s = 160; // too far ahead
+  sim.updateItems(a, 0.1, 0.5);
+  assert.equal(a.item, 'bigTable', 'held until someone is in range');
+  b.s = 130;
+  b.shield = 10;
+  sim.updateItems(a, 0.1, 0.5);
   assert.equal(a.item, null);
-  const drop = sim.drainEvents().find((e) => e.type === 'drop');
-  const table = drop.obstacle;
-  assert.equal(drop.target, b);
-  assert.equal(table.s, 300 - TUNING.tableDropBehind);
-  assert.equal(table.d, -5, 'centred on the rival\'s lane');
-  assert.ok(table.dMax - table.dMin < 2, 'starts narrow');
-  // Kept in sorted order for every racer's obstacle scan.
-  for (let i = 1; i < sim.obstacles.length; i++) assert.ok(sim.obstacles[i].sMin >= sim.obstacles[i - 1].sMin);
-  for (let i = 0; i < 100; i++) sim.updateCourse(0.05);
-  const width = table.dMax - table.dMin;
-  assert.ok(Math.abs(width - TUNING.halfWidth) < 1e-9, `fills half the track (width ${width})`);
-  assert.ok(table.dMin >= -TUNING.halfWidth && table.dMax <= TUNING.halfWidth, 'stays on the track');
-  // Gone for good after its lifetime.
-  for (let i = 0; i < 400; i++) sim.updateCourse(0.05);
-  assert.equal(table.active, false);
+  for (let i = 0; i < 30 && sim.projectiles.length; i++) sim.updateProjectiles(DT);
+  assert.equal(b.stun, null);
+  assert.ok(sim.drainEvents().some((e) => e.type === 'block' && e.cause === 'bigTable'));
 });
 
-test('hitting the table bounces you back and takes your items; the dropper and a firewall are safe', () => {
-  const sim = new RaceSim({ names: names(3), rng: mulberry32(22) });
-  const [a, b, c] = sim.racers;
-  a.s = 300;
-  const table = sim.dropTable(a, null);
-  sim.drainEvents();
-
-  b.s = table.s;
-  b.item = 'coffee';
-  b.returnUrl = true;
-  sim.triggerObstacle(b, table);
-  assert.equal(b.stun.kind, 'bounce');
-  assert.equal(b.item, null, 'lost the held item');
-  assert.equal(b.returnUrl, false, 'lost the ?returnUrl= pass');
-  const hit = sim.drainEvents().find((e) => e.type === 'hit');
-  assert.equal(hit.cause, 'columnTable');
-  assert.equal(hit.by, a);
-  assert.equal(hit.lost, 'coffee');
-  const before = b.s;
-  for (let i = 0; i < 20; i++) sim.updateStun(b, DT, 0);
-  assert.ok(b.s < before - 1, 'knocked backwards');
-
-  sim.triggerObstacle(a, table);
-  assert.equal(a.stun, null, 'the dropper knows where they left it');
-
-  c.shield = 10;
-  c.item = 'bug';
-  sim.triggerObstacle(c, table);
-  assert.equal(c.stun, null);
-  assert.equal(c.item, 'bug', 'blocked by the firewall, item kept');
-});
-
-test('800-Column Tables are dropped in real races, at most four at a time', () => {
-  let dropped = 0;
-  let bounced = 0;
-  for (let seed = 1; seed <= 10; seed++) {
-    const sim = new RaceSim({ names: names(12), rng: mulberry32(seed * 41) });
-    while (!sim.done && sim.time < 400) {
-      sim.step(DT);
-      for (const e of sim.drainEvents()) {
-        if (e.type === 'drop') dropped++;
-        if (e.type === 'hit' && e.cause === 'columnTable') bounced++;
-      }
-      assert.ok(sim.obstacles.filter((o) => o.type === 'columnTable' && o.active).length <= TUNING.maxTables);
-    }
+test('the leader never gets a 200GB Table, and they flatten people in real races', () => {
+  const rng = mulberry32(25);
+  for (let i = 0; i < 2000; i++) assert.notEqual(rollItem(0, rng), 'bigTable');
+  let flattened = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    for (const e of runRace(12, seed * 43).events) if (e.type === 'hit' && e.cause === 'bigTable') flattened++;
   }
-  assert.ok(dropped > 0, 'nobody dropped a table');
-  assert.ok(bounced > 0, 'nobody hit a table');
+  assert.ok(flattened > 0, 'nobody was ever flattened');
 });

@@ -21,7 +21,7 @@ const HIT_TEXT = {
   sslExpired: (r) => `${who(r)} hit SSL Expired — your connection is not private`,
   urlBarricade: (r) => `${who(r)} hit DO NOT MODIFY URLS and dropped into the error pit`,
   notClear: (r, by) => `${who(by)} told ${who(r)} “You Are Not Being Clear” 🌫️ — “It's your fault.”`,
-  columnTable: (r, by, e) => `${who(r)} bounced off ${by ? `${who(by)}'s` : 'an'} 800-Column Table 📊${e?.lost ? ` and lost their ${escapeHtml(ITEM_INFO[e.lost]?.label ?? 'item')}` : ''} — “You're wasting disk space.”`,
+  bigTable: (r, by) => `${who(by)} threw a 200GB Table 📊 and flattened ${who(r)} — “You're wasting disk space.”`,
 };
 
 const STATUS_TEXT = {
@@ -52,7 +52,7 @@ const STUN_ICON = {
   sslExpired: '🔓',
   urlBarricade: '🚧',
   notClear: '🌫️',
-  columnTable: '📊',
+  bigTable: '📊',
 };
 
 export class Hud {
@@ -162,16 +162,13 @@ export class Hud {
   event(e) {
     switch (e.type) {
       case 'hit':
-        this.line(HIT_TEXT[e.cause]?.(e.racer, e.by, e));
+        this.line(HIT_TEXT[e.cause]?.(e.racer, e.by));
         break;
       case 'zone':
         this.line(ZONE_TEXT[e.obstacle.type]?.(e.racer));
         break;
       case 'block':
         this.line(`${who(e.racer)}'s firewall 🛡️ blocked ${e.by ? `${who(e.by)}'s ${ITEM_INFO[e.cause]?.label ?? 'attack'}` : 'the hit'}`);
-        break;
-      case 'drop':
-        this.line(`${who(e.racer)} dropped an 800-Column Table 📊${e.target ? ` in ${who(e.target)}'s lane` : ''} — “Finally, a use for it.”`);
         break;
       case 'status':
         this.line(STATUS_TEXT[e.effect]?.(e.racer, e.by, e.mph));
