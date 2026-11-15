@@ -186,3 +186,12 @@ test('a pasted invite with 30 people and their calendar labels saves as 30 names
   const state = await (await fetch(`${base}/api/state`)).json();
   assert.deepEqual(state.names, people);
 });
+
+test('a wrestling win is recorded in the history with mode "wrestle"', async (t) => {
+  const { base } = await startServer(t);
+  assert.equal((await post(base, { name: 'Linus', mode: 'wrestle' })).status, 200);
+  const list = await history(base);
+  assert.deepEqual(list.map((h) => `${h.name}:${h.mode}`), ['Linus:wrestle']);
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.deepEqual(state.winners.map((w) => w.name), ['Linus'], 'and the winner sits out like any other');
+});

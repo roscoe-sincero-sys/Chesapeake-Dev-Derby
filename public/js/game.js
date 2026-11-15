@@ -9,6 +9,7 @@ import { buildObstacle, buildCrate, buildProjectile } from './obstacles.js';
 import { Particles } from './effects.js';
 import { emojiTexture } from './util3d.js';
 import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
+import { WrestleMatch } from './wrestle.js';
 
 const STEP = 1 / 60;
 const COUNTDOWN_LEAD_IN = 1.3; // seconds of camera sweep before "3"
@@ -125,6 +126,20 @@ export class Game {
     // Widen the view a little on tall/narrow windows so the pack still fits.
     this.camera.fov = w / h < 1 ? 70 : 55;
     this.camera.updateProjectionMatrix();
+    this.wrestle?.resize(w / h);
+  }
+
+  /**
+   * Starts "Let's Wrestle Instead" in its own arena. `options`: { rng, onEvent, onWinner }.
+   * Returns the line-up: [{ id, name, kind, color }].
+   */
+  startWrestle(names, options = {}) {
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.wrestle = new WrestleMatch(names, { ...options, sfx: this.sfx });
+    this.wrestle.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'wrestle';
+    return this.wrestle.lineup;
   }
 
   // ------------------------------------------------------------ race set-up
@@ -200,6 +215,10 @@ export class Game {
 
   /** Removes the current race and returns to the lobby fly-over. */
   clearRace() {
+    if (this.wrestle) {
+      this.wrestle.dispose();
+      this.wrestle = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -229,6 +248,13 @@ export class Game {
     this.last = now;
     const dt = real * this.timeScale;
     this.clock += dt;
+
+    if (this.wrestle) {
+      // The wrestling match has its own scene and pacing (always real time).
+      this.wrestle.update(real);
+      this.renderer.render(this.wrestle.scene, this.wrestle.camera);
+      return;
+    }
 
     if (this.phase === 'lobby') {
       this.flyT += real;

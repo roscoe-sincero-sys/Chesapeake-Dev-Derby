@@ -128,6 +128,13 @@ export class Sfx {
         this.tone(784, 0.1, { type: 'triangle', gain: 0.08 });
         this.tone(1047, 0.14, { type: 'triangle', gain: 0.08, delay: 0.09 });
         break;
+      case 'bell':
+        // Ding ding: the ring bell, twice.
+        for (const delay of [0, 0.32]) {
+          this.tone(1568, 1.1, { type: 'sine', gain: 0.14, delay });
+          this.tone(2350, 0.7, { type: 'triangle', gain: 0.05, delay });
+        }
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

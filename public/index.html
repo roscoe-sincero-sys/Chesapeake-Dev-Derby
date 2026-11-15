@@ -121,6 +121,8 @@
             </ul>
             <h3>Racers</h3>
             <p class="guide-racers" id="guide-racers"></p>
+            <h3>Let’s Wrestle Instead</h3>
+            <p>A battle royal for 2 to 10 teammates in a wrestling ring, as Mahabharata wrestlers: <span id="guide-wrestlers"></span>. Everyone starts in the ring; go over the top rope and you're out. The last one in the ring leads today’s standup.</p>
           </div>
         </div>
       </details>
@@ -128,6 +130,10 @@
       <footer class="lobby-foot">
         <button id="run" type="button" class="primary" disabled>Start race</button>
         <button id="pick" type="button" class="secondary" disabled>Skip race, just pick</button>
+        <span class="wrestle-wrap">
+          <button id="wrestle" type="button" class="secondary wrestle" aria-disabled="true" aria-describedby="wrestle-tip">🤼 Let’s Wrestle Instead</button>
+          <span id="wrestle-tip" class="tip" role="tooltip">You need 2 to 10 wrestlers.</span>
+        </span>
         <span id="run-hint" class="hint"></span>
       </footer>
     </main>
@@ -140,6 +146,7 @@
         <span class="tag">&lt;/race&gt;</span>
       </div>
       <ol id="leaderboard" aria-label="Standings"></ol>
+      <ol id="ring-roster" aria-label="Wrestlers in the ring"></ol>
       <div id="feed" aria-live="off"></div>
       <div id="countdown" aria-live="assertive"></div>
     </div>

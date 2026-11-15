@@ -83,12 +83,38 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
+### Let’s Wrestle Instead
+
+A second way to pick: **🤼 Let’s Wrestle Instead**, at the far right of the **Start race** row. It can be
+used when **2 to 10** teammates are checked; otherwise it is greyed out, and hovering over it (or tabbing
+to it) says "You need 2 to 10 wrestlers."
+
+The checked teammates enter a wrestling ring as Mahabharata wrestlers, each with their name floating
+above them. So far the cast is **Bhima** (power wrestler, two-handed overhead toss), **Jarasandha**
+(grappler, king of Magadha), **Duryodhana** (showman, plays to the crowd after a ring-out) and **Arjuna**
+(precision wrestler, slips free); each name is dealt one, and all four appear before any repeats.
+
+It is a battle royal: everyone starts in the ring, and you're out when you go over the top rope and land
+on the floor. The last one left **leads today's standup**.
+
+1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
+2. **Ring-outs.** Wrestlers circle, grapple and bounce off the ropes. When a throw starts, the camera eases
+   towards that side and holds while the wrestler clears the top rope and lands, with "Roscoe is out!"
+   on screen and their name crossed off the list.
+3. **Final two.** The orbit slows to frame both, one of them has a close call at the ropes, then the last
+   throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
+   winner history as **wrestle**, and sits out the next three picks like any other winner.
+
+**Fair and fixed-length.** The elimination order is drawn uniformly at random when the bell rings, so
+every wrestler has the same chance. The match has its own pacing: about 15 seconds for 2 wrestlers, up
+to about 62 seconds for 10, whatever the **Race length** slider says (the slider is only for races).
+
 ### Winner history
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
 5,000). Click **Full history** next to **Last three winners** in the lobby to see the list, newest first,
-with each winner's date and time and whether they won a **race** or were picked with **Skip race, just
-pick**. On an install from before the history was added, the list starts with the winners already in
+with each winner's date and time and whether they won a **race**, won by **wrestling** (Let’s Wrestle
+Instead), or were picked with **Skip race, just pick**. On an install from before the history was added, the list starts with the winners already in
 `data/winners.json`; those show **—** under How because that wasn't recorded.
 
 ### Resetting or correcting the history
@@ -214,6 +240,9 @@ public/
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
   js/racers.js       The 11 racer models and their karts
   js/audience.js     Grandstands and the cheering wildlife
+  js/wrestle-sim.js  Let’s Wrestle Instead: the battle royal's rules and script (pure logic)
+  js/wrestle.js      The wrestling ring, camera and choreography
+  js/wrestlers.js    The Mahabharata wrestler models and their poses
   js/obstacles.js    The 11 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card

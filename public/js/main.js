@@ -1,7 +1,8 @@
 // App entry point: loads the roster, runs the lobby, starts races and saves the winner.
 
 import { Game, runHeadless } from './game.js';
-import { Hud } from './hud.js';
+import { Hud, who } from './hud.js';
+import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName } from './eligibility.js';
@@ -270,6 +271,12 @@ function updateRunButton() {
   const racing = selectRacers(state.roster, state.absent).length;
   $('racer-count').textContent = `${racing} racing`;
   $('run').disabled = $('pick').disabled = racing < 2;
+  // Let's Wrestle Instead: 2 to 10 wrestlers. aria-disabled (not disabled) keeps the tip reachable.
+  const canWrestle = racing >= MIN_WRESTLERS && racing <= MAX_WRESTLERS;
+  $('wrestle').setAttribute('aria-disabled', String(!canWrestle));
+  $('wrestle-tip').textContent = canWrestle
+    ? `You need 2 to 10 wrestlers. ${racing} ready to wrestle.`
+    : `You need 2 to 10 wrestlers. ${racing} ${racing === 1 ? 'is' : 'are'} checked.`;
   $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it on your meeting screen.`;
 }
 
@@ -310,6 +317,57 @@ function run() {
 
   const lineup = game.startRace(racers, { rng, timeScale: speed });
   hud.begin(lineup);
+  $('quit').hidden = false;
+}
+
+// ------------------------------------------------------------------ wrestling
+
+/** "Let's Wrestle Instead": a battle royal in its own arena, with its own pacing. */
+function wrestle() {
+  if (state.phase !== 'lobby') return;
+  const storedNames = selectRacers(state.roster, state.absent);
+  if (storedNames.length < MIN_WRESTLERS || storedNames.length > MAX_WRESTLERS) return;
+  const names = storedNames.map(show);
+  state.raceNames = new Map(storedNames.map((name) => [show(name), name]));
+  sfx.unlock();
+  const rng = seed === null ? Math.random : mulberry32(seed);
+  state.phase = 'race';
+  $('lobby').hidden = true;
+
+  if (!game) {
+    // No WebGL: the same draw, decided instantly.
+    const plan = planMatch(names, rng);
+    const winner = plan.wrestlers[plan.winner];
+    hud.showWinner(winner.name, null, null, 0, `Won the battle royal as ${winner.kind.label} (decided off-screen).`, { kicker: 'Leads today’s standup' });
+    state.phase = 'results';
+    saveWinner(stored(winner.name), 'wrestle');
+    return;
+  }
+
+  const lineup = game.startWrestle(names, {
+    rng,
+    onEvent: (e) => {
+      if (e.type === 'bell') hud.note('🔔 Ding ding! Last one in the ring leads today’s standup.', true);
+      else if (e.type === 'out') {
+        hud.wrestleOut(e.victim.id);
+        hud.callout(`${e.victim.name} is out!`);
+        hud.note(`${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`);
+      } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
+      else if (e.type === 'closeCall') {
+        const saved = e.wrestler.kind.style === 'counter' ? 'slips free at the ropes!'
+          : e.other.kind.style === 'centre' ? `is pulled back to the centre by ${e.other.kind.label}!` : 'hangs on at the ropes!';
+        hud.note(`Close call — ${who(e.wrestler)} ${saved}`);
+      } else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
+    },
+    onWinner: (w) => {
+      state.phase = 'results';
+      $('quit').hidden = true;
+      hud.callout(`${w.name} leads today’s standup!`, 2400);
+      hud.showWinner(w.name, null, null, 2600, `Won the battle royal as ${w.kind.label}`, { kicker: 'Leads today’s standup' });
+      saveWinner(stored(w.name), 'wrestle');
+    },
+  });
+  hud.beginWrestle(lineup);
   $('quit').hidden = false;
 }
 
@@ -365,6 +423,7 @@ function init() {
   }
 
   $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
+  $('guide-wrestlers').textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
 
   const slider = $('race-speed');
   // The slider steps through the offered race lengths (longest on the left), not raw speeds.
@@ -387,6 +446,9 @@ function init() {
   showSpeed();
 
   $('run').addEventListener('click', run);
+  $('wrestle').addEventListener('click', () => {
+    if ($('wrestle').getAttribute('aria-disabled') !== 'true') wrestle();
+  });
   $('pick').addEventListener('click', pick);
   $('check-all').addEventListener('click', () => setAll(true));
   $('check-none').addEventListener('click', () => setAll(false));

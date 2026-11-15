@@ -6,7 +6,7 @@ import { ITEM_INFO, statusIcon } from './game.js';
 const $ = (id) => document.getElementById(id);
 
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
-const who = (racer) => `<b>${escapeHtml(racer.name)}</b>`;
+export const who = (racer) => `<b>${escapeHtml(racer.name)}</b>`;
 const ordinal = (n) => `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : Math.min(n % 10, 4) % 4]}`;
 
 const HIT_TEXT = {
@@ -160,6 +160,54 @@ export class Hud {
     }
   }
 
+  /** Sets up the display for a wrestling match: who is in the ring, as which character. */
+  beginWrestle(lineup) {
+    this.end();
+    this.root.classList.add('wrestling');
+    const roster = $('ring-roster');
+    roster.replaceChildren();
+    for (const entry of lineup) {
+      const li = document.createElement('li');
+      li.dataset.id = entry.id;
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.background = entry.color;
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = entry.name;
+      const as = document.createElement('span');
+      as.className = 'as';
+      as.textContent = `as ${entry.kind.label}`;
+      li.append(swatch, who, as);
+      li.title = `${entry.name} wrestles as ${entry.kind.label}: ${entry.kind.blurb}`;
+      roster.append(li);
+    }
+    this.root.hidden = false;
+  }
+
+  /** Crosses a wrestler off the list once they are thrown out. */
+  wrestleOut(id) {
+    $('ring-roster').querySelector(`li[data-id="${id}"]`)?.classList.add('out');
+  }
+
+  /** A short message across the middle of the screen, e.g. "Roscoe is out!". */
+  callout(text, ms = 1600) {
+    clearTimeout(this.countdownTimer);
+    this.count.textContent = text;
+    this.count.className = '';
+    void this.count.offsetWidth;
+    this.count.className = 'callout';
+    this.countdownTimer = setTimeout(() => {
+      this.count.textContent = '';
+      this.count.className = '';
+    }, ms);
+  }
+
+  /** Adds a line to the event feed from outside the race (e.g. the wrestling match). */
+  note(html, big = false) {
+    this.line(html, big);
+  }
+
   /** Turns a simulation event into a feed line (if it is worth mentioning). */
   event(e) {
     switch (e.type) {
@@ -211,8 +259,9 @@ export class Hud {
   }
 
   /** Shows the winner card (after a short pause so the finish can be seen). */
-  showWinner(name, kind, time, delay = 1900, detail = '') {
+  showWinner(name, kind, time, delay = 1900, detail = '', { kicker = 'Leading the team meeting' } = {}) {
     $('winner-name').textContent = name;
+    document.querySelector('.results-kicker').textContent = kicker;
     $('winner-kind').textContent = kind ? `raced as ${kind.emoji} ${kind.label}${time ? ` · ${time.toFixed(1)}s elapsed` : ''}` : detail;
     $('podium').replaceChildren();
     clearTimeout(this.resultsTimer);
@@ -242,7 +291,8 @@ export class Hud {
     clearTimeout(this.countdownTimer);
     clearTimeout(this.resultsTimer);
     this.root.hidden = true;
-    this.root.classList.remove('results-open');
+    this.root.classList.remove('results-open', 'wrestling');
+    $('ring-roster').replaceChildren();
     this.results.hidden = true;
     this.board.replaceChildren();
     this.dots.replaceChildren();

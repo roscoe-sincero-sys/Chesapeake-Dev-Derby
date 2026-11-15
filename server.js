@@ -7,7 +7,7 @@
 //   GET  /api/state    -> { names, winners, warnings }
 //   PUT  /api/names    -> body { names: [...] } ; returns { names, warnings }
 //   GET  /api/history  -> { history } every recorded result, newest first
-//   POST /api/winners  -> body { name, mode? } (mode "race" or "skip") ; returns { winners }
+//   POST /api/winners  -> body { name, mode? } (mode "race", "skip" or "wrestle") ; returns { winners }
 //   DELETE /api/winners -> body {} ; clears the history, returns { winners: [] }
 
 import http from 'node:http';
