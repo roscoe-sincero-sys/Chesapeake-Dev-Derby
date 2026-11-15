@@ -83,12 +83,62 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
+### Let’s Wrestle Instead
+
+A second way to pick: **🤼 Let’s Wrestle Instead**, at the far right of the **Start race** row. It can be
+used when **2 to 10** teammates are checked; otherwise it is greyed out, and hovering over it (or tabbing
+to it) says "You need 2 to 10 wrestlers."
+
+The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
+their name floating above them. During the match the corner button reads **Quit match** (it saves nothing).
+
+Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a match has at most
+10 wrestlers). Their styles show in how they move, throw and get out of trouble:
+
+| Character | Look | Style |
+| --- | --- | --- |
+| Bhima | broadest of all, saffron dhoti, iron mace | two-handed overhead toss |
+| Jarasandha | maroon and gold, full beard, ruby crown, the seam where he was joined | pulls opponents back to the centre |
+| Duryodhana | royal blue, jewelled crown, golden mace, red cape | plays to the crowd after a ring-out |
+| Kichaka | heavy bruiser in forest green, sword on his back | muscles opponents over the ropes |
+| Arjuna | lean, yellow pitambara, Gandiva bow and quiver | slips free at the ropes |
+| Karna | golden kavacha armour with a sun emblem, big kundala earrings | turns a charge into a sideways throw |
+| Abhimanyu | young and quick, sky blue, round shield | ducks out low when cornered |
+| Ghatotkacha | towering half-rakshasa, wild hair, small tusks, glowing amulet | flickers like an illusion, then throws overhead |
+| Hidimbi | green choli and skirt, long braid, nose ring, tiara | changes form mid-grapple and slips free |
+| Dushasana | Kaurava green, short beard, golden mace | crowds opponents into the ropes |
+| Shikhandi | violet, pointed crown, round shield | catches charging wrestlers off balance |
+| Satyaki | teal, a peacock feather in his crown, sword | fast, and lives on the ropes |
+
+**The crowd** fills four tiers around the ring: low-poly fans of every build, sitting, standing, leaning
+forward, arms crossed, clapping or with both hands up, in caps, turbans, buns and Maryland scarves. They
+react: the section nearest a ring-out leans back with hands up, the section by a close call leans in, a
+few fans stand and cheer a beat after Duryodhana plays to the crowd, and everyone is on their feet for
+the winner. Fifteen hand-lettered signs are held up around the stands, from "HANUMAN WAS HERE" to
+"WE HAVE 2 MINUTES LEFT. WHO’S LEADING?"; four of them name a wrestler from the match (a different one
+each while there are enough wrestlers).
+
+It is a battle royal: everyone starts in the ring, and you're out when you go over the top rope and land
+on the floor. The last one left **leads today's standup**.
+
+1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
+2. **Ring-outs.** Wrestlers circle, grapple and bounce off the ropes. When a throw starts, the camera eases
+   towards that side and holds while the wrestler clears the top rope and lands, with "Roscoe is out!"
+   on screen and their name crossed off the list.
+3. **Final two.** The orbit slows to frame both, one of them has a close call at the ropes, then the last
+   throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
+   winner history as **wrestle**, and sits out the next three picks like any other winner.
+
+**Fair and fixed-length.** The elimination order is drawn uniformly at random when the bell rings, so
+every wrestler has the same chance. The match has its own pacing: about 15 seconds for 2 wrestlers, up
+to about 62 seconds for 10, whatever the **Race length** slider says (the slider is only for races).
+
 ### Winner history
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
 5,000). Click **Full history** next to **Last three winners** in the lobby to see the list, newest first,
-with each winner's date and time and whether they won a **race** or were picked with **Skip race, just
-pick**. On an install from before the history was added, the list starts with the winners already in
+with each winner's date and time and whether they won a **race**, won by **wrestling** (Let’s Wrestle
+Instead), or were picked with **Skip race, just pick**. On an install from before the history was added, the list starts with the winners already in
 `data/winners.json`; those show **—** under How because that wasn't recorded.
 
 ### Resetting or correcting the history
@@ -214,6 +264,10 @@ public/
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
   js/racers.js       The 11 racer models and their karts
   js/audience.js     Grandstands and the cheering wildlife
+  js/wrestle-sim.js  Let’s Wrestle Instead: the battle royal's rules and script (pure logic)
+  js/wrestle.js      The wrestling ring, camera and choreography
+  js/wrestlers.js    The Mahabharata wrestler models and their poses
+  js/crowd.js        The reacting crowd and its hand-lettered signs
   js/obstacles.js    The 11 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card

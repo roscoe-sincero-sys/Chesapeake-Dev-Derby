@@ -10,6 +10,7 @@ $('back-to-lobby').focus();
 const MODE = {
   race: '🏁 Race',
   skip: '🎲 Skip',
+  wrestle: '🤼 Wrestle',
 };
 
 async function request(url) {
@@ -68,8 +69,9 @@ async function load() {
     $('history-table').hidden = !history.length;
     const races = history.filter((h) => h.mode === 'race').length;
     const skips = history.filter((h) => h.mode === 'skip').length;
+    const wrestles = history.filter((h) => h.mode === 'wrestle').length;
     summary.textContent = history.length
-      ? `${history.length} result${history.length === 1 ? '' : 's'}: ${races} by race, ${skips} skipped${history.length - races - skips ? `, ${history.length - races - skips} recorded before the history was kept (how unknown)` : ''}.`
+      ? `${history.length} result${history.length === 1 ? '' : 's'}: ${races} by race, ${wrestles} by wrestling, ${skips} skipped${history.length - races - skips - wrestles ? `, ${history.length - races - skips - wrestles} recorded before the history was kept (how unknown)` : ''}.`
       : 'No winners yet. Results appear here after each race or pick.';
   } catch (err) {
     summary.className = 'hint error-text';

@@ -875,3 +875,39 @@ button.danger:hover { filter: brightness(1.1); }
   #history-table th, #history-table td { padding: 8px 5px; white-space: normal; }
   #history-table td.mode { white-space: nowrap; }
 }
+
+/* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. */
+.wrestle-wrap { position: relative; margin-left: auto; display: inline-flex; }
+button.wrestle { font-weight: 650; }
+button.wrestle[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
+.wrestle-wrap .tip {
+  position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5;
+  white-space: nowrap; padding: 6px 10px; border-radius: 8px; font-size: 13px;
+  color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity 0.12s, transform 0.12s;
+}
+.wrestle-wrap:hover .tip, .wrestle-wrap:focus-within .tip { opacity: 1; transform: none; }
+
+/* During a wrestling match: no race standings or progress bar; a list of who is still in. */
+#ring-roster { display: none; }
+#hud.wrestling #progress, #hud.wrestling #leaderboard { display: none; }
+#hud.wrestling #ring-roster {
+  display: block; position: absolute; top: 14px; left: 14px; margin: 0; padding: 0; list-style: none;
+  font-size: 14px; max-width: min(320px, calc(100vw - 28px));
+}
+#ring-roster li {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 10px;
+  border-radius: 8px; background: rgba(16, 20, 32, 0.82); border: 1px solid var(--panel-border);
+}
+#ring-roster .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+#ring-roster .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ring-roster .as { color: var(--muted); font-size: 12px; white-space: nowrap; }
+#ring-roster li.out { opacity: 0.45; }
+#ring-roster li.out .who { text-decoration: line-through; }
+#hud.wrestling.results-open #ring-roster { display: none; }
+#countdown.callout { font-size: min(8vw, 64px); font-family: var(--ui); top: 20%; padding: 10px 22px; white-space: nowrap; }
+@media (max-width: 560px) {
+  #countdown.callout { white-space: normal; text-align: center; width: calc(100vw - 32px); }
+  #hud.wrestling #ring-roster { font-size: 12px; }
+}
