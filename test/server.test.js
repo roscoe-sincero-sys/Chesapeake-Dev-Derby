@@ -173,3 +173,16 @@ test('an older install starts its history from winners.json, and keeps it throug
   await post(base, { name: 'Ada', mode: 'skip' });
   assert.deepEqual((await history(base)).map((h) => `${h.name}:${h.mode}`), ['Ada:skip', 'Hedy:null', 'Linus:null']);
 });
+
+test('a pasted invite with 30 people and their calendar labels saves as 30 names', async (t) => {
+  const { base } = await startServer(t);
+  const people = Array.from({ length: 30 }, (_, i) => `Person ${i + 1}`);
+  const lines = people.flatMap((p, i) => [p, ['Organizer', 'Optional', 'Required', 'Telework', 'Home', 'Office'][i % 6]]);
+  const res = await putNames(base, { names: lines });
+  assert.equal(res.status, 200, 'labels do not count towards the 30-name limit');
+  const body = await res.json();
+  assert.deepEqual(body.names, people);
+  assert.match(body.warnings.join(' '), /30 calendar labels were ignored/);
+  const state = await (await fetch(`${base}/api/state`)).json();
+  assert.deepEqual(state.names, people);
+});
