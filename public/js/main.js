@@ -117,7 +117,8 @@ async function saveWinner(name, mode) {
     });
     state.winners = data.winners;
     state.pendingWinner = null;
-    hud.saveStatus(`Saved. ${show(name)} sits out the next three races.`, 'ok');
+    // A wrestling win isn't a race: the three-pick rule applies however someone won.
+    hud.saveStatus(`Saved. ${show(name)} sits out the next three ${mode === 'wrestle' ? 'picks' : 'races'}.`, 'ok');
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -381,7 +382,11 @@ function wrestle() {
       state.phase = 'results';
       $('quit').hidden = true;
       hud.callout(`${w.name} leads today’s standup!`, 2400);
-      hud.showWinner(w.name, null, null, 2600, `Won the battle royal as ${w.kind.label}`, { kicker: 'Leads today’s standup' });
+      hud.showWinner(w.name, null, null, 2600, `Won the battle royal as ${w.kind.label}`, {
+        kicker: 'Leads today’s standup',
+        // The card says who won as whom: fade the floating name tags so they don't compete with it.
+        onShown: () => game?.wrestle?.fadeNameTags(),
+      });
       saveWinner(stored(w.name), 'wrestle');
     },
   });

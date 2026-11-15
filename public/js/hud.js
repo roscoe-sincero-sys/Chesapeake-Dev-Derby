@@ -259,7 +259,7 @@ export class Hud {
   }
 
   /** Shows the winner card (after a short pause so the finish can be seen). */
-  showWinner(name, kind, time, delay = 1900, detail = '', { kicker = 'Leading the team meeting' } = {}) {
+  showWinner(name, kind, time, delay = 1900, detail = '', { kicker = 'Leading the team meeting', onShown = null } = {}) {
     $('winner-name').textContent = name;
     document.querySelector('.results-kicker').textContent = kicker;
     $('winner-kind').textContent = kind ? `raced as ${kind.emoji} ${kind.label}${time ? ` · ${time.toFixed(1)}s elapsed` : ''}` : detail;
@@ -270,6 +270,7 @@ export class Hud {
       this.root.classList.add('results-open');
       this.feed.replaceChildren();
       $('back').focus({ preventScroll: true });
+      onShown?.();
     }, delay);
   }
 
