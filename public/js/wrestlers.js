@@ -55,21 +55,26 @@ function humanoid(look, belt) {
   const hips = new THREE.Group();
   hips.position.y = HIP_DROP + THIGH + SHIN + FOOT;
   root.add(hips);
+  // The clothes round the hips, flattened front to back like a real pelvis (a round dhoti would prop
+  // a wrestler lying on their back up off the floor).
+  const pelvis = new THREE.Group();
+  pelvis.scale.z = 0.8;
+  hips.add(pelvis);
   if (look.female) {
     // A long skirt to mid-calf (short enough to stay off the mat in a crouch), with a gold border.
-    hips.add(lathe([[0.37 * bulk, -0.86], [0.345 * bulk, -0.55], [0.31 * bulk, -0.18], [0.26 * bulk, 0.16]], cloth));
-    hips.add(at(cyl(0.372 * bulk, 0.372 * bulk, 0.05, border, 28), 0, -0.84, 0));
-    hips.add(at(box(0.06, 0.95, 0.02, border), 0, -0.36, -0.33 * bulk, 0.12)); // front pleat
+    pelvis.add(lathe([[0.37 * bulk, -0.86], [0.345 * bulk, -0.55], [0.31 * bulk, -0.18], [0.26 * bulk, 0.16]], cloth));
+    pelvis.add(at(cyl(0.372 * bulk, 0.372 * bulk, 0.05, border, 28), 0, -0.84, 0));
+    pelvis.add(at(box(0.06, 0.95, 0.02, border), 0, -0.36, -0.33 * bulk, 0.12)); // front pleat
   } else {
-    hips.add(lathe([[0.3 * bulk, -0.36], [0.335 * bulk, -0.2], [0.32 * bulk, 0.02], [0.27 * bulk, 0.16]], cloth));
-    hips.add(at(cyl(0.302 * bulk, 0.302 * bulk, 0.04, border, 28), 0, -0.36, 0));
+    pelvis.add(lathe([[0.3 * bulk, -0.36], [0.335 * bulk, -0.2], [0.32 * bulk, 0.02], [0.27 * bulk, 0.16]], cloth));
+    pelvis.add(at(cyl(0.302 * bulk, 0.302 * bulk, 0.04, border, 28), 0, -0.36, 0));
     for (let i = -1; i <= 1; i++) {
-      hips.add(at(box(0.07, 0.62, 0.025, cloth), i * 0.055, -0.22, -0.29 * bulk, 0.08, 0, i * 0.04)); // pleats
+      pelvis.add(at(box(0.07, 0.62, 0.025, cloth), i * 0.055, -0.22, -0.29 * bulk, 0.08, 0, i * 0.04)); // pleats
     }
-    hips.add(at(box(0.2, 0.025, 0.03, border), 0, -0.53, -0.31 * bulk));
+    pelvis.add(at(box(0.2, 0.025, 0.03, border), 0, -0.53, -0.31 * bulk));
   }
-  hips.add(at(torus(0.272 * bulk, 0.035, mat(belt, { roughness: 0.5 })), 0, 0.14, 0, Math.PI / 2));
-  hips.add(at(torus(0.285 * bulk, 0.012, gold), 0, 0.09, 0, Math.PI / 2));
+  pelvis.add(at(torus(0.272 * bulk, 0.035, mat(belt, { roughness: 0.5 })), 0, 0.14, 0, Math.PI / 2));
+  pelvis.add(at(torus(0.285 * bulk, 0.012, gold), 0, 0.09, 0, Math.PI / 2));
 
   // ---- legs: cloth over the thighs (the dhoti), bare muscular calves, anklets, feet
   const legs = [-1, 1].map((side) => {
@@ -141,7 +146,9 @@ function humanoid(look, belt) {
     const head = look.back === 'goldMace' ? gold : mat('#59636b', { metalness: 0.6, roughness: 0.35 });
     const mace = group(at(cyl(0.03, 0.035, 1.0, mat('#5c3a1e'), 10), 0, 0, 0), at(ball(0.16, head), 0, 0.56, 0), at(cone(0.045, 0.12, head, 8), 0, 0.74, 0));
     for (let i = 0; i < 6; i++) mace.add(at(torus(0.16, 0.012, head), 0, 0.56, 0, Math.PI / 2, (i * Math.PI) / 6, 0)); // ridges
-    torso.add(at(mace, 0.12, 0.4, 0.26 * bulk, 0, 0, 0.5));
+    mace.userData.gear = true;
+    // Strapped close to the back, so a fallen wrestler lies on it rather than being propped up.
+    torso.add(at(mace, 0.12, 0.4, 0.2 * bulk, 0, 0, 0.5));
   }
   if (look.back === 'sword') {
     const sword = group(
@@ -150,21 +157,27 @@ function humanoid(look, belt) {
       at(cyl(0.018, 0.018, 0.16, mat('#5c3a1e'), 8), 0, 0.52, 0), // grip
       at(ball(0.03, gold), 0, 0.61, 0), // pommel
     );
+    sword.userData.gear = true;
     torso.add(at(sword, -0.08, 0.38, 0.24 * bulk, 0, 0, -0.55));
   }
   if (look.back === 'shield') {
     const face = mat(look.shield ?? '#7a4a22', { roughness: 0.6 });
     const shield = group(at(cyl(0.3, 0.3, 0.04, face, 24), 0, 0, 0, Math.PI / 2), at(torus(0.3, 0.02, gold), 0, 0, -0.01), at(ball(0.06, gold), 0, 0, 0.03));
+    shield.userData.gear = true;
     torso.add(at(shield, 0, 0.4, 0.27 * bulk));
   }
   if (look.back === 'bow') {
     // Gandiva on the back, with a quiver of arrows.
-    torso.add(at(torus(0.66, 0.022, mat('#6b3d17', { roughness: 0.6 }), Math.PI * 0.86), -0.04, 0.42, 0.26, 0, Math.PI / 2, Math.PI * 0.57));
+    // Slung across the back, flat against it (as a bow is carried), so it lies flat under a fallen archer.
+    const bow = at(torus(0.66, 0.022, mat('#6b3d17', { roughness: 0.6 }), Math.PI * 0.86), 0.05, 0.42, 0.25 * bulk, 0, 0, Math.PI * 0.07);
+    bow.userData.gear = true;
+    torso.add(bow);
     const quiver = group(at(cyl(0.065, 0.055, 0.56, mat('#7a4a22'), 10), 0, 0, 0), at(torus(0.066, 0.012, gold), 0, 0.25, 0, Math.PI / 2));
     for (let i = 0; i < 5; i++) {
       quiver.add(at(cyl(0.007, 0.007, 0.34, mat('#d8c9a3'), 4), (i - 2) * 0.02, 0.42, (i % 2) * 0.015));
       quiver.add(at(cone(0.022, 0.06, mat('#e9ecef'), 4), (i - 2) * 0.02, 0.6, (i % 2) * 0.015, Math.PI));
     }
+    quiver.userData.gear = true;
     torso.add(at(quiver, 0.17, 0.44, 0.24, 0, 0, -0.35));
   }
 
@@ -378,6 +391,30 @@ export function pose(w, p = {}) {
     arm.upper.rotation.z = side * (0.12 + guard * 0.25 + flail * 0.9 + (p.spread ?? 0) * 1.2);
     arm.fore.rotation.x = guard * 1.3 + fwd * 0.35 + up * 0.2;
   });
+}
+
+/**
+ * The lowest point of the body in world space: everything except the gear carried on the back (maces,
+ * bows, quivers, shields, swords), which is marked `userData.gear`. A wrestler lying on their back rests
+ * on their body, not propped up on a mace or a bow. Exact, from the vertices; call after posing.
+ */
+const _v = new THREE.Vector3();
+export function lowestBodyPoint(rig) {
+  rig.root.updateMatrixWorld(true);
+  let lowest = Infinity;
+  const visit = (o) => {
+    if (o.userData.gear) return;
+    if (o.isMesh) {
+      const pos = o.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const y = _v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).y;
+        if (y < lowest) lowest = y;
+      }
+    }
+    for (const c of o.children) visit(c);
+  };
+  visit(rig.root);
+  return lowest;
 }
 
 /** For tests: the lowest point of the rig's feet relative to its root, after posing. */

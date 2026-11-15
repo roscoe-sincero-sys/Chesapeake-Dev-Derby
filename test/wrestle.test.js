@@ -205,3 +205,21 @@ test('a thrown wrestler bounces twice off the floor, each bounce smaller, then l
   assert.equal(bounce(BOUNCES[1].end + 0.01), 0, 'then lies still');
   assert.equal(bounce(5), 0);
 });
+
+test('lying on their back, every wrestler rests on their body, not propped up on a mace, bow or shield', async () => {
+  const { buildRig, pose, lowestBodyPoint } = await import('../public/js/wrestlers.js');
+  const THREE = await import('three');
+  for (const kind of WRESTLER_KINDS) {
+    const rig = buildRig(kind);
+    rig.root.rotation.order = 'YXZ';
+    rig.root.rotation.set(Math.PI / 2, 0, 0); // on the back, face up, as after a throw
+    pose(rig, { spread: 0.4, look: 0.3 });
+    // Settle the body onto the floor (y = 0) the way the arena does.
+    rig.root.position.y -= lowestBodyPoint(rig);
+    rig.root.updateMatrixWorld(true);
+    assert.ok(Math.abs(lowestBodyPoint(rig)) < 1e-6, `${kind.label}: body touches the floor`);
+    // The torso itself is close to the floor (no hovering on gear): its underside within 0.12.
+    const torso = new THREE.Box3().setFromObject(rig.torso.children[1], true);
+    assert.ok(torso.min.y < 0.12 * rig.root.scale.y, `${kind.label}: back ${torso.min.y.toFixed(2)} above the floor`);
+  }
+});

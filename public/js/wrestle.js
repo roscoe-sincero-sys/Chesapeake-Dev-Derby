@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI } from './util3d.js';
 import { planMatch, PACE } from './wrestle-sim.js';
-import { buildWrestler, pose } from './wrestlers.js';
+import { buildWrestler, pose, lowestBodyPoint } from './wrestlers.js';
 import { Particles } from './effects.js';
 import { Crowd } from './crowd.js';
 
@@ -403,14 +403,18 @@ export class WrestleMatch {
     r.tags.visible = fade > 0;
   }
 
-  /** How far to lift a wrestler so the lowest point of the body rests on the ring or the floor. */
+  /**
+   * How far to move a wrestler so the lowest point of the body rests exactly on the ring or the floor:
+   * up out of it, or down onto it (so they never hover). Gear on the back doesn't count, so nobody is
+   * propped up on their mace or bow.
+   */
   groundLift(w) {
     const r = w.rig;
     const overRing = Math.abs(r.root.position.x) < HALF + 0.5 && Math.abs(r.root.position.z) < HALF + 0.5;
     const floor = overRing ? MAT_Y : 0;
-    r.root.updateMatrixWorld(true);
-    this.box.setFromObject(r.root, true); // exact, from the vertices
-    return Math.max(0, floor - this.box.min.y);
+    const gap = floor - lowestBodyPoint(r);
+    // In the air (thrown, before landing) only ever lift; once landed, settle onto the floor.
+    return w.landed ? gap : Math.max(0, gap);
   }
 
   // ------------------------------------------------------------ scripted moments
@@ -525,6 +529,7 @@ export class WrestleMatch {
       v.heading = headingTo(v.x, v.z, 0, 0); // facing the ring: their back goes over the ropes first
       v.tagDrop = -1.4;
       v.ground = true; // never let any part of the body pass through the ring or the floor
+      v.landed = false;
       v.hop = 0;
       pose(v.rig, { flail: 1, spread: 0.6, walk: t * 8 });
     } else {
@@ -559,6 +564,7 @@ export class WrestleMatch {
       v.y = 0;
       v.hop = hop;
       v.ground = true;
+      v.landed = true; // resting on the floor: settle onto it, never hover
       v.heading = headingTo(v.x, v.z, 0, 0);
       // Flat on the back (the bounce rocks them a little), then sitting up facing the ring.
       v.pitch = (ON_BACK - hop * 0.5) * (1 - sitUp);
