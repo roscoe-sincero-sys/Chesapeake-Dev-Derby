@@ -20,6 +20,7 @@ const HIT_TEXT = {
   forcePush: (r, by) => `${who(by)} force-pushed 💥 over ${who(r)}`,
   sslExpired: (r) => `${who(r)} hit SSL Expired — your connection is not private`,
   urlBarricade: (r) => `${who(r)} hit DO NOT MODIFY URLS and dropped into the error pit`,
+  columnTable: (r, by, e) => `${who(r)} clipped the 800-Column Table 📊${e?.lost ? ` and lost their ${escapeHtml(ITEM_INFO[e.lost]?.label ?? 'item')}` : ''}`,
   notClear: (r, by) => `${who(by)} told ${who(r)} “You Are Not Being Clear” 🌫️ — “It's your fault.”`,
   bigTable: (r, by) => `${who(by)} threw a 200GB Table 📊 and flattened ${who(r)} — “You're wasting disk space.”`,
 };
@@ -51,6 +52,7 @@ const STUN_ICON = {
   forcePush: '💥',
   sslExpired: '🔓',
   urlBarricade: '🚧',
+  columnTable: '📊',
   notClear: '🌫️',
   bigTable: '📊',
 };
@@ -162,13 +164,20 @@ export class Hud {
   event(e) {
     switch (e.type) {
       case 'hit':
-        this.line(HIT_TEXT[e.cause]?.(e.racer, e.by));
+        this.line(HIT_TEXT[e.cause]?.(e.racer, e.by, e));
         break;
       case 'zone':
         this.line(ZONE_TEXT[e.obstacle.type]?.(e.racer));
         break;
       case 'block':
         this.line(`${who(e.racer)}'s firewall 🛡️ blocked ${e.by ? `${who(e.by)}'s ${ITEM_INFO[e.cause]?.label ?? 'attack'}` : 'the hit'}`);
+        break;
+      case 'bulkLoad':
+        this.line(`${who(e.racer)} set off BULK LOAD IN PROGRESS 📊 — the 800-Column Table is spreading across the track`);
+        break;
+      case 'truncate':
+        // Highlighted, so the feed's flood control never drops the news that the track is open again.
+        this.line('TRUNCATE TABLE ✂️ — the 800-Column Table is gone and the track is open again', true);
         break;
       case 'status':
         this.line(STATUS_TEXT[e.effect]?.(e.racer, e.by, e.mph));

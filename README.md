@@ -124,6 +124,7 @@ watersnakes.
 | Unhandled exception | A mine that throws everyone nearby (and re-arms)              |
 | SSL Expired         | A "Your connection is not private" page stops you for a moment |
 | DO NOT MODIFY URLS  | A barricade that drops you into an error pit for a few seconds |
+| 800-Column Table    | Juts into the track from one edge. The first racer to come near sets off **BULK LOAD IN PROGRESS** and it expands sideways until it fills half the track — a quick leader may get past before it is fully grown. Squeeze through the gap or clip it: you bounce back and lose any item you were holding. 10 seconds after the bulk load it is truncated and the track is fully open again. |
 
 **Items** — picked up from the spinning `{?}` crates:
 
@@ -205,7 +206,7 @@ public/
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
   js/racers.js       The 11 racer models and their karts
   js/audience.js     Grandstands and the cheering wildlife
-  js/obstacles.js    The 10 obstacle models, item crates, thrown items
+  js/obstacles.js    The 11 obstacle models, item crates, thrown items
   js/effects.js      Particles (explosions, confetti)
   js/hud.js          Countdown, standings, event feed, winner card
   js/audio.js        Synthesised sound effects
