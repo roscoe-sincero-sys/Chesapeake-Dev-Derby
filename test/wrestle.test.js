@@ -46,15 +46,20 @@ test('every wrestler is equally likely to win (elimination order drawn uniformly
   assert.ok(chi2 < 16.27, `wins look biased: ${wins.join(', ')} (chi2 ${chi2.toFixed(1)})`);
 });
 
-test('characters are dealt so each appears before any repeats', () => {
-  for (let seed = 1; seed <= 20; seed++) {
-    const plan = planMatch(names(10), mulberry32(seed));
+test('all 12 roster characters are available, and nobody in a match shares a character', () => {
+  assert.deepEqual(WRESTLER_KINDS.map((k) => k.label), [
+    'Bhima', 'Jarasandha', 'Duryodhana', 'Kichaka', 'Arjuna', 'Karna',
+    'Abhimanyu', 'Ghatotkacha', 'Hidimbi', 'Dushasana', 'Shikhandi', 'Satyaki',
+  ]);
+  assert.equal(new Set(WRESTLER_KINDS.map((k) => k.style)).size, 12, 'each has their own style');
+  const seen = new Set();
+  for (let seed = 1; seed <= 60; seed++) {
+    const plan = planMatch(names(MAX_WRESTLERS), mulberry32(seed));
     const kinds = plan.wrestlers.map((w) => w.kind.id);
-    for (let start = 0; start + WRESTLER_KINDS.length <= kinds.length; start += WRESTLER_KINDS.length) {
-      assert.equal(new Set(kinds.slice(start, start + WRESTLER_KINDS.length)).size, WRESTLER_KINDS.length);
-    }
+    assert.equal(new Set(kinds).size, kinds.length, 'a match never repeats a character');
+    kinds.forEach((k) => seen.add(k));
   }
-  assert.deepEqual(WRESTLER_KINDS.map((k) => k.label), ['Bhima', 'Jarasandha', 'Duryodhana', 'Arjuna']);
+  assert.equal(seen.size, 12, 'every character gets picked');
 });
 
 test('the final two get one close call before the last throw', () => {

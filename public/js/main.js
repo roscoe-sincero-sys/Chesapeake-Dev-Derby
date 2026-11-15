@@ -323,6 +323,27 @@ function run() {
 
 // ------------------------------------------------------------------ wrestling
 
+/** Feed lines for a ring-out, in the thrower's style. */
+const THROW_TEXT = {
+  overhead: (h, v) => `${who(h)} (Bhima) lifted ${who(v)} overhead and tossed them out`,
+  bruiser: (h, v) => `${who(h)} (Kichaka) muscled ${who(v)} over the top rope`,
+  patient: (h, v) => `${who(h)} (Karna) turned ${who(v)}'s charge into a throw over the ropes`,
+  composed: (h, v) => `${who(h)} (Shikhandi) caught ${who(v)} off balance and over the ropes`,
+  illusion: (h, v) => `${who(h)} (Ghatotkacha) feinted with an illusion, then threw ${who(v)} out`,
+  crowd: (h, v) => `${who(h)} (Dushasana) crowded ${who(v)} into the ropes and over`,
+  rebound: (h, v) => `${who(h)} (Satyaki) came off the ropes and took ${who(v)} over the top`,
+};
+
+/** How the close call ends, by who's on the ropes (or who is pulling them back). */
+function closeCallText(w, other) {
+  const saved = {
+    counter: 'slips free at the ropes!',
+    duck: 'ducks out low under the ropes!',
+    shapeshift: 'changes form and slips free!',
+  }[w.kind.style] ?? (other.kind.style === 'centre' ? `is pulled back to the centre by ${other.kind.label}!` : 'hangs on at the ropes!');
+  return `Close call — ${who(w)} ${saved}`;
+}
+
 /** "Let's Wrestle Instead": a battle royal in its own arena, with its own pacing. */
 function wrestle() {
   if (state.phase !== 'lobby') return;
@@ -352,13 +373,9 @@ function wrestle() {
       else if (e.type === 'out') {
         hud.wrestleOut(e.victim.id);
         hud.callout(`${e.victim.name} is out!`);
-        hud.note(`${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`);
+        hud.note(THROW_TEXT[e.thrower.kind.style]?.(e.thrower, e.victim) ?? `${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`);
       } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
-      else if (e.type === 'closeCall') {
-        const saved = e.wrestler.kind.style === 'counter' ? 'slips free at the ropes!'
-          : e.other.kind.style === 'centre' ? `is pulled back to the centre by ${e.other.kind.label}!` : 'hangs on at the ropes!';
-        hud.note(`Close call — ${who(e.wrestler)} ${saved}`);
-      } else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
+      else if (e.type === 'closeCall') hud.note(closeCallText(e.wrestler, e.other)); else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
     },
     onWinner: (w) => {
       state.phase = 'results';

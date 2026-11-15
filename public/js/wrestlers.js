@@ -53,14 +53,21 @@ function humanoid(look, belt) {
   const hips = new THREE.Group();
   hips.position.y = HIP_DROP + THIGH + SHIN + FOOT;
   root.add(hips);
-  hips.add(lathe([[0.3 * bulk, -0.36], [0.335 * bulk, -0.2], [0.32 * bulk, 0.02], [0.27 * bulk, 0.16]], cloth));
-  hips.add(at(cyl(0.302 * bulk, 0.302 * bulk, 0.04, border, 28), 0, -0.36, 0));
+  if (look.female) {
+    // A long skirt to mid-calf (short enough to stay off the mat in a crouch), with a gold border.
+    hips.add(lathe([[0.37 * bulk, -0.86], [0.345 * bulk, -0.55], [0.31 * bulk, -0.18], [0.26 * bulk, 0.16]], cloth));
+    hips.add(at(cyl(0.372 * bulk, 0.372 * bulk, 0.05, border, 28), 0, -0.84, 0));
+    hips.add(at(box(0.06, 0.95, 0.02, border), 0, -0.36, -0.33 * bulk, 0.12)); // front pleat
+  } else {
+    hips.add(lathe([[0.3 * bulk, -0.36], [0.335 * bulk, -0.2], [0.32 * bulk, 0.02], [0.27 * bulk, 0.16]], cloth));
+    hips.add(at(cyl(0.302 * bulk, 0.302 * bulk, 0.04, border, 28), 0, -0.36, 0));
+    for (let i = -1; i <= 1; i++) {
+      hips.add(at(box(0.07, 0.62, 0.025, cloth), i * 0.055, -0.22, -0.29 * bulk, 0.08, 0, i * 0.04)); // pleats
+    }
+    hips.add(at(box(0.2, 0.025, 0.03, border), 0, -0.53, -0.31 * bulk));
+  }
   hips.add(at(torus(0.272 * bulk, 0.035, mat(belt, { roughness: 0.5 })), 0, 0.14, 0, Math.PI / 2));
   hips.add(at(torus(0.285 * bulk, 0.012, gold), 0, 0.09, 0, Math.PI / 2));
-  for (let i = -1; i <= 1; i++) {
-    hips.add(at(box(0.07, 0.62, 0.025, cloth), i * 0.055, -0.22, -0.29 * bulk, 0.08, 0, i * 0.04)); // pleats
-  }
-  hips.add(at(box(0.2, 0.025, 0.03, border), 0, -0.53, -0.31 * bulk));
 
   // ---- legs: cloth over the thighs (the dhoti), bare muscular calves, anklets, feet
   const legs = [-1, 1].map((side) => {
@@ -81,15 +88,38 @@ function humanoid(look, belt) {
   const torso = new THREE.Group();
   torso.position.y = 0.16;
   hips.add(torso);
-  torso.add(at(ball(1, skin, 0.26 * bulk, 0.26, 0.19 * bulk), 0, 0.13, 0)); // abdomen
-  torso.add(at(ball(1, skin, 0.33 * bulk, 0.27, 0.22 * bulk), 0, 0.45, 0)); // ribcage
-  for (const side of [-1, 1]) {
-    torso.add(at(ball(1, skin, 0.14 * bulk, 0.1, 0.07), side * 0.125 * bulk, 0.52, -0.17 * bulk)); // chest
-    torso.add(at(ball(0.12 * bulk, skin, 1.05, 0.95, 1), side * 0.37 * bulk, 0.62, 0)); // shoulder
+  if (look.female) {
+    // A fitted choli (blouse) over the chest, bare midriff.
+    const choli = mat(look.top ?? look.dhoti, { roughness: 0.7 });
+    torso.add(at(ball(1, skin, 0.22 * bulk, 0.24, 0.17 * bulk), 0, 0.13, 0)); // waist
+    torso.add(at(ball(1, choli, 0.27 * bulk, 0.21, 0.19 * bulk), 0, 0.47, 0)); // choli
+    for (const side of [-1, 1]) {
+      torso.add(at(ball(1, choli, 0.11 * bulk, 0.1, 0.09), side * 0.1 * bulk, 0.45, -0.15 * bulk)); // bust
+      torso.add(at(ball(0.1 * bulk, choli, 1.05, 0.9, 1), side * 0.33 * bulk, 0.6, 0)); // sleeve
+    }
+    torso.add(at(torus(0.24 * bulk, 0.016, border), 0, 0.3, 0, Math.PI / 2)); // choli hem
+    torso.add(at(ball(0.012, shade), 0, 0.07, -0.16 * bulk)); // navel
+  } else {
+    torso.add(at(ball(1, skin, 0.26 * bulk, 0.26, 0.19 * bulk), 0, 0.13, 0)); // abdomen
+    torso.add(at(ball(1, skin, 0.33 * bulk, 0.27, 0.22 * bulk), 0, 0.45, 0)); // ribcage
+    for (const side of [-1, 1]) {
+      torso.add(at(ball(1, skin, 0.14 * bulk, 0.1, 0.07), side * 0.125 * bulk, 0.52, -0.17 * bulk)); // chest
+      torso.add(at(ball(0.12 * bulk, skin, 1.05, 0.95, 1), side * 0.37 * bulk, 0.62, 0)); // shoulder
+    }
+    torso.add(at(ball(1, skin, 0.2 * bulk, 0.08, 0.14), 0, 0.7, 0.02)); // trapezius
+    torso.add(at(box(0.012, 0.22, 0.01, shade), 0, 0.2, -0.185 * bulk)); // abdominal line
+    torso.add(at(ball(0.012, shade), 0, 0.07, -0.18 * bulk)); // navel
   }
-  torso.add(at(ball(1, skin, 0.2 * bulk, 0.08, 0.14), 0, 0.7, 0.02)); // trapezius
-  torso.add(at(box(0.012, 0.22, 0.01, shade), 0, 0.2, -0.185 * bulk)); // abdominal line
-  torso.add(at(ball(0.012, shade), 0, 0.07, -0.18 * bulk)); // navel
+  if (look.kavacha) {
+    // Karna's divine golden armour, worn from birth: a breastplate with a sun boss.
+    torso.add(at(ball(1, gold, 0.345 * bulk, 0.285, 0.235 * bulk), 0, 0.45, 0));
+    torso.add(at(ball(1, gold, 0.27 * bulk, 0.2, 0.2 * bulk), 0, 0.17, 0));
+    torso.add(at(cyl(0.07, 0.07, 0.02, mat('#ff922b', { emissive: '#ff6b00', emissiveIntensity: 0.6, metalness: 0.5 }), 16), 0, 0.5, -0.235 * bulk, Math.PI / 2));
+  }
+  if (look.amulet) {
+    // Ghatotkacha's glowing amulet: his magic.
+    torso.add(at(ball(0.05, mat(look.amulet, { emissive: look.amulet, emissiveIntensity: 1.2 })), 0, 0.52, -0.23 * bulk));
+  }
   // Jewellery: a two-strand gold necklace with a ruby pendant.
   torso.add(at(torus(0.16 * bulk, 0.014, gold), 0, 0.69, -0.04, Math.PI / 2 - 0.5));
   torso.add(at(torus(0.2 * bulk, 0.014, gold), 0, 0.64, -0.06, Math.PI / 2 - 0.55));
@@ -109,6 +139,20 @@ function humanoid(look, belt) {
     const mace = group(at(cyl(0.03, 0.035, 1.0, mat('#5c3a1e'), 10), 0, 0, 0), at(ball(0.16, head), 0, 0.56, 0), at(cone(0.045, 0.12, head, 8), 0, 0.74, 0));
     for (let i = 0; i < 6; i++) mace.add(at(torus(0.16, 0.012, head), 0, 0.56, 0, Math.PI / 2, (i * Math.PI) / 6, 0)); // ridges
     torso.add(at(mace, 0.12, 0.4, 0.26 * bulk, 0, 0, 0.5));
+  }
+  if (look.back === 'sword') {
+    const sword = group(
+      at(box(0.06, 0.8, 0.03, mat('#2b2016')), 0, 0, 0), // scabbard
+      at(box(0.16, 0.03, 0.04, gold), 0, 0.42, 0), // guard
+      at(cyl(0.018, 0.018, 0.16, mat('#5c3a1e'), 8), 0, 0.52, 0), // grip
+      at(ball(0.03, gold), 0, 0.61, 0), // pommel
+    );
+    torso.add(at(sword, -0.08, 0.38, 0.24 * bulk, 0, 0, -0.55));
+  }
+  if (look.back === 'shield') {
+    const face = mat(look.shield ?? '#7a4a22', { roughness: 0.6 });
+    const shield = group(at(cyl(0.3, 0.3, 0.04, face, 24), 0, 0, 0, Math.PI / 2), at(torus(0.3, 0.02, gold), 0, 0, -0.01), at(ball(0.06, gold), 0, 0, 0.03));
+    torso.add(at(shield, 0, 0.4, 0.27 * bulk));
   }
   if (look.back === 'bow') {
     // Gandiva on the back, with a quiver of arrows.
@@ -147,12 +191,18 @@ function humanoid(look, belt) {
   head.add(at(cone(0.022, 0.06, skin, 8), 0, 0.2, -0.135, -Math.PI / 2 - 0.25)); // nose
   for (const side of [-1, 1]) {
     head.add(at(ball(1, skin, 0.02, 0.04, 0.025), side * 0.118, 0.21, 0.005)); // ear
-    head.add(at(torus(0.022, 0.006, gold), side * 0.122, 0.16, 0, 0, Math.PI / 2, 0)); // kundala
+    head.add(at(torus(look.bigEarrings ? 0.045 : 0.022, look.bigEarrings ? 0.012 : 0.006, gold), side * 0.122, look.bigEarrings ? 0.13 : 0.16, 0, 0, Math.PI / 2, 0)); // kundala
     head.add(at(ball(1, mat('#f1ede6', { roughness: 0.3 }), 0.022, 0.012, 0.01), side * 0.045, 0.235, -0.118)); // eye white
     head.add(at(ball(0.008, mat('#1a120b')), side * 0.045, 0.235, -0.128)); // iris
     head.add(at(box(0.05, 0.01, 0.012, hair), side * 0.046, 0.262, -0.122, 0, 0, side * -0.18)); // brow
   }
-  head.add(at(box(0.012, 0.045, 0.006, mat('#c92a2a')), 0, 0.29, -0.124)); // tilak
+  if (look.female) head.add(at(ball(0.012, mat('#c92a2a')), 0, 0.272, -0.126)); // bindi
+  else head.add(at(box(0.012, 0.045, 0.006, mat('#c92a2a')), 0, 0.29, -0.124)); // tilak
+  if (look.noseRing) head.add(at(torus(0.014, 0.003, gold), 0.018, 0.19, -0.14, 0, Math.PI / 2, 0));
+  if (look.tusks) {
+    // Small tusks: Ghatotkacha is half-rakshasa.
+    for (const side of [-1, 1]) head.add(at(cone(0.011, 0.045, mat('#f8f4e6'), 6), side * 0.032, 0.15, -0.115));
+  }
   head.add(at(box(0.035, 0.006, 0.006, mat('#7a3b2e')), 0, 0.135, -0.118)); // mouth
   if (look.mustache) {
     const thick = look.mustache === 'thick';
@@ -166,8 +216,25 @@ function humanoid(look, belt) {
   // Long hair falling to the shoulders, as the epic's heroes are drawn.
   head.add(at(ball(1, hair, 0.125, 0.15, 0.13), 0, 0.24, 0.02));
   head.add(at(ball(1, hair, 0.12, 0.17, 0.07), 0, 0.08, 0.1));
+  if (look.hair === 'wild') {
+    // A great mane of wild curls.
+    for (const [x, y, z, r] of [[-0.12, 0.28, 0.05, 0.08], [0.12, 0.28, 0.05, 0.08], [0, 0.34, 0.08, 0.09], [-0.1, 0.12, 0.12, 0.08], [0.1, 0.12, 0.12, 0.08], [0, 0.0, 0.14, 0.09]]) head.add(at(ball(r, hair), x, y, z));
+  }
+  if (look.braid) {
+    // A long braid down the back.
+    for (let i = 0; i < 7; i++) head.add(at(ball(0.04 - i * 0.002, hair), 0, -0.02 - i * 0.075, 0.14 + i * 0.01));
+    head.add(at(ball(0.02, gold), 0, -0.56, 0.21));
+  }
   const crownY = 0.33;
-  if (look.crown === 'band') {
+  if (look.feather) {
+    // A peacock feather in the crown, as worn by the Yadavas.
+    const plume = group(at(cyl(0.006, 0.006, 0.28, mat('#2b8a3e'), 4), 0, 0.14, 0), at(ball(1, mat('#0b7285'), 0.04, 0.07, 0.012), 0, 0.3, 0), at(ball(1, mat('#1864ab'), 0.022, 0.035, 0.014), 0, 0.3, -0.004), at(ball(0.01, mat('#f2b817')), 0, 0.3, -0.012));
+    head.add(at(plume, 0.06, crownY + 0.02, 0.04, -0.25, 0, -0.25));
+  }
+  if (look.crown === 'tiara') {
+    head.add(at(torus(0.122, 0.012, gold), 0, crownY - 0.02, 0, Math.PI / 2 - 0.15));
+    head.add(at(ball(0.025, mat(look.gem ?? '#e03131', { emissive: look.gem ?? '#e03131', emissiveIntensity: 0.3 })), 0, crownY - 0.01, -0.125));
+  } else if (look.crown === 'band') {
     head.add(at(cyl(0.124, 0.124, 0.06, gold, 24), 0, crownY, 0));
     head.add(at(cone(0.03, 0.09, gold, 8), 0, crownY + 0.07, -0.11));
   } else {
@@ -191,6 +258,22 @@ const LOOKS = {
   jarasandha: { skin: '#7a4f33', build: 1.08, bulk: 1.14, dhoti: '#8f1d3f', border: '#f2b817', sash: '#f2b817', crown: 'tall', gem: '#e03131', beard: true, mustache: 'thick', seam: true },
   // The Kaurava prince: royal blue, tall jewelled crown, golden mace and a red cape for the crowd.
   duryodhana: { skin: '#a06e4d', build: 1.04, bulk: 1.06, dhoti: '#1c3d7a', sash: '#f8f9fa', crown: 'tall', gem: '#1c7ed6', mustache: 'thin', back: 'goldMace', cape: '#a61e4d' },
+  // Commander of King Virata's army: a heavy bruiser in forest green, thick mustache, sword on his back.
+  kichaka: { skin: '#7d5236', build: 1.12, bulk: 1.2, dhoti: '#2b5f2b', border: '#c9a227', sash: '#c9a227', crown: 'band', mustache: 'thick', back: 'sword' },
+  // Son of the sun god, born with golden armour (kavacha) and earrings (kundala): crimson and gold.
+  karna: { skin: '#b07d58', build: 1.04, bulk: 1.04, dhoti: '#9c1c1c', border: '#f2b817', crown: 'tall', gem: '#ff922b', mustache: 'thin', kavacha: true, bigEarrings: true, back: 'bow' },
+  // Arjuna's young son: lean and quick, sky blue, small crown, clean-shaven, round shield on his back.
+  abhimanyu: { skin: '#a87250', build: 0.95, bulk: 0.9, dhoti: '#4dabf7', border: '#f2b817', sash: '#f8f9fa', crown: 'mukuta', gem: '#e64980', back: 'shield', shield: '#1864ab' },
+  // Bhima's towering half-rakshasa son: dark skin, wild hair, small tusks, glowing amulet of his magic.
+  ghatotkacha: { skin: '#4e342e', build: 1.3, bulk: 1.25, dhoti: '#3b1f4f', border: '#b197fc', sash: '#b197fc', crown: 'band', mustache: 'thick', hair: 'wild', tusks: true, amulet: '#9775fa', back: 'mace' },
+  // A rakshasi and Ghatotkacha's mother: green choli and skirt, long braid, nose ring, tiara.
+  hidimbi: { skin: '#5d4037', build: 1.02, bulk: 0.9, female: true, dhoti: '#087f5b', top: '#2f9e44', border: '#f2b817', crown: 'tiara', gem: '#9775fa', braid: true, noseRing: true, bigEarrings: true },
+  // Duryodhana's brother: Kaurava green and gold, short beard, golden mace (no cape: he isn't the showman).
+  dushasana: { skin: '#946243', build: 1.06, bulk: 1.1, dhoti: '#1b4d3e', border: '#f2b817', sash: '#f2b817', crown: 'tall', gem: '#2f9e44', mustache: 'thick', beard: true, back: 'goldMace' },
+  // The warrior whose presence turned the battle against Bhishma: violet, pointed crown, sword and shield.
+  shikhandi: { skin: '#9c6b4a', build: 1.0, bulk: 1.0, dhoti: '#6741d9', border: '#f2b817', sash: '#e9ecef', crown: 'mukuta', gem: '#4dabf7', mustache: 'thin', back: 'shield', shield: '#5f3dc4' },
+  // Krishna's Yadava ally: teal, a peacock feather in his crown, sword on his back, built for speed.
+  satyaki: { skin: '#8f5e3e', build: 0.98, bulk: 0.98, dhoti: '#0b7285', border: '#f2b817', sash: '#ffd43b', crown: 'band', feather: true, mustache: 'thin', back: 'sword' },
   // The archer: lean, yellow pitambara, pointed crown, Gandiva and a quiver on his back.
   arjuna: { skin: '#9a6a48', build: 1.0, bulk: 0.95, dhoti: '#f2b817', border: '#c92a2a', sash: '#1971c2', crown: 'mukuta', gem: '#2f9e44', mustache: 'thin', back: 'bow' },
 };

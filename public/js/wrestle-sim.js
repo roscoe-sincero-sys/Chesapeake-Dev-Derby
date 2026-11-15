@@ -11,14 +11,22 @@ export const MIN_WRESTLERS = 2;
 export const MAX_WRESTLERS = 10;
 
 /**
- * The Mahabharata characters available so far. Each name is dealt one, and every character
- * appears before any repeats. More of the 12-character roster can be added here and in wrestlers.js.
+ * The 12-character Mahabharata roster. Each name is dealt one from a shuffled bag; a match has at
+ * most 10 wrestlers, so nobody shares a character. Each `style` drives how they move, throw and survive.
  */
 export const WRESTLER_KINDS = [
   { id: 'bhima', label: 'Bhima', emoji: '💪', style: 'overhead', blurb: 'Power wrestler with a two-handed overhead toss' },
   { id: 'jarasandha', label: 'Jarasandha', emoji: '👑', style: 'centre', blurb: 'A grappler who keeps pulling opponents back to center ring' },
   { id: 'duryodhana', label: 'Duryodhana', emoji: '🎭', style: 'showman', blurb: 'A showman who plays to the crowd after a ring-out' },
+  { id: 'kichaka', label: 'Kichaka', emoji: '🪨', style: 'bruiser', blurb: 'A bruiser who tries to muscle opponents straight through the ropes' },
   { id: 'arjuna', label: 'Arjuna', emoji: '🏹', style: 'counter', blurb: 'A precision wrestler who slips out of holds and counters quickly' },
+  { id: 'karna', label: 'Karna', emoji: '☀️', style: 'patient', blurb: 'A patient counterwrestler who turns a charge into a throw' },
+  { id: 'abhimanyu', label: 'Abhimanyu', emoji: '🌀', style: 'duck', blurb: 'A quick mover who ducks between opponents when cornered' },
+  { id: 'ghatotkacha', label: 'Ghatotkacha', emoji: '🌫️', style: 'illusion', blurb: 'A towering wrestler who uses an illusion to feint before a throw' },
+  { id: 'hidimbi', label: 'Hidimbi', emoji: '🌙', style: 'shapeshift', blurb: 'A shapeshifter who changes form mid-grapple and slips free' },
+  { id: 'dushasana', label: 'Dushasana', emoji: '😤', style: 'crowd', blurb: 'A pushy heel who crowds opponents against the ropes' },
+  { id: 'shikhandi', label: 'Shikhandi', emoji: '🛡️', style: 'composed', blurb: 'A composed grappler who catches charging wrestlers off balance' },
+  { id: 'satyaki', label: 'Satyaki', emoji: '🪶', style: 'rebound', blurb: 'A fast wrestler who rebounds off the ropes for a running takedown' },
 ];
 
 /** Seconds for each part of the match. Fixed: the Race length slider does not change these. */

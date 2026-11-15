@@ -90,9 +90,25 @@ used when **2 to 10** teammates are checked; otherwise it is greyed out, and hov
 to it) says "You need 2 to 10 wrestlers."
 
 The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
-their name floating above them. During the match the corner button reads **Quit match** (it saves nothing). So far the cast is **Bhima** (power wrestler, two-handed overhead toss), **Jarasandha**
-(grappler, king of Magadha), **Duryodhana** (showman, plays to the crowd after a ring-out) and **Arjuna**
-(precision wrestler, slips free); each name is dealt one, and all four appear before any repeats.
+their name floating above them. During the match the corner button reads **Quit match** (it saves nothing).
+
+Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a match has at most
+10 wrestlers). Their styles show in how they move, throw and get out of trouble:
+
+| Character | Look | Style |
+| --- | --- | --- |
+| Bhima | broadest of all, saffron dhoti, iron mace | two-handed overhead toss |
+| Jarasandha | maroon and gold, full beard, ruby crown, the seam where he was joined | pulls opponents back to the centre |
+| Duryodhana | royal blue, jewelled crown, golden mace, red cape | plays to the crowd after a ring-out |
+| Kichaka | heavy bruiser in forest green, sword on his back | muscles opponents over the ropes |
+| Arjuna | lean, yellow pitambara, Gandiva bow and quiver | slips free at the ropes |
+| Karna | golden kavacha armour with a sun emblem, big kundala earrings | turns a charge into a sideways throw |
+| Abhimanyu | young and quick, sky blue, round shield | ducks out low when cornered |
+| Ghatotkacha | towering half-rakshasa, wild hair, small tusks, glowing amulet | flickers like an illusion, then throws overhead |
+| Hidimbi | green choli and skirt, long braid, nose ring, tiara | changes form mid-grapple and slips free |
+| Dushasana | Kaurava green, short beard, golden mace | crowds opponents into the ropes |
+| Shikhandi | violet, pointed crown, round shield | catches charging wrestlers off balance |
+| Satyaki | teal, a peacock feather in his crown, sword | fast, and lives on the ropes |
 
 It is a battle royal: everyone starts in the ring, and you're out when you go over the top rope and land
 on the floor. The last one left **leads today's standup**.

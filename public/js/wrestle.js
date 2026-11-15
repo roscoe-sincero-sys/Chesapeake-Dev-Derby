@@ -20,6 +20,12 @@ const clamp01 = (k) => Math.max(0, Math.min(1, k));
 const headingTo = (fromX, fromZ, toX, toZ) => Math.atan2(-(toX - fromX), -(toZ - fromZ));
 const lerpAngle = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
 
+// How each roster style shows in the ring.
+const QUICK = new Set(['duck', 'rebound']); // Abhimanyu and Satyaki move faster
+const LIFTERS = new Set(['overhead', 'illusion']); // Bhima and the towering Ghatotkacha throw overhead
+const HIP_TOSS = new Set(['patient', 'composed']); // Karna and Shikhandi turn a charge into a sideways throw
+const PUSHERS = new Set(['bruiser', 'crowd']); // Kichaka and Dushasana drive opponents into the ropes
+
 export class WrestleMatch {
   /**
    * @param {string[]} names  the wrestlers (2 to 10), as shown on screen
@@ -69,6 +75,7 @@ export class WrestleMatch {
       };
       state.heading = headingTo(state.x, state.z, 0, 0);
       rig.root.rotation.order = 'YXZ';
+      state.baseScale = rig.root.scale.x;
       this.scene.add(rig.root, rig.tags);
       return state;
     });
@@ -256,7 +263,8 @@ export class WrestleMatch {
   }
 
   roam(w, dt, beat) {
-    const slow = beat.type === 'final' || beat.type === 'closeCall' ? 0.65 : 1;
+    const slow = (beat.type === 'final' || beat.type === 'closeCall' ? 0.65 : 1) * (QUICK.has(w.kind.style) ? 1.3 : 1);
+    const ropeChance = w.kind.style === 'rebound' ? 0.45 : 0.22; // Satyaki lives on the ropes
     // Tie-ups: two wrestlers close together lock up for a moment.
     if (w.tie) {
       w.tie.t -= dt;
@@ -280,7 +288,7 @@ export class WrestleMatch {
         w.rebound = 0.3;
         w.target = this.pickSpot(beat, 2.5);
         w.speed = 4.2 * slow;
-      } else if (Math.random() < 0.22) {
+      } else if (Math.random() < ropeChance) {
         const [nx, nz] = SIDES[Math.floor(Math.random() * 4)];
         const along = -3.5 + Math.random() * 7;
         w.target = { x: nx * (HALF - 0.7) + (nz ? along : 0), z: nz * (HALF - 0.7) + (nx ? along : 0), rope: true };
@@ -376,6 +384,9 @@ export class WrestleMatch {
     r.root.position.set(w.x, w.y, w.z);
     r.root.rotation.y = w.heading;
     r.root.rotation.x = w.pitch ?? 0;
+    r.root.rotation.z = w.roll ?? 0;
+    r.root.scale.setScalar(w.baseScale * (w.pulse ?? 1));
+    r.root.visible = !w.flicker;
     r.tags.position.set(w.x, Math.max(w.y, w.out ? 0 : MAT_Y) + (w.tagDrop ?? 0), w.z);
     // Keep name tags a steady size on screen: smaller when the camera moves in close.
     const s = Math.max(0.32, Math.min(1, this.camera.position.distanceTo(r.root.position) / 15));
@@ -416,7 +427,13 @@ export class WrestleMatch {
     const pv = f.at(HALF - 0.95);
     const ph = f.at(HALF - 2.05);
     const landing = f.at(HALF + 2.7);
-    const overhead = h.kind.style === 'overhead';
+    const overhead = LIFTERS.has(h.kind.style);
+    const hipToss = HIP_TOSS.has(h.kind.style);
+    const push = PUSHERS.has(h.kind.style) ? 0.45 : 0.25;
+    // Hidimbi changes form mid-grapple: her outline pulses while she's locked up.
+    const shapeshift = (w) => (w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1);
+    v.pulse = h.pulse = 1;
+    h.flicker = false;
 
     if (t < b.grappleAt) {
       // Meet at the ropes.
@@ -438,8 +455,12 @@ export class WrestleMatch {
       // Grapple, edging the victim back to the ropes.
       const k = (t - b.grappleAt) / PACE.grapple;
       const shake = Math.sin(t * 22) * 0.04;
-      v.x = pv.x + f.nx * 0.25 * k + shake;
-      v.z = pv.z + f.nz * 0.25 * k;
+      v.x = pv.x + f.nx * push * k + shake;
+      v.z = pv.z + f.nz * push * k;
+      v.pulse = shapeshift(v);
+      h.pulse = shapeshift(h);
+      // Ghatotkacha's illusion: he flickers like a mirage just before the throw.
+      h.flicker = h.kind.style === 'illusion' && t > b.throwAt - 0.45 && Math.floor(t * 18) % 2 === 0;
       h.x = ph.x + f.nx * 0.35 * k;
       h.z = ph.z + f.nz * 0.35 * k;
       v.heading = headingTo(v.x, v.z, h.x, h.z);
@@ -455,7 +476,7 @@ export class WrestleMatch {
         this.fired.add(`throwSound:${b.start}`);
         this.sfx?.play('throw');
       }
-      const start = { x: pv.x + f.nx * 0.25, z: pv.z + f.nz * 0.25 };
+      const start = { x: pv.x + f.nx * push, z: pv.z + f.nz * push };
       let x;
       let z;
       let y;
@@ -475,8 +496,10 @@ export class WrestleMatch {
         x = from.x + (landing.x - from.x) * q;
         z = from.z + (landing.z - from.z) * q;
         y = from.y + (0.25 - from.y) * q + (overhead ? 1.6 : 2.9) * 4 * q * (1 - q);
-        flip = -0.4 - q * Math.PI * 1.1;
-        pose(h.rig, overhead ? { armsUp: 1 - q * 0.4, spread: q * 0.3 } : { armsForward: 1.2, lean: 0.45 * (1 - q) });
+        flip = hipToss ? -0.3 : -0.4 - q * Math.PI * 1.1;
+        // Karna and Shikhandi send them cartwheeling sideways instead of over backwards.
+        v.roll = hipToss ? q * Math.PI * 1.1 : 0;
+        pose(h.rig, overhead ? { armsUp: 1 - q * 0.4, spread: q * 0.3 } : hipToss ? { armsForward: 1, twist: 0.8 * q, crouch: 0.3 } : { armsForward: 1.2, lean: 0.45 * (1 - q) });
       }
       v.x = x;
       v.z = z;
@@ -496,6 +519,9 @@ export class WrestleMatch {
       }
       this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final });
       const since = t - b.landAt;
+      v.roll = 0;
+      v.pulse = h.pulse = 1;
+      h.flicker = false;
       v.x = landing.x;
       v.z = landing.z;
       const sitUp = ease((since - 0.7) / 0.6);
@@ -555,16 +581,19 @@ export class WrestleMatch {
       w.z = pw.z;
       w.heading = headingTo(w.x, w.z, o.x, o.z);
       o.heading = headingTo(o.x, o.z, w.x, w.z);
+      w.pulse = w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1;
       pose(w.rig, { lean: -0.95 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5), flail: 1, walk: t * 9, crouch: 0.15 });
       pose(o.rig, { armsForward: 1.1, lean: 0.4 });
     } else {
-      // Back from the brink: both return towards the centre.
+      // Back from the brink: both return towards the centre (Abhimanyu ducks out low and sideways).
       const k = ease((since - 1.9) / (PACE.closeCall - 1.9));
-      w.x = pw.x - f.nx * 2.2 * k;
-      w.z = pw.z - f.nz * 2.2 * k;
+      w.pulse = 1;
+      const duck = w.kind.style === 'duck';
+      w.x = pw.x - f.nx * 2.2 * k + (duck ? f.ux * 1.6 * k : 0);
+      w.z = pw.z - f.nz * 2.2 * k + (duck ? f.uz * 1.6 * k : 0);
       o.x = po.x - f.nx * 1.6 * k;
       o.z = po.z - f.nz * 1.6 * k;
-      pose(w.rig, { guard: 0.8, crouch: 0.25, walk: t * 6, stride: 0.3, lean: -0.3 * (1 - k) });
+      pose(w.rig, { guard: 0.8, crouch: duck ? 0.35 * (1 - k) + 0.25 : 0.25, walk: t * 6, stride: 0.3, lean: duck ? 0.4 * (1 - k) : -0.3 * (1 - k) });
       pose(o.rig, { guard: 0.8, crouch: 0.25, walk: t * 6, stride: 0.3 });
       if (t > b.end - 0.05) {
         w.mode = o.mode = 'roam';
