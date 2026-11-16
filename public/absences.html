@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Absentee list - Chesapeake Dev Derby</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/build/three.module.js" } }
+  </script>
+</head>
+<body class="editor-page">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <main class="panel editor history">
+    <nav class="page-links" aria-label="Pages">
+      <a id="back-to-lobby" href="./">Back to lobby</a>
+      <a href="history.html">Winner history</a>
+    </nav>
+    <h1>Absentee list</h1>
+    <p>Who was marked absent (unticked in the lobby) at each pick, newest first. Recent winners sitting
+      out aren't listed: they weren't absent.</p>
+    <p id="absence-summary" class="hint" role="status" aria-live="polite">Loading absentees...</p>
+    <div class="history-scroll">
+      <table id="absence-table" class="log-table" hidden>
+        <caption class="visually-hidden">Absentees at each pick, newest first</caption>
+        <thead>
+          <tr><th scope="col">#</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Absent</th><th scope="col">How</th><th scope="col">Picked</th></tr>
+        </thead>
+        <tbody id="absence-rows"></tbody>
+      </table>
+    </div>
+    <div class="editor-actions">
+      <a href="./">Return to lobby</a>
+      <button id="reload-absences" type="button" hidden>Retry loading</button>
+    </div>
+  </main>
+  <script type="module" src="js/absences.js"></script>
+  <script type="module" src="js/session.js"></script>
+</body>
+</html>

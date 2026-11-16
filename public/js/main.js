@@ -5,7 +5,7 @@ import { Hud, who } from './hud.js';
 import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
-import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName } from './eligibility.js';
+import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName, selectAbsentees } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { apiFetch, DEMO } from './api.js';
 import { endSession, resumeSession } from './session.js';
@@ -115,7 +115,8 @@ async function saveWinner(name, mode) {
     const data = await api('/api/winners', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, mode }),
+      // Who was marked absent is logged with the result (Full history → Absentee list).
+      body: JSON.stringify({ name, mode, absent: selectAbsentees(state.roster, state.absent) }),
     });
     state.winners = data.winners;
     state.pendingWinner = null;

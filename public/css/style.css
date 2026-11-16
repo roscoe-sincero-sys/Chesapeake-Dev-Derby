@@ -863,21 +863,23 @@ button.secondary:disabled { cursor: not-allowed; }
 button.danger { background: #c92a2a; border-color: #ff8787; color: #fff; font-weight: 650; }
 button.danger:hover { filter: brightness(1.1); }
 
-/* Winner history page. */
+/* Winner history and Absentee list pages. */
+.page-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.log-table td.picked { white-space: normal; overflow-wrap: anywhere; }
 .history-scroll { overflow-x: auto; margin-top: 12px; }
-#history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-#history-table th, #history-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
-#history-table th { color: var(--muted); font-weight: 650; font-size: 13px; }
-#history-table tbody tr:first-child td { color: var(--gold); }
-#history-table td.num { color: var(--muted); font-family: var(--mono); font-size: 13px; }
-#history-table td.who { font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
-#history-table td.mode.unknown { color: var(--muted); }
+.log-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.log-table th, .log-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
+.log-table th { color: var(--muted); font-weight: 650; font-size: 13px; }
+.log-table tbody tr:first-child td { color: var(--gold); }
+.log-table td.num { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.log-table td.who { font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
+.log-table td.mode.unknown { color: var(--muted); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 560px) {
   .editor.history { padding: 18px 14px; }
-  #history-table { font-size: 13px; }
-  #history-table th, #history-table td { padding: 8px 5px; white-space: normal; }
-  #history-table td.mode { white-space: nowrap; }
+  .log-table { font-size: 13px; }
+  .log-table th, .log-table td { padding: 8px 5px; white-space: normal; }
+  .log-table td.mode { white-space: nowrap; }
 }
 
 /* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. Hidden tips use

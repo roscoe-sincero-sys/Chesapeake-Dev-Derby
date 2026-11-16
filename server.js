@@ -206,7 +206,7 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         if (!payload || typeof payload.name !== 'string' || !payload.name.trim()) {
           return sendJson(res, 400, { error: 'A winner "name" is required.' });
         }
-        const winners = await store.recordWinner(payload.name, payload.mode ?? 'race');
+        const winners = await store.recordWinner(payload.name, payload.mode ?? 'race', payload.absent);
         return sendJson(res, 200, { winners });
       }
 
