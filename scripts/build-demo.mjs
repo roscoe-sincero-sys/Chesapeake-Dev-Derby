@@ -7,6 +7,7 @@
 //
 //   npm run build:demo           then serve _site/ with any static file server
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,10 +36,37 @@ fs.writeFileSync(
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 
 // The demo lives under /Chesapeake-Dev-Derby/, so pages must not use root-absolute links.
-for (const page of fs.readdirSync(out).filter((f) => f.endsWith('.html'))) {
+const pages = fs.readdirSync(out).filter((f) => f.endsWith('.html'));
+for (const page of pages) {
   const html = fs.readFileSync(path.join(out, page), 'utf8');
   const bad = html.match(/(?:href|src)="\/(?!\/)|"three":\s*"\/(?!\/)/);
   if (bad) throw new Error(`${page} uses a root-absolute path (${bad[0]}); use a relative one.`);
 }
 
-console.log(`Demo ${version} built in ${path.relative(ROOT, out) || '.'}`);
+// Cache busting. GitHub Pages lets browsers keep each file for 10 minutes, so right after a deploy a
+// browser could pair the new page with old scripts and styles. Every link to a page, script, style
+// and Three.js gets "?v=<build>", a hash of the whole build: a new deploy is fetched as a new set,
+// and an older cached set still works on its own. All modules use the same stamped URLs, so each
+// module still loads once.
+const files = fs.readdirSync(out, { recursive: true }).filter((f) => fs.statSync(path.join(out, f)).isFile()).sort();
+const hash = crypto.createHash('sha256');
+for (const f of files) hash.update(`${f.replace(/\\/g, '/')}\0`).update(fs.readFileSync(path.join(out, f)));
+const build = hash.digest('hex').slice(0, 10);
+const stamp = (url) => `${url}?v=${build}`;
+for (const page of pages) {
+  const file = path.join(out, page);
+  const html = fs
+    .readFileSync(file, 'utf8')
+    .replace(/(\b(?:src|href)=")((?:js|css)\/[^"?#]+\.(?:js|css)|[a-z-]+\.html|\.\/)"/g, (_, attr, url) => `${attr}${stamp(url)}"`)
+    .replace(/("three":\s*")(\.\/vendor\/three\/build\/three\.module\.js)"/, (_, key, url) => `${key}${stamp(url)}"`);
+  fs.writeFileSync(file, html);
+}
+for (const f of files.filter((f) => /^js[\\/][^\\/]+\.js$/.test(f))) {
+  const file = path.join(out, f);
+  const js = fs
+    .readFileSync(file, 'utf8')
+    .replace(/(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])(\.\/[^'"?]+\.js)\2/g, (_, lead, q, url) => `${lead}${q}${stamp(url)}${q}`);
+  fs.writeFileSync(file, js);
+}
+
+console.log(`Demo ${version} (build ${build}) built in ${path.relative(ROOT, out) || '.'}`);
