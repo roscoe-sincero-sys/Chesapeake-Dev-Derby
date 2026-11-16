@@ -7,6 +7,18 @@ to release.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-15
+
+### Fixed
+- **Colour contrast (accessibility):** text in the lobby, team list editor, results card and wrestling
+  standings now meets WCAG AA in every contrast checker, not just some.
+  - Faint see-through backgrounds (team list cards, last three winners, messages, code samples) are
+    now the same colours, but solid. Simple checkers no longer misread them as white.
+  - **Start race** and **Save team list** have a solid orange under their gradient.
+  - Disabled **Start race** and **Let's Wrestle Instead** are greyed out with readable text instead of
+    being faded (the faded wrestle button was 4.0:1).
+  - Knocked-out wrestlers in the standings are greyed by colour instead of fading.
+
 ## [1.1.1] - 2026-11-15
 
 ### Fixed
