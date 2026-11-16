@@ -132,3 +132,27 @@ test('Exit in the demo answers without losing anything', async () => {
   assert.deepEqual((await call(api, 'api/exit', json('POST', {}))).body, { stopping: true });
   assert.deepEqual((await call(createDemoApi({ storage }), '/api/state')).body.winners.map((w) => w.name), ['Kabayan']);
 });
+
+test('the demo build stamps every page, script, style and Three.js link, so a deploy never mixes with cached files', async (t) => {
+  const out = await mkdtemp(path.join(os.tmpdir(), 'derby-demo-stamp-'));
+  t.after(() => rm(out, { recursive: true, force: true }));
+  const build = () => spawnSync(process.execPath, ['scripts/build-demo.mjs', out], { cwd: ROOT, encoding: 'utf8' });
+  const first = build();
+  assert.equal(first.status, 0, first.stderr);
+  const stamp = first.stdout.match(/build ([0-9a-f]{10})/)[1];
+  assert.equal(build().stdout.match(/build ([0-9a-f]{10})/)[1], stamp, 'the same sources give the same stamp');
+
+  for (const page of ['index.html', 'roster.html', 'history.html']) {
+    const html = await readFile(path.join(out, page), 'utf8');
+    const refs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !/^(?:data:|https?:|#)/.test(u));
+    assert.ok(refs.length >= 3, page);
+    for (const ref of refs) assert.ok(ref.endsWith(`?v=${stamp}`), `${page}: ${ref}`);
+    assert.ok(html.includes(`three.module.js?v=${stamp}"`), `${page} import map`);
+  }
+  for (const f of (await readdir(path.join(out, 'js'))).filter((f) => f.endsWith('.js'))) {
+    const js = await readFile(path.join(out, 'js', f), 'utf8');
+    for (const [, url] of js.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](\.[^'"]*)['"]/g)) {
+      assert.ok(url.endsWith(`?v=${stamp}`), `js/${f}: ${url}`);
+    }
+  }
+});

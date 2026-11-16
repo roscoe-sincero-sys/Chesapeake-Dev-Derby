@@ -325,7 +325,8 @@ npx serve _site        # or any static file server
 ```
 
 The build copies `public/`, adds Three.js's single-file module, and swaps in a `js/config.js` that turns on
-demo mode. Pages use relative links, so the same files work at `/` in the presenter app and under
+demo mode. It also adds a build stamp (`?v=…`) to every page, script and style link, so after a deploy
+browsers load the new files together instead of mixing them with old cached ones. Pages use relative links, so the same files work at `/` in the presenter app and under
 `/Chesapeake-Dev-Derby/` on GitHub Pages.
 
 ## Troubleshooting

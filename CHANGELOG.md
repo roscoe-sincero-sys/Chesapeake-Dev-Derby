@@ -7,6 +7,14 @@ to release.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-15
+
+### Fixed
+- **Online demo after an update:** browsers could pair the new page with old cached scripts and styles
+  (GitHub Pages lets them keep files for 10 minutes). The Exit button did nothing, its hover tip always
+  showed, and the old version number stayed. Every link in the demo now carries a build stamp, so each
+  deploy is loaded as a complete new set.
+
 ## [1.1.0] - 2026-11-15
 
 ### Added
