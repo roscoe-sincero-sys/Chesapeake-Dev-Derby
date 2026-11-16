@@ -18,6 +18,8 @@ to release.
   - Disabled **Start race** and **Let's Wrestle Instead** are greyed out with readable text instead of
     being faded (the faded wrestle button was 4.0:1).
   - Knocked-out wrestlers in the standings are greyed by colour instead of fading.
+- **README:** a new **Accessibility** section: what is built in, the tools used to test it (axe-core,
+  Lighthouse, contrast measurements, `test/contrast.test.js`) and how to check it yourself.
 
 ## [1.1.1] - 2026-11-15
 
