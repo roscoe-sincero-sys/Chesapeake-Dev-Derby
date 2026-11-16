@@ -81,3 +81,20 @@ test('disabled controls stay readable: no see-through or dimming filters on thei
   assert.equal(primary.filter, undefined);
   assert.doesNotMatch(css, /#ring-roster li\.out\s*\{\s*opacity/, 'knocked-out wrestlers are greyed by colour, not opacity');
 });
+
+test('hover tips are hidden with visibility, not only opacity, so checkers like WAVE skip them (#86)', () => {
+  for (const wrap of ['.wrestle-wrap', '.exit-wrap']) {
+    const hidden = rule(`${wrap} .tip`);
+    assert.equal(hidden.visibility, 'hidden', `${wrap} tip at rest`);
+    assert.match(hidden.transition, /visibility/, `${wrap} tip still fades`);
+    const shown = rule(`${wrap}:hover .tip, ${wrap}:focus-within .tip`);
+    assert.equal(shown.visibility, 'visible', `${wrap} tip on hover and focus`);
+    assert.equal(shown.opacity, '1');
+    assert.ok(ratio(hex(hidden.color), hex(hidden.background)) >= 4.5, `${wrap} tip text`);
+  }
+  // No other text is hidden by opacity alone.
+  const transparent = [...css.matchAll(/([^{}]+)\{([^}]*\bopacity:\s*0\s*;[^}]*)\}/g)]
+    // Animation frames that fade in from opacity 0 are fine.
+    .filter(([, sel, body]) => !/visibility:\s*hidden/.test(body) && !/@keyframes|^\s*(?:from|to|\d+%)\s*$/.test(sel));
+  assert.deepEqual(transparent.map(([, sel]) => sel.trim()), []);
+});

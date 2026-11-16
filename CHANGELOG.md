@@ -7,6 +7,13 @@ to release.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-15
+
+### Fixed
+- **WAVE contrast errors on the hover tips:** the **Let's Wrestle Instead** and **Exit** tips were hidden
+  only by being fully see-through, which WAVE measures as invisible text (1:1). They are now properly
+  hidden until hover or keyboard focus, with the same fade. Screen readers still read them.
+
 ## [1.1.2] - 2026-11-15
 
 ### Fixed

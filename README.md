@@ -323,7 +323,8 @@ The online demo uses the same pages.
   - the race-length slider reads out the length in words ("About 60 seconds");
   - the mute button reports whether sound is on;
   - hover tips (**Let's Wrestle Instead**, **Exit**) are also shown on keyboard focus and are linked to
-    their buttons, so screen readers read them too.
+    their buttons, so screen readers read them too. While hidden they are fully hidden, not just
+    see-through, so contrast checkers don't measure invisible text.
 - **Colour contrast:**
   - all text meets AA: 4.5:1, or 3:1 for large text;
   - text sits on solid panels, never directly on the moving 3D scene;
@@ -343,13 +344,13 @@ The online demo uses the same pages.
 
 | Tool | What it checks | When |
 | ---- | -------------- | ---- |
-| [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
+| [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters; hover tips hidden with `visibility`, not just `opacity: 0`. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
 | [axe-core](https://github.com/dequelabs/axe-core) 4.10 (Deque) | WCAG 2 AA `color-contrast` rule. | Each accessibility change: every screen, desktop (1280×800) and phone (390×844), in headless Chrome driven by Puppeteer. |
 | [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
 | Worst-case contrast measurement | Every visible piece of text, including disabled controls and text over the 3D scene. See-through layers are composited over both pure white and pure black; every gradient colour stop and every opacity is applied. | Each accessibility change, same screens as axe-core. |
-| Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. | Each accessibility change, same screens as axe-core. |
+| Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. A WAVE-like pass also folds each element's opacity into its text colour, as WAVE does, so text hidden only by `opacity: 0` counts. | Each accessibility change, same screens as axe-core. |
 
-Results for version 1.1.2 (2026-11-15): **0** contrast problems with each method on every screen, and
+Results for version 1.1.3 (2026-11-15): **0** contrast problems with each method on every screen, and
 Lighthouse Accessibility **100** on every page.
 
 Only `test/contrast.test.js` runs automatically. The other tools are run in a browser during
@@ -378,8 +379,30 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
      and the winner are read out;
    - check that the hover tips are read out when their buttons get focus.
-7. **Reduce motion:** turn on **Settings → Accessibility → Visual effects → Animation effects: Off**
-   (Windows) or **Reduce motion** (Mac). Reload: page animations stop and the bay holds still.
+7. **Reduce motion:** Chrome and Edge have no setting of their own for this. They follow your computer's
+   setting, which websites see as `prefers-reduced-motion`. Either change that setting, or simulate it in
+   the browser:
+
+   - **Option A: change the computer's setting.** This affects every app and website.
+     - **Windows 11:** open the **Start** menu → **Settings** (or press **Windows key + I**) →
+       **Accessibility** → **Visual effects**. Turn **Animation effects** **Off**.
+     - **Windows 10:** **Start** → **Settings** → **Ease of Access** → **Display**. Turn **Show animations
+       in Windows** **Off**.
+     - **macOS:** **Apple menu** → **System Settings** → **Accessibility** → **Display**. Turn on **Reduce
+       motion**.
+   - **Option B: simulate it in the browser.** This affects only that tab, and only while DevTools is open.
+     1. Open the derby and press **F12** to open DevTools.
+     2. Press **Ctrl + Shift + P** (Mac: **Cmd + Shift + P**) to open the command menu.
+     3. Type **reduced motion** and choose **Emulate CSS prefers-reduced-motion: reduce**.
+     4. To undo, run the command again and choose **Do not emulate CSS prefers-reduced-motion**.
+
+     The same choice is on DevTools' **Rendering** tab. To find it: **⋮** (top right of DevTools) → **More
+     tools** → **Rendering** → **Emulate CSS media feature prefers-reduced-motion** → **reduce**.
+
+   **What to look for:** the change applies straight away; reload if it doesn't.
+   - The water stops moving, and the boats, clouds and grandstand wildlife hold still.
+   - Lines in the race feed and the winner card appear without sliding or fading.
+   - The race and the wrestling match still move, because watching them is the point.
 
 Found a problem? Open an issue with the `accessibility` label, naming the page, the element and the tool.
 
