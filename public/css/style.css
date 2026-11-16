@@ -175,22 +175,22 @@ button.link, a.link {
   font-size: 14px;
   border-radius: 10px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #1e222d; /* rgba(255, 255, 255, 0.06) on the panel, as a solid colour */
 }
 
 #status.error {
-  background: rgba(197, 18, 47, 0.25);
+  background: #3d1424; /* rgba(197, 18, 47, 0.25) on the panel, as a solid colour */
   border: 1px solid rgba(255, 107, 107, 0.5);
 }
 
 #status.warn {
-  background: rgba(242, 184, 23, 0.14);
+  background: #302b1f; /* rgba(242, 184, 23, 0.14) on the panel, as a solid colour */
   border: 1px solid rgba(242, 184, 23, 0.4);
 }
 
 #status button {
   margin-left: 8px;
-  background: rgba(255, 255, 255, 0.12);
+  background: #393d46; /* rgba(255, 255, 255, 0.12) on the panel, as a solid colour */
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   padding: 2px 10px;
@@ -216,7 +216,7 @@ button.link, a.link {
   gap: 9px;
   padding: 7px 10px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #1e222d; /* rgba(255, 255, 255, 0.06) on the panel, as a solid colour */
   border: 1px solid transparent;
   cursor: pointer;
   font-size: 15px;
@@ -225,12 +225,12 @@ button.link, a.link {
 }
 
 #roster label:hover {
-  background: rgba(255, 255, 255, 0.11);
+  background: #2a2e39; /* rgba(255, 255, 255, 0.11) on the panel, as a solid colour */
 }
 
 #roster label:has(input:checked) {
   border-color: rgba(242, 184, 23, 0.55);
-  background: rgba(242, 184, 23, 0.1);
+  background: #27241f; /* rgba(242, 184, 23, 0.1) on the panel, as a solid colour */
 }
 
 #roster label:has(input:focus-visible) {
@@ -259,7 +259,7 @@ button.link, a.link {
 
 #roster li.ineligible label {
   cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.03);
+  background: #171b27; /* rgba(255, 255, 255, 0.03) on the panel, as a solid colour */
   color: var(--muted);
 }
 
@@ -289,7 +289,7 @@ button.link, a.link {
 #recent li {
   padding: 5px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
+  background: #212430; /* rgba(255, 255, 255, 0.07) on the panel, as a solid colour */
 }
 
 #recent li .when {
@@ -345,7 +345,7 @@ button.link, a.link {
 
 code {
   font-family: var(--mono);
-  background: rgba(255, 255, 255, 0.1);
+  background: #282c36; /* rgba(255, 255, 255, 0.1) on the panel, as a solid colour */
   padding: 0 4px;
   border-radius: 4px;
 }
@@ -366,7 +366,8 @@ code {
 }
 
 button.primary {
-  background: linear-gradient(180deg, #ff9a2e, var(--orange));
+  /* The solid orange under the gradient is what contrast checkers measure the dark text against. */
+  background: var(--orange) linear-gradient(180deg, #ff9a2e, var(--orange));
   color: #1b0f00;
   font-weight: 750;
   font-size: 18px;
@@ -386,8 +387,11 @@ button.primary:active:not(:disabled) {
   box-shadow: 0 1px 0 #a34e00, 0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
+/* Disabled: clearly greyed out, with text that still reads (no dimming filters or see-through). */
 button.primary:disabled {
-  filter: grayscale(0.9) brightness(0.7);
+  background: #2f3440;
+  color: var(--muted);
+  box-shadow: 0 4px 0 #1c2029;
   cursor: not-allowed;
 }
 
@@ -717,7 +721,7 @@ button:focus-visible {
 }
 
 #retry-save {
-  background: rgba(255, 255, 255, 0.1);
+  background: #282c36; /* rgba(255, 255, 255, 0.1) on the panel, as a solid colour */
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 10px 18px;
@@ -879,7 +883,8 @@ button.danger:hover { filter: brightness(1.1); }
 /* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. */
 .wrestle-wrap { position: relative; margin-left: auto; display: inline-flex; }
 button.wrestle { font-weight: 650; }
-button.wrestle[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
+/* grayscale() keeps brightness, so it greys the emoji without lowering contrast. */
+button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433; border-color: #3b4557; cursor: not-allowed; filter: grayscale(1); }
 .wrestle-wrap .tip {
   position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5;
   white-space: nowrap; padding: 6px 10px; border-radius: 8px; font-size: 13px;
@@ -898,12 +903,13 @@ button.wrestle[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; filte
 }
 #ring-roster li {
   display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 10px;
-  border-radius: 8px; background: rgba(16, 20, 32, 0.82); border: 1px solid var(--panel-border);
+  border-radius: 8px; background: var(--panel); border: 1px solid var(--panel-border);
 }
 #ring-roster .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 #ring-roster .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #ring-roster .as { color: var(--muted); font-size: 12px; white-space: nowrap; }
-#ring-roster li.out { opacity: 0.45; }
+#ring-roster li.out .who, #ring-roster li.out .as { color: var(--muted); }
+#ring-roster li.out .swatch { opacity: 0.45; }
 #ring-roster li.out .who { text-decoration: line-through; }
 #hud.wrestling.results-open #ring-roster { display: none; }
 #countdown.callout { font-size: min(8vw, 64px); font-family: var(--ui); top: 20%; padding: 10px 22px; white-space: nowrap; }

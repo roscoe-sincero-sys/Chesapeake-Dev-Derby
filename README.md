@@ -249,6 +249,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
   from a seed, and outcomes are unbiased.
 - **`test/lobby-settings.test.js`** — saved attendance and race length, the five slider lengths, and
   snapping older or typed-in speeds to the nearest length.
+- **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
+  controls stay readable (see [Accessibility](#accessibility)).
 
 ## How it's put together
 
@@ -296,6 +298,90 @@ other machines; see [Local server security](#local-server-security).
 The simulation (`sim.js`) works in simple track coordinates — distance along the course and sideways
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
 the models to match, so the outcome is the same on a fast or slow machine.
+
+## Accessibility
+
+The derby aims to meet **WCAG 2.2 level AA** on every screen it shows: the lobby, the race and wrestling
+screens, the winner card, **Edit team list**, **Full history**, the reset dialog and the closed screen.
+The online demo uses the same pages.
+
+### What's built in
+
+- **Keyboard:**
+  - every control can be reached with **Tab** and used with **Enter** or **Space**;
+  - in the lobby, **Enter** starts the race;
+  - **M** turns sound on or off;
+  - **Escape** closes the reset dialog.
+- **Focus:**
+  - each page starts on the most useful control: **Start race** in the lobby, **Back to lobby** on the
+    other pages;
+  - focused controls show a clear blue outline.
+- **Screen readers:**
+  - status messages are announced as they change: loading, saving, warnings and errors;
+  - the countdown is announced; the fast-moving race feed is not, so it doesn't flood the listener;
+  - the winner card is a labelled dialog;
+  - the race-length slider reads out the length in words ("About 60 seconds");
+  - the mute button reports whether sound is on;
+  - hover tips (**Let's Wrestle Instead**, **Exit**) are also shown on keyboard focus and are linked to
+    their buttons, so screen readers read them too.
+- **Colour contrast:**
+  - all text meets AA: 4.5:1, or 3:1 for large text;
+  - text sits on solid panels, never directly on the moving 3D scene;
+  - disabled buttons are greyed out with readable text instead of being faded.
+- **Not colour alone:** each state also has words or a mark:
+  - absent teammates are struck through;
+  - recent winners say "Sits out N more races";
+  - knocked-out wrestlers are struck through.
+- **Motion:** with the system setting **Reduce motion** on, page animations and transitions are switched
+  off and the background scenery (waves, boats, clouds) holds still. The race and the wrestling match still
+  move, because watching them is the point.
+- **No 3D:** if the browser can't show 3D (WebGL), the pick still runs. The winner is shown and saved
+  straight away.
+- **Small screens:** pages fit phone width without sideways scrolling.
+
+### How it is tested
+
+| Tool | What it checks | When |
+| ---- | -------------- | ---- |
+| [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
+| [axe-core](https://github.com/dequelabs/axe-core) 4.10 (Deque) | WCAG 2 AA `color-contrast` rule. | Each accessibility change: every screen, desktop (1280×800) and phone (390×844), in headless Chrome driven by Puppeteer. |
+| [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
+| Worst-case contrast measurement | Every visible piece of text, including disabled controls and text over the 3D scene. See-through layers are composited over both pure white and pure black; every gradient colour stop and every opacity is applied. | Each accessibility change, same screens as axe-core. |
+| Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. | Each accessibility change, same screens as axe-core. |
+
+Results for version 1.1.2 (2026-11-15): **0** contrast problems with each method on every screen, and
+Lighthouse Accessibility **100** on every page.
+
+Only `test/contrast.test.js` runs automatically. The other tools are run in a browser during
+development; to run them yourself, see below.
+
+### Check it yourself
+
+Start the derby (`npm start`) and open it in Chrome or Edge, then:
+
+1. **Lighthouse:**
+   1. Press **F12** and open the **Lighthouse** tab.
+   2. Tick only **Accessibility** and click **Analyze page load**.
+   3. Repeat on **Edit team list** and **Full history**.
+2. **axe DevTools:** install the free [axe DevTools](https://www.deque.com/axe/devtools/) extension, open its
+   tab in DevTools and click **Scan all of my page**. Scan again after opening the reset dialog, during a
+   race and on the winner card.
+3. **WAVE:** install the [WAVE extension](https://wave.webaim.org/extension/) and click its icon on each page.
+   Look at **Contrast errors**.
+4. **One element:** right-click some text and choose **Inspect**. Then click the colour swatch next to
+   `color` in the **Styles** pane; the colour picker shows the contrast ratio and whether it passes AA.
+5. **Keyboard:** put the mouse aside.
+   1. Press **Tab** through the lobby: every control should get a visible outline.
+   2. Start a race with **Enter**, and toggle sound with **M**.
+   3. Open **Reset list** and close it with **Escape**.
+6. **Screen reader:**
+   - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
+     and the winner are read out;
+   - check that the hover tips are read out when their buttons get focus.
+7. **Reduce motion:** turn on **Settings → Accessibility → Visual effects → Animation effects: Off**
+   (Windows) or **Reduce motion** (Mac). Reload: page animations stop and the bay holds still.
+
+Found a problem? Open an issue with the `accessibility` label, naming the page, the element and the tool.
 
 ## Online demo
 
