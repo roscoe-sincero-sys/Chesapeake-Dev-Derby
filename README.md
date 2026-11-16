@@ -379,8 +379,30 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
      and the winner are read out;
    - check that the hover tips are read out when their buttons get focus.
-7. **Reduce motion:** turn on **Settings → Accessibility → Visual effects → Animation effects: Off**
-   (Windows) or **Reduce motion** (Mac). Reload: page animations stop and the bay holds still.
+7. **Reduce motion:** Chrome and Edge have no setting of their own for this. They follow your computer's
+   setting, which websites see as `prefers-reduced-motion`. Either change that setting, or simulate it in
+   the browser:
+
+   - **Option A: change the computer's setting.** This affects every app and website.
+     - **Windows 11:** open the **Start** menu → **Settings** (or press **Windows key + I**) →
+       **Accessibility** → **Visual effects**. Turn **Animation effects** **Off**.
+     - **Windows 10:** **Start** → **Settings** → **Ease of Access** → **Display**. Turn **Show animations
+       in Windows** **Off**.
+     - **macOS:** **Apple menu** → **System Settings** → **Accessibility** → **Display**. Turn on **Reduce
+       motion**.
+   - **Option B: simulate it in the browser.** This affects only that tab, and only while DevTools is open.
+     1. Open the derby and press **F12** to open DevTools.
+     2. Press **Ctrl + Shift + P** (Mac: **Cmd + Shift + P**) to open the command menu.
+     3. Type **reduced motion** and choose **Emulate CSS prefers-reduced-motion: reduce**.
+     4. To undo, run the command again and choose **Do not emulate CSS prefers-reduced-motion**.
+
+     The same choice is on DevTools' **Rendering** tab. To find it: **⋮** (top right of DevTools) → **More
+     tools** → **Rendering** → **Emulate CSS media feature prefers-reduced-motion** → **reduce**.
+
+   **What to look for:** the change applies straight away; reload if it doesn't.
+   - The water stops moving, and the boats, clouds and grandstand wildlife hold still.
+   - Lines in the race feed and the winner card appear without sliding or fading.
+   - The race and the wrestling match still move, because watching them is the point.
 
 Found a problem? Open an issue with the `accessibility` label, naming the page, the element and the tool.
 
