@@ -1,42 +1,12 @@
 // Winner history page: every recorded result, newest first, with how it was decided.
 
 import { displayNames, nameKey } from './eligibility.js';
-import { apiFetch } from './api.js';
+import { request, cell, dateAndTime, MODE, startBackground } from './page-common.js';
 
 const $ = (id) => document.getElementById(id);
 
 // Keyboard users start on the first control on the page.
 $('back-to-lobby').focus();
-
-const MODE = {
-  race: '🏁 Race',
-  skip: '🎲 Skip',
-  wrestle: '🤼 Wrestle',
-};
-
-async function request(url) {
-  let response;
-  try {
-    response = await apiFetch(url);
-  } catch {
-    throw new Error('Lost connection to the app. Ask the host to restart it, then tap Retry.');
-  }
-  let body = null;
-  try {
-    body = await response.json();
-  } catch {
-    /* handled below */
-  }
-  if (!response.ok) throw Object.assign(new Error(body?.error || `Server error (${response.status})`), { status: response.status });
-  return body;
-}
-
-function cell(text, className) {
-  const td = document.createElement('td');
-  td.textContent = text;
-  if (className) td.className = className;
-  return td;
-}
 
 async function load() {
   const summary = $('history-summary');
@@ -54,15 +24,14 @@ async function load() {
     rows.replaceChildren();
     history.forEach((entry, i) => {
       const tr = document.createElement('tr');
-      const when = entry.date ? new Date(entry.date) : null;
-      const valid = when && !Number.isNaN(when.getTime());
+      const [day, time] = dateAndTime(entry.date);
       const name = cell(shown.get(nameKey(entry.name)) ?? entry.name, 'who');
       name.title = entry.name;
       tr.append(
         cell(String(history.length - i), 'num'),
         name,
-        cell(valid ? when.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : '—'),
-        cell(valid ? when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '—'),
+        cell(day),
+        cell(time),
         cell(MODE[entry.mode] ?? '—', `mode ${entry.mode ?? 'unknown'}`),
       );
       rows.append(tr);
@@ -88,13 +57,4 @@ async function load() {
 $('reload-history').addEventListener('click', load);
 load();
 
-// The same slow fly-over of the course as the lobby and Edit team list, without making the
-// history depend on WebGL: if 3D is unavailable the page just keeps its plain background.
-Promise.all([import('./game.js'), import('./audio.js')])
-  .then(([{ Game }, { Sfx }]) => {
-    new Game(document.getElementById('scene'), {}, new Sfx());
-  })
-  .catch((err) => {
-    document.getElementById('scene').hidden = true;
-    console.warn('3D background is unavailable.', err);
-  });
+startBackground();

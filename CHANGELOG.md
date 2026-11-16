@@ -7,6 +7,21 @@ to release.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-15
+
+### Added
+- **Absentee list:** each result now records who was marked absent (unticked in the lobby). Recent
+  winners sitting out and the winner aren't counted.
+  - A new page, linked from the top of **Full history**, lists them newest first: pick number, date,
+    time, who was absent, how the pick was made and who was picked.
+  - Stored with each result in `data/history.json` (`"absent"`). Older results have no list, and older
+    pages that don't send one still save normally. The online demo logs absentees the same way.
+
+### Fixed
+- **Background fly-over between pages:** opening **Edit team list** or **Full history** (and going back)
+  carries on the fly-over and the moving scenery from where the last page was, instead of restarting
+  from the start line. **Skip race** already did, because it stays on the same page.
+
 ## [1.1.3] - 2026-11-15
 
 ### Fixed

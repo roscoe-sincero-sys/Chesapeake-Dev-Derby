@@ -124,11 +124,16 @@ export function parseHistory(raw) {
   const history = [];
   for (const entry of list) {
     if (!entry || typeof entry.name !== 'string' || !entry.name.trim()) continue;
-    history.push({
+    const item = {
       name: entry.name.trim(),
       date: typeof entry.date === 'string' ? entry.date : null,
       mode: WIN_MODES.includes(entry.mode) ? entry.mode : null,
-    });
+    };
+    // Who was marked absent for that pick. Results saved before absentees were logged have no list.
+    if (Array.isArray(entry.absent)) {
+      item.absent = entry.absent.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim());
+    }
+    history.push(item);
   }
   return history.slice(-MAX_HISTORY);
 }
@@ -148,6 +153,23 @@ export function validateRoster(raw) {
     throw Object.assign(new Error(`Use at most ${MAX_NAMES} names, each ${MAX_NAME_LENGTH} characters or fewer.`), { statusCode: 400 });
   }
   return parseNames({ names: [...entries, ...labels] });
+}
+
+/**
+ * The teammates marked absent for a pick, as they are spelled on the team list, in team-list order.
+ * Only people who could have taken part count: names not on the list, the winner, and recent winners
+ * sitting out (`recent`, the last three winners before this pick) are left out; duplicates count once.
+ * `absent` may be missing (an older page): that means nobody was recorded as absent.
+ * Throws an Error with statusCode 400 when it isn't a list of names.
+ */
+export function checkAbsentees(names, recent, winner, absent) {
+  if (absent === undefined || absent === null) return [];
+  if (!Array.isArray(absent) || absent.length > MAX_NAMES || absent.some((n) => typeof n !== 'string')) {
+    throw Object.assign(new Error(`"absent" must be a list of at most ${MAX_NAMES} names.`), { statusCode: 400 });
+  }
+  const wanted = new Set(absent.map(nameKey));
+  const sittingOut = new Set(recent.map((w) => nameKey(w.name)));
+  return names.filter((n) => wanted.has(nameKey(n)) && !sittingOut.has(nameKey(n)) && nameKey(n) !== nameKey(winner));
 }
 
 /**

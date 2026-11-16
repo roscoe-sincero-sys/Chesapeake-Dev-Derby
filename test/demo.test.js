@@ -89,7 +89,7 @@ test('with no sign variants, the crowd shows the regular signs whatever the name
 });
 
 test('pages use relative links and import map, so they work under a sub-path', async () => {
-  for (const page of ['index.html', 'roster.html', 'history.html']) {
+  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html']) {
     const html = await readFile(path.join(ROOT, 'public', page), 'utf8');
     assert.doesNotMatch(html, /(?:href|src)="\/(?!\/)/, `${page} has a root-absolute link`);
     assert.match(html, /"three": "\.\/vendor\/three\/build\/three\.module\.js"/, `${page} import map`);
@@ -105,7 +105,7 @@ test('npm run build:demo produces a self-contained demo with demo mode on and no
   const config = await readFile(path.join(out, 'js', 'config.js'), 'utf8');
   assert.match(config, /export const DEMO = true;/);
   assert.ok(config.includes(`DEMO_VERSION = "${pkg.version}"`));
-  for (const f of ['index.html', 'roster.html', 'history.html', 'js/main.js', 'js/demo-api.js', 'js/data-rules.js', 'css/style.css', 'vendor/three/build/three.module.js', 'vendor/three/LICENSE', '.nojekyll']) {
+  for (const f of ['index.html', 'roster.html', 'history.html', 'absences.html', 'js/absences.js', 'js/flyover-handoff.js', 'js/main.js', 'js/demo-api.js', 'js/data-rules.js', 'css/style.css', 'vendor/three/build/three.module.js', 'vendor/three/LICENSE', '.nojekyll']) {
     await stat(path.join(out, f));
   }
   const all = await readdir(out, { recursive: true });
@@ -142,7 +142,7 @@ test('the demo build stamps every page, script, style and Three.js link, so a de
   const stamp = first.stdout.match(/build ([0-9a-f]{10})/)[1];
   assert.equal(build().stdout.match(/build ([0-9a-f]{10})/)[1], stamp, 'the same sources give the same stamp');
 
-  for (const page of ['index.html', 'roster.html', 'history.html']) {
+  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html']) {
     const html = await readFile(path.join(out, page), 'utf8');
     const refs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !/^(?:data:|https?:|#)/.test(u));
     assert.ok(refs.length >= 3, page);

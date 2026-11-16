@@ -27,6 +27,14 @@ export function selectRacers(roster, absent = new Set()) {
   return roster.filter((entry) => entry.eligible && !absent.has(nameKey(entry.name))).map((entry) => entry.name);
 }
 
+/**
+ * Who was marked absent: people who could have taken part (not recent winners sitting out) but were
+ * unticked. These are logged with each result.
+ */
+export function selectAbsentees(roster, absent = new Set()) {
+  return roster.filter((entry) => entry.eligible && absent.has(nameKey(entry.name))).map((entry) => entry.name);
+}
+
 /** A uniform immediate pick from the same eligible, present racers as a race. */
 export function pickRandomRacer(roster, absent = new Set(), rng = Math.random) {
   const racers = selectRacers(roster, absent);
@@ -63,4 +71,22 @@ const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: tr
 export function sortByDisplayName(entries, shown) {
   const label = (entry) => shown.get(nameKey(entry.name)) ?? entry.name;
   return [...entries].sort((a, b) => collator.compare(label(a), label(b)) || collator.compare(a.name, b.name));
+}
+
+/**
+ * The rows to show and the numbers for the summary. `history` is newest first, as the server sends it;
+ * each row keeps its pick number from the Winner history so the two lists line up.
+ */
+export function absenteeRows(history) {
+  const rows = [];
+  let logged = 0;
+  let absences = 0;
+  history.forEach((entry, i) => {
+    if (!Array.isArray(entry.absent)) return; // saved before absentees were logged
+    logged++;
+    if (!entry.absent.length) return;
+    absences += entry.absent.length;
+    rows.push({ number: history.length - i, ...entry });
+  });
+  return { rows, logged, absences, unlogged: history.length - logged };
 }

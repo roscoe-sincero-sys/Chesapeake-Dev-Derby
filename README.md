@@ -148,6 +148,23 @@ with each winner's date and time and whether they won a **race**, won by **wrest
 Instead), or were picked with **Skip race, just pick**. On an install from before the history was added, the list starts with the winners already in
 `data/winners.json`; those show **—** under How because that wasn't recorded.
 
+### Absentee list
+
+Each result also records who was **marked absent**: the teammates unticked in the lobby for that pick.
+Recent winners sitting out are not counted, because they weren't absent; nor is the winner.
+
+To see the list, click **Full history** in the lobby, then **Absentee list** at the top of that page. Like
+the winner history, it is newest first. Each row shows:
+
+- the pick's number, the same as in the winner history;
+- the date and time;
+- who was absent;
+- how the pick was made (race, skip or wrestle) and who was picked.
+
+Only picks with someone absent are listed. The line above the table says how many picks that was out of
+all those logged. Results saved before version 1.2.0 didn't record absentees, so the list starts from
+then. The absentees are stored with each result in `data/history.json`, as `"absent": [ ...names ]`.
+
 ### Resetting or correcting the history
 
 To make everyone eligible again, click **Reset list** next to **Last three winners** in the lobby and
@@ -262,10 +279,13 @@ scripts/build-demo.mjs  Builds the GitHub Pages demo into _site/ (npm run build:
 .github/workflows/pages.yml  Tests, builds and deploys the demo on pushes to main
 data/names.json      Your roster (created by Edit team list; not committed)
 data/winners.json    Last three winners (written by the game)
-data/history.json    Every result, with date, time and race/skip (written by the game)
+data/history.json    Every result, with date, time, race/skip/wrestle and who was absent (written by the game)
 public/
   index.html         Lobby, race HUD and winner card
   history.html       Winner history page (js/history.js)
+  absences.html      Absentee list page (js/absences.js)
+  js/page-common.js  Shared by the history and absentee pages: loading, table cells, 3D background
+  js/flyover-handoff.js  Carries the background fly-over on from page to page (sessionStorage)
   css/style.css
   js/main.js         Lobby logic, starts races, saves the winner
   js/api.js          Sends API requests to the server, or to the demo store in the online demo
@@ -302,7 +322,8 @@ the models to match, so the outcome is the same on a fast or slow machine.
 ## Accessibility
 
 The derby aims to meet **WCAG 2.2 level AA** on every screen it shows: the lobby, the race and wrestling
-screens, the winner card, **Edit team list**, **Full history**, the reset dialog and the closed screen.
+screens, the winner card, **Edit team list**, **Full history**, the **Absentee list**, the reset dialog
+and the closed screen.
 The online demo uses the same pages.
 
 ### What's built in
@@ -346,11 +367,11 @@ The online demo uses the same pages.
 | ---- | -------------- | ---- |
 | [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters; hover tips hidden with `visibility`, not just `opacity: 0`. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
 | [axe-core](https://github.com/dequelabs/axe-core) 4.10 (Deque) | WCAG 2 AA `color-contrast` rule. | Each accessibility change: every screen, desktop (1280×800) and phone (390×844), in headless Chrome driven by Puppeteer. |
-| [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
+| [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby and the absentee list (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
 | Worst-case contrast measurement | Every visible piece of text, including disabled controls and text over the 3D scene. See-through layers are composited over both pure white and pure black; every gradient colour stop and every opacity is applied. | Each accessibility change, same screens as axe-core. |
 | Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. A WAVE-like pass also folds each element's opacity into its text colour, as WAVE does, so text hidden only by `opacity: 0` counts. | Each accessibility change, same screens as axe-core. |
 
-Results for version 1.1.3 (2026-11-15): **0** contrast problems with each method on every screen, and
+Results for version 1.2.0 (2026-11-15): **0** contrast problems with each method on every screen, and
 Lighthouse Accessibility **100** on every page.
 
 Only `test/contrast.test.js` runs automatically. The other tools are run in a browser during
@@ -363,7 +384,7 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
 1. **Lighthouse:**
    1. Press **F12** and open the **Lighthouse** tab.
    2. Tick only **Accessibility** and click **Analyze page load**.
-   3. Repeat on **Edit team list** and **Full history**.
+   3. Repeat on **Edit team list**, **Full history** and the **Absentee list**.
 2. **axe DevTools:** install the free [axe DevTools](https://www.deque.com/axe/devtools/) extension, open its
    tab in DevTools and click **Scan all of my page**. Scan again after opening the reset dialog, during a
    race and on the winner card.

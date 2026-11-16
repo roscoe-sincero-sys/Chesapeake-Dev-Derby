@@ -2,7 +2,7 @@
 // rules (shared through data-rules.js), but keeps everything in this browser's localStorage: nothing is
 // sent anywhere. Used only when config.js says DEMO.
 
-import { validateRoster, checkWinner, parseNames, parseWinners, parseHistory, addWinner, MAX_HISTORY } from './data-rules.js';
+import { validateRoster, checkWinner, checkAbsentees, parseNames, parseWinners, parseHistory, addWinner, MAX_HISTORY } from './data-rules.js';
 
 /** The demo's starting team list: characters from the Maranao epic Maharadia Lawana. */
 export const DEMO_NAMES = [
@@ -78,9 +78,10 @@ export function createDemoApi({ storage, version = null, names = DEMO_NAMES, now
       if (!payload || typeof payload.name !== 'string' || !payload.name.trim()) throw fail(400, 'A winner "name" is required.');
       const data = load();
       const match = checkWinner(data.names, payload.name, payload.mode ?? 'race');
+      const absent = checkAbsentees(data.names, data.winners, match, payload.absent);
       const date = now();
       const winners = addWinner(data.winners, match, date);
-      const history = [...data.history, { name: match, date, mode: payload.mode ?? 'race' }].slice(-MAX_HISTORY);
+      const history = [...data.history, { name: match, date, mode: payload.mode ?? 'race', absent }].slice(-MAX_HISTORY);
       save({ ...data, winners, history });
       return { winners };
     }

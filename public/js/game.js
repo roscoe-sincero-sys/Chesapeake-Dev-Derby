@@ -10,6 +10,16 @@ import { Particles } from './effects.js';
 import { emojiTexture } from './util3d.js';
 import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
 import { WrestleMatch } from './wrestle.js';
+import { readFlyover, writeFlyover } from './flyover-handoff.js';
+
+/** This tab's sessionStorage, or null where the browser blocks it. */
+function sessionStorageOrNull() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
 
 const STEP = 1 / 60;
 const COUNTDOWN_LEAD_IN = 1.3; // seconds of camera sweep before "3"
@@ -95,6 +105,16 @@ export class Game {
     this.clock = 0;
     this.timeScale = 1;
     this.flyT = 0; // real seconds into the current fly-over
+    // Carry on the fly-over where the previous page left it (lobby ↔ Edit team list ↔ Full history),
+    // instead of starting again from the start line on every page.
+    this.resumeFlyover();
+    window.addEventListener('pagehide', () => {
+      if (this.phase === 'lobby' && !this.wrestle) writeFlyover(sessionStorageOrNull(), { flyT: this.flyT, clock: this.clock });
+    });
+    window.addEventListener('pageshow', (event) => {
+      // Back/forward cache: this page was frozen while another page moved the fly-over on.
+      if (event.persisted && this.phase === 'lobby') this.resumeFlyover();
+    });
     this.sim = null;
     this.raceGroup = null;
     this.visuals = [];
@@ -241,6 +261,15 @@ export class Game {
   }
 
   // ------------------------------------------------------------ main loop
+
+  /** Picks up the fly-over (and the scenery's clock) from the last page, if there was one. */
+  resumeFlyover() {
+    const saved = readFlyover(sessionStorageOrNull());
+    if (!saved) return;
+    this.flyT = saved.flyT;
+    this.clock = saved.clock;
+    this.camReady = false; // place the camera there at once, rather than gliding from the start line
+  }
 
   /** Stops drawing for good (after Exit). */
   stop() {

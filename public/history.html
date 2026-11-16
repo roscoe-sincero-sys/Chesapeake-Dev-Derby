@@ -13,12 +13,15 @@
 <body class="editor-page">
   <canvas id="scene" aria-hidden="true"></canvas>
   <main class="panel editor history">
-    <a id="back-to-lobby" href="./">Back to lobby</a>
+    <nav class="page-links" aria-label="Pages">
+      <a id="back-to-lobby" href="./">Back to lobby</a>
+      <a href="absences.html">Absentee list</a>
+    </nav>
     <h1>Winner history</h1>
     <p>Every meeting leader the derby has picked, newest first.</p>
     <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
     <div class="history-scroll">
-      <table id="history-table" hidden>
+      <table id="history-table" class="log-table" hidden>
         <caption class="visually-hidden">All past winners, newest first</caption>
         <thead>
           <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
