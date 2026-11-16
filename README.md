@@ -323,7 +323,8 @@ The online demo uses the same pages.
   - the race-length slider reads out the length in words ("About 60 seconds");
   - the mute button reports whether sound is on;
   - hover tips (**Let's Wrestle Instead**, **Exit**) are also shown on keyboard focus and are linked to
-    their buttons, so screen readers read them too.
+    their buttons, so screen readers read them too. While hidden they are fully hidden, not just
+    see-through, so contrast checkers don't measure invisible text.
 - **Colour contrast:**
   - all text meets AA: 4.5:1, or 3:1 for large text;
   - text sits on solid panels, never directly on the moving 3D scene;
@@ -343,13 +344,13 @@ The online demo uses the same pages.
 
 | Tool | What it checks | When |
 | ---- | -------------- | ---- |
-| [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
+| [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters; hover tips hidden with `visibility`, not just `opacity: 0`. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
 | [axe-core](https://github.com/dequelabs/axe-core) 4.10 (Deque) | WCAG 2 AA `color-contrast` rule. | Each accessibility change: every screen, desktop (1280×800) and phone (390×844), in headless Chrome driven by Puppeteer. |
 | [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
 | Worst-case contrast measurement | Every visible piece of text, including disabled controls and text over the 3D scene. See-through layers are composited over both pure white and pure black; every gradient colour stop and every opacity is applied. | Each accessibility change, same screens as axe-core. |
-| Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. | Each accessibility change, same screens as axe-core. |
+| Simple-checker method | The method used by tools such as the [WAVE](https://wave.webaim.org/extension/) extension and the browser's inspect-element contrast warning: text colour against the nearest background colour, ignoring transparency and gradients. A WAVE-like pass also folds each element's opacity into its text colour, as WAVE does, so text hidden only by `opacity: 0` counts. | Each accessibility change, same screens as axe-core. |
 
-Results for version 1.1.2 (2026-11-15): **0** contrast problems with each method on every screen, and
+Results for version 1.1.3 (2026-11-15): **0** contrast problems with each method on every screen, and
 Lighthouse Accessibility **100** on every page.
 
 Only `test/contrast.test.js` runs automatically. The other tools are run in a browser during

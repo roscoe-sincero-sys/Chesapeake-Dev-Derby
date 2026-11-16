@@ -880,7 +880,8 @@ button.danger:hover { filter: brightness(1.1); }
   #history-table td.mode { white-space: nowrap; }
 }
 
-/* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. */
+/* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. Hidden tips use
+   visibility: hidden, not just opacity: 0, so contrast checkers (WAVE) don't measure invisible text. */
 .wrestle-wrap { position: relative; margin-left: auto; display: inline-flex; }
 button.wrestle { font-weight: 650; }
 /* grayscale() keeps brightness, so it greys the emoji without lowering contrast. */
@@ -890,9 +891,10 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
   white-space: nowrap; padding: 6px 10px; border-radius: 8px; font-size: 13px;
   color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-  opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity 0.12s, transform 0.12s;
+  visibility: hidden; opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s, visibility 0.12s;
 }
-.wrestle-wrap:hover .tip, .wrestle-wrap:focus-within .tip { opacity: 1; transform: none; }
+.wrestle-wrap:hover .tip, .wrestle-wrap:focus-within .tip { visibility: visible; opacity: 1; transform: none; }
 
 /* During a wrestling match: no race standings or progress bar; a list of who is still in. */
 #ring-roster { display: none; }
@@ -960,9 +962,10 @@ button.exit { padding: 8px 14px; }
   padding: 6px 10px; border-radius: 8px; font-size: 13px;
   color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-  opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 0.12s, transform 0.12s;
+  visibility: hidden; opacity: 0; transform: translateY(-4px); pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s, visibility 0.12s;
 }
-.exit-wrap:hover .tip, .exit-wrap:focus-within .tip { opacity: 1; transform: none; }
+.exit-wrap:hover .tip, .exit-wrap:focus-within .tip { visibility: visible; opacity: 1; transform: none; }
 
 /* After Exit. */
 .closed { max-width: 460px; margin: 18vh auto 0; padding: 28px; text-align: center; }
