@@ -207,3 +207,35 @@ test('GET /api/version reports the version from package.json', async (t) => {
   const lock = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'));
   assert.equal(lock.version, pkg.version, 'package-lock.json agrees');
 });
+
+test('POST /api/exit (the lobby Exit button) answers, then stops the server; data stays', async (t) => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-exit-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await writeFile(path.join(dir, 'names.json'), JSON.stringify({ names: ['Ada', 'Grace'] }));
+  const server = createServer({ dataDir: dir });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.listening && new Promise((resolve) => server.close(resolve)));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  await post(base, { name: 'Ada' });
+
+  // Only the page itself may stop the app: a cross-site or non-JSON request is refused.
+  const crossSite = await fetch(`${base}/api/exit`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'http://evil.example' }, body: '{}' });
+  assert.equal(crossSite.status, 403);
+  const notJson = await fetch(`${base}/api/exit`, { method: 'POST', headers: { 'Content-Type': 'text/plain', Origin: base }, body: '{}' });
+  assert.equal(notJson.status, 415);
+  assert.equal((await fetch(`${base}/api/exit`)).status, 404, 'GET does nothing');
+  assert.ok(server.listening);
+
+  let requested = false;
+  server.on('exit-requested', () => { requested = true; });
+  const closed = new Promise((resolve) => server.on('close', resolve));
+  const res = await fetch(`${base}/api/exit`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base }, body: '{}' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { stopping: true });
+  await closed;
+  assert.ok(requested);
+  assert.equal(server.listening, false);
+  await assert.rejects(fetch(`${base}/api/version`));
+  const winners = JSON.parse(await readFile(path.join(dir, 'winners.json'), 'utf8'));
+  assert.deepEqual(winners.winners.map((w) => w.name), ['Ada'], 'saved winners are kept');
+});

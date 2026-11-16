@@ -120,7 +120,8 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
       if (url.origin !== origin) return sendJson(res, 421, { error: 'Untrusted request target.' });
       const pathname = decodeURIComponent(url.pathname);
       const mutation = (pathname === '/api/names' && req.method === 'PUT') ||
-        (pathname === '/api/winners' && (req.method === 'POST' || req.method === 'DELETE'));
+        (pathname === '/api/winners' && (req.method === 'POST' || req.method === 'DELETE')) ||
+        (pathname === '/api/exit' && req.method === 'POST');
       const session = pathname === '/api/session' && req.method === 'GET';
       if ((mutation || session) && !isSameOriginRequest(req, origin)) {
         return sendJson(res, 403, { error: 'A same-origin request is required.' });
@@ -155,6 +156,19 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
               server.closeIdleConnections?.();
             }, shutdownDelay);
           }
+        });
+        return;
+      }
+
+      // The lobby's Exit button: answer first, then stop serving. Winners are already saved, and
+      // any save still being written finishes before the server closes.
+      if (pathname === '/api/exit' && req.method === 'POST') {
+        await readBody(req);
+        sendJson(res, 200, { stopping: true });
+        res.on('finish', () => {
+          server.emit('exit-requested');
+          server.close();
+          server.closeAllConnections?.();
         });
         return;
       }
@@ -241,6 +255,8 @@ if (isMain) {
   }
   const exitOnClose = process.argv.includes('--exit-on-close');
   const server = createServer({ exitOnClose });
+  server.on('exit-requested', () => console.log('\n  👋 Exit was clicked in the lobby. Chesapeake Dev Derby has stopped.\n'));
+  server.on('close', () => process.exit(0));
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`Port ${port} is already in use. Try: PORT=${port + 1} npm start  (PowerShell: $env:PORT=${port + 1}; npm start)`);

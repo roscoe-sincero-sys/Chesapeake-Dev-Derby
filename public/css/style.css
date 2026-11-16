@@ -944,3 +944,26 @@ button.wrestle[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; filte
   font-size: 13px;
   color: var(--gold);
 }
+
+/* Exit: top right of the lobby card, with a hover / focus tip like Let's Wrestle Instead's. */
+.exit-wrap { position: relative; margin-left: auto; align-self: flex-start; display: inline-flex; }
+button.exit { padding: 8px 14px; }
+.exit-wrap .tip {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 5;
+  width: max-content; max-width: min(260px, 70vw); white-space: normal;
+  padding: 6px 10px; border-radius: 8px; font-size: 13px;
+  color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 0.12s, transform 0.12s;
+}
+.exit-wrap:hover .tip, .exit-wrap:focus-within .tip { opacity: 1; transform: none; }
+
+/* After Exit. */
+.closed { max-width: 460px; margin: 18vh auto 0; padding: 28px; text-align: center; }
+.closed p { color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
+@media (max-width: 720px) {
+  /* Narrow screens: Exit gets its own line under the title, so the name keeps its room. */
+  .lobby-head { flex-wrap: wrap; }
+  .lobby-title { flex: 1 1 0; min-width: 0; }
+  .exit-wrap { order: 3; flex-basis: 100%; justify-content: flex-end; margin-top: -6px; }
+}
