@@ -7,7 +7,12 @@ to release.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-15
+
 ### Added
+- **Exit button** in the lobby (top right): closes the app. The server stops, the launcher's terminal
+  closes, and the page says the Derby is closed. Hovering explains it in plain words; the team list and
+  winners stay saved. Only the page itself can do this (`POST /api/exit`, same-origin JSON).
 - **Online demo on GitHub Pages:** a public, browser-only copy at
   <https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>.
   - Starts with characters from *Maharadia Lawana*; edits, winners and history are saved only in the
@@ -18,6 +23,7 @@ to release.
   - `npm run build:demo` builds it locally into `_site/`.
 
 ### Changed
+- The lobby hint now says "Let's go see it in your virtual meeting room."
 - Pages use relative links and a relative Three.js import map, so they also work under a sub-path.
 - The team list, winner and history rules moved to `public/js/data-rules.js`, shared by the server and
   the demo. The presenter app behaves as before.

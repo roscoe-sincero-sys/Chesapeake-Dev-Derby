@@ -242,7 +242,13 @@ export class Game {
 
   // ------------------------------------------------------------ main loop
 
+  /** Stops drawing for good (after Exit). */
+  stop() {
+    this.stopped = true;
+  }
+
   frame(now) {
+    if (this.stopped) return;
     requestAnimationFrame(this.frame);
     const real = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;

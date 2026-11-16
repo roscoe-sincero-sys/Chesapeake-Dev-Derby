@@ -124,3 +124,11 @@ test('npm run build:demo produces a self-contained demo with demo mode on and no
   // The repository's own config stays the local app.
   assert.match(await readFile(path.join(ROOT, 'public', 'js', 'config.js'), 'utf8'), /export const DEMO = false;/);
 });
+
+test('Exit in the demo answers without losing anything', async () => {
+  const storage = memoryStorage();
+  const api = createDemoApi({ storage });
+  await call(api, '/api/winners', json('POST', { name: 'Kabayan' }));
+  assert.deepEqual((await call(api, 'api/exit', json('POST', {}))).body, { stopping: true });
+  assert.deepEqual((await call(createDemoApi({ storage }), '/api/state')).body.winners.map((w) => w.name), ['Kabayan']);
+});

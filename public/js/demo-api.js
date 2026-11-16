@@ -84,6 +84,7 @@ export function createDemoApi({ storage, version = null, names = DEMO_NAMES, now
       save({ ...data, winners, history });
       return { winners };
     }
+    if (path === '/api/exit' && method === 'POST') return { stopping: true }; // nothing to stop in the demo
     if (path === '/api/winners' && method === 'DELETE') {
       // Like the server: resetting the last three winners keeps the full history.
       save({ ...load(), winners: [] });

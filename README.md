@@ -31,6 +31,10 @@ seconds after the last game or roster-editor tab closes. Reloading or moving bet
 it running. On startup it waits up to four seconds for an existing tab to reconnect, avoiding a duplicate
 tab after you stop the server with Ctrl+C and restart the launcher. `npm start` and `npm run open` keep running until you press Ctrl+C.
 
+**Exit** (top right of the lobby) closes the app however you started it: the server stops, the launcher's
+terminal closes, and the page says the Derby is closed. Hover over it for a reminder. Your team list and
+winners are already saved, so nothing is lost; start the app again to carry on.
+
 To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm start`).
 
 ## Running a meeting pick
@@ -249,7 +253,7 @@ Uses Node's built-in test runner — no extra packages. Covers:
 ## How it's put together
 
 ```
-server.js            Serves the game; GET /api/version, GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners
+server.js            Serves the game; GET /api/version, GET /api/state, GET /api/history, PUT /api/names, POST/DELETE /api/winners, POST /api/exit
 CHANGELOG.md         What changed in each version
 lib/store.js         Reads names.json, reads/writes winners.json and history.json
 scripts/build-demo.mjs  Builds the GitHub Pages demo into _site/ (npm run build:demo)
@@ -345,7 +349,8 @@ hostnames are not supported; forwarded host headers are not trusted.
 Browser writes and launcher-session connections must come from the same origin. Non-browser clients
 making writes or opening launcher sessions must send an `Origin` header matching their target origin
 (for example, `http://127.0.0.1:4100`).
-Roster and winner writes also require `Content-Type: application/json`. These checks protect against
+Roster and winner writes, and **Exit** (`POST /api/exit`, which stops the server), also require
+`Content-Type: application/json`, so another web page cannot stop the app. These checks protect against
 untrusted web pages; they do not authenticate other programs running on your computer.
 
 The game and roster editor cannot be embedded in frames. Top-level browser navigation is unchanged.

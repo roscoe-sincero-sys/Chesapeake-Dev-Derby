@@ -8,6 +8,7 @@ import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { apiFetch, DEMO } from './api.js';
+import { endSession, resumeSession } from './session.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './lobby-settings.js';
 
 const $ = (id) => document.getElementById(id);
@@ -279,7 +280,7 @@ function updateRunButton() {
   $('wrestle-tip').textContent = canWrestle
     ? `You need 2 to 10 wrestlers. ${racing} ready to wrestle.`
     : `You need 2 to 10 wrestlers. ${racing} ${racing === 1 ? 'is' : 'are'} checked.`;
-  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it on your meeting screen.`;
+  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it in your virtual meeting room.`;
 }
 
 function setAll(present) {
@@ -419,6 +420,39 @@ function backToLobby() {
   $('run').focus({ preventScroll: true });
 }
 
+/**
+ * Exit: stops the app (the local server) and shows a "closed" screen. Winners are saved as soon as
+ * they're picked, so there's nothing to lose. If the server has already gone, the app is closed anyway.
+ */
+async function exitApp() {
+  $('exit-app').disabled = true;
+  // Let go of the keep-alive connection first, so the server isn't cutting it off mid-stream.
+  endSession();
+  try {
+    await api('api/exit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  } catch (err) {
+    // "Lost connection" means the server is already gone; anything else, it's still running.
+    if (!/Lost connection/.test(err.message)) {
+      resumeSession();
+      $('exit-app').disabled = false;
+      $('status').innerHTML = '';
+      const p = document.createElement('p');
+      p.className = 'error-text';
+      p.textContent = `Could not close the app: ${err.message}`;
+      $('status').append(p);
+      return;
+    }
+  }
+  game?.stop();
+  $('lobby').hidden = true;
+  $('scene').hidden = true;
+  $('toolbar').hidden = true;
+  if (DEMO) $('closed-text').textContent = 'Your team list and winners stay saved in this browser. You can close this tab, or reload it to play again.';
+  $('closed').hidden = false;
+  // A tab the app opened itself may close; most browsers keep other tabs open, and the message stays.
+  window.close();
+}
+
 /** Shows the app's version next to its name in the lobby (stays hidden if the server doesn't say). */
 async function showVersion() {
   try {
@@ -495,6 +529,7 @@ function init() {
     if ($('wrestle').getAttribute('aria-disabled') !== 'true') wrestle();
   });
   $('pick').addEventListener('click', pick);
+  $('exit-app').addEventListener('click', exitApp);
   $('check-all').addEventListener('click', () => setAll(true));
   $('check-none').addEventListener('click', () => setAll(false));
   $('back').addEventListener('click', backToLobby);
