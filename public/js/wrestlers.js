@@ -1,10 +1,11 @@
-// The wrestlers for "Let's Wrestle Instead": Mahabharata characters built from shapes, with
-// natural proportions (about 7 heads tall), muscle definition, faces, long hair, draped dhotis and
-// jewellery, on a jointed rig (hips, torso, head, two-part arms and legs) that wrestle.js poses.
+// Shared character/label/pose API for Rumble and HD. Classic mode explicitly selects the original
+// jointed primitive models below; HD uses loaded CC0 skinned models, with the originals as fallback.
 // They face -Z, like the racers. The root sits at floor level: pose() keeps the lower foot on it.
 
 import * as THREE from 'three';
 import { mat, box, ball, cyl, cone, torus, at, group, makeSprite, nameTagTexture } from './util3d.js';
+import { createWrestlerRig, poseWrestlerModel, modelLowestFoot } from './wrestler-models.js';
+export { prepareWrestlerModels } from './wrestler-models.js';
 
 const GOLD = '#d4a017';
 const HAIR = '#16110d';
@@ -295,16 +296,16 @@ const LOOKS = {
 };
 
 /** Just the posable body (no name tags), e.g. for tests. */
-export function buildRig(kind, color = '#ffffff') {
-  return humanoid(LOOKS[kind.id], color);
+export function buildRig(kind, color = '#ffffff', { original = false } = {}) {
+  return (!original && createWrestlerRig(kind, color)) || humanoid(LOOKS[kind.id], color);
 }
 
 /**
  * Builds one wrestler: rig + floating name tag (the teammate's name) and a smaller "as <character>" tag.
  * `color` is the wrestler's own belt colour, so two of the same character can be told apart.
  */
-export function buildWrestler(kind, color, name) {
-  const rig = humanoid(LOOKS[kind.id], color);
+export function buildWrestler(kind, color, name, options = {}) {
+  const rig = buildRig(kind, color, options);
   const tagTexture = nameTagTexture(name, color);
   const tag = makeSprite(tagTexture, 3.2, 0.8, { depthTest: false });
   tag.renderOrder = 10;
@@ -328,6 +329,10 @@ export function buildWrestler(kind, color, name) {
       for (const t of [tagTexture, asTexture]) t.dispose();
       tag.material.dispose();
       asTag.material.dispose();
+      if (rig.disposeBody) {
+        rig.disposeBody();
+        return;
+      }
       rig.root.traverse((o) => {
         // Lathes (dhoti, skirt, cape) are built per wrestler; other shapes are shared by util3d.
         if (o.geometry?.type === 'LatheGeometry') o.geometry.dispose();
@@ -355,6 +360,7 @@ function legReach(leg) {
  * The hips are then set so the lower foot rests exactly on the floor (no feet through the ring).
  */
 export function pose(w, p = {}) {
+  if (w.skinnedRig) return poseWrestlerModel(w, p);
   const t = p.walk ?? 0;
   const stride = p.stride ?? 0;
   const swing = Math.sin(t) * stride;
@@ -399,15 +405,22 @@ export function pose(w, p = {}) {
  * on their body, not propped up on a mace or a bow. Exact, from the vertices; call after posing.
  */
 const _v = new THREE.Vector3();
+const supportVertices = new WeakMap();
 export function lowestBodyPoint(rig) {
   rig.root.updateMatrixWorld(true);
+  if (rig.skinnedRig) rig.body.skeleton.update();
   let lowest = Infinity;
   const visit = (o) => {
     if (o.userData.gear) return;
     if (o.isMesh) {
       const pos = o.geometry.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const y = _v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).y;
+      let indices = supportVertices.get(o.geometry);
+      if (!indices) {
+        indices = o.geometry.index ? [...new Set(o.geometry.index.array)] : Array.from({ length: pos.count }, (_, i) => i);
+        supportVertices.set(o.geometry, indices);
+      }
+      for (const i of indices) {
+        const y = o.getVertexPosition(i, _v).applyMatrix4(o.matrixWorld).y;
         if (y < lowest) lowest = y;
       }
     }
@@ -419,6 +432,7 @@ export function lowestBodyPoint(rig) {
 
 /** For tests: the lowest point of the rig's feet relative to its root, after posing. */
 export function lowestFoot(w) {
+  if (w.skinnedRig) return modelLowestFoot(w);
   w.root.updateMatrixWorld(true);
   const rootY = w.root.getWorldPosition(new THREE.Vector3()).y;
   let lowest = Infinity;

@@ -27,6 +27,8 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const VERSION = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
 
 const MIME = {
+  '.glb': 'model/gltf-binary',
+  '.gltf': 'model/gltf+json',
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',

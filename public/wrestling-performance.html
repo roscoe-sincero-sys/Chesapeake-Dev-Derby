@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>12-wrestler performance test · Chesapeake Dev Derby</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/wrestling-performance.css" />
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
+    </script>
+  </head>
+  <body>
+    <canvas id="performance-scene" aria-label="Full-screen twelve-wrestler battle royal"></canvas>
+    <main class="benchmark-panel">
+      <nav><a href="character-prototype.html">← Character studio</a><a href="index.html">Lobby</a></nav>
+      <h1>All twelve. One ring.</h1>
+      <p>Watch a full match with every character. Compare it with ten at the same window size.</p>
+      <div class="actions">
+        <button id="run-twelve" type="button" disabled>Run all 12</button>
+        <button id="run-ten" type="button" disabled>Compare 10</button>
+        <button id="pause-run" type="button" aria-pressed="false" disabled>Pause</button>
+      </div>
+      <p id="run-status" role="status">Preparing free character models…</p>
+      <dl class="metrics">
+        <div><dt>Frame rate</dt><dd id="fps">—</dd></div>
+        <div><dt>p95 frame interval</dt><dd id="p95">—</dd></div>
+        <div><dt>In ring / loaded</dt><dd id="remaining">—</dd></div>
+        <div><dt>Frame work · p95</dt><dd id="work">—</dd></div>
+      </dl>
+      <p id="gpu" class="small"></p>
+      <p class="small">Keep this tab visible and the window size fixed. The first two seconds warm up. Pausing, hiding or resizing marks a run as unsuitable for comparison.</p>
+      <details id="results" open>
+        <summary>Finished runs</summary>
+        <ol id="run-results"></ol>
+        <button id="download-results" type="button" disabled>Download results (.json)</button>
+      </details>
+      <p class="small">Target: 30+ FPS, p95 ≤ 50 ms, and ≤ 1% of frames above 100 ms, including the opening with everybody in the ring. This preview saves no meeting results.</p>
+    </main>
+    <script type="module" src="js/wrestling-performance.js"></script>
+    <script type="module" src="js/session.js"></script>
+  </body>
+</html>

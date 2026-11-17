@@ -90,17 +90,32 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
-### Let’s Wrestle Instead
+### Let’s Rumble
 
-A second way to pick: **🤼 Let’s Wrestle Instead**, at the far right of the **Start race** row. It can be
-used when **2 to 10** teammates are checked; otherwise it is greyed out, and hovering over it (or tabbing
-to it) says "You need 2 to 10 wrestlers."
+A second way to pick: **🤼 Let’s Rumble**, at the far right of the **Start race** row, uses the original
+character models. The adjacent **HD** button starts the same match with the new detailed models.
+Both support **2 to 12** checked teammates and follow the same selection and winner-history rules.
+Their hover/focus tips explain the model choice and whether enough teammates are checked.
 
 The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
 their name floating above them. During the match the corner button reads **Quit match** (it saves nothing).
 
 Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a match has at most
-10 wrestlers). Their styles show in how they move, throw and get out of trouble:
+12 wrestlers). Their styles show in how they move, throw and get out of trouble:
+
+**Character studio:** the HD option uses free, skinned Quaternius bodies with custom costumes
+and equipment for all twelve characters. Open the permanent **Preview wrestlers** link beneath
+the lobby's Rumble/HD buttons, or visit [`character-prototype.html`](public/character-prototype.html), and select any two
+warriors. Choose poses, orbit/zoom, inspect equipment from behind, compare the original models,
+or watch a match with reversible roles. Preview matches never save meeting results. Original
+models remain the HD fallback if assets cannot load; the ordinary Rumble button always selects
+the originals, even after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
+and [models.md](models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
+
+**Performance test:** open [`wrestling-performance.html`](public/wrestling-performance.html) or use
+**Run all 12 · performance test** in the studio. It runs a complete match with all twelve models,
+compares with ten, and shows/downloads frame timing. The twelve-character limit was validated in
+repeated hardware-accelerated 1080p runs; see [the measured results](docs/wrestling-performance.md).
 
 | Character | Look | Style |
 | --- | --- | --- |

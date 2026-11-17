@@ -827,7 +827,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 
 /* Keep actions readable on narrow screens without moving the length control. */
 .lobby-foot { flex-wrap: wrap; gap: 10px; }
-.lobby-foot .hint { flex-basis: 100%; }
+.lobby-summary { flex: 1 0 100%; display: flex; align-items: baseline; gap: 12px; }
+.lobby-summary .hint { flex: 1; min-width: 0; }
+.lobby-summary .wrestler-preview { flex: none; margin-left: auto; white-space: nowrap; }
 button.primary { white-space: nowrap; }
 .lobby-foot button.primary { padding-inline: 22px; }
 button.secondary {
@@ -882,15 +884,18 @@ button.danger:hover { filter: brightness(1.1); }
   .log-table td.mode { white-space: nowrap; }
 }
 
-/* Let's Wrestle Instead: far right of the Start race row, with a hover / focus tip. Hidden tips use
+/* Rumble model choices: adjacent actions, each with its own hover / focus tip. Hidden tips use
    visibility: hidden, not just opacity: 0, so contrast checkers (WAVE) don't measure invisible text. */
-.wrestle-wrap { position: relative; margin-left: auto; display: inline-flex; }
+.rumble-buttons { position: relative; margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
+.wrestle-wrap { display: inline-flex; }
 button.wrestle { font-weight: 650; }
+button.rumble-hd { font-weight: 750; letter-spacing: 0.06em; padding-inline: 12px; }
 /* grayscale() keeps brightness, so it greys the emoji without lowering contrast. */
 button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433; border-color: #3b4557; cursor: not-allowed; filter: grayscale(1); }
 .wrestle-wrap .tip {
   position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5;
-  white-space: nowrap; padding: 6px 10px; border-radius: 8px; font-size: 13px;
+  width: max-content; max-width: min(330px, calc(100vw - 36px)); white-space: normal;
+  padding: 6px 10px; border-radius: 8px; font-size: 13px;
   color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   visibility: hidden; opacity: 0; transform: translateY(4px); pointer-events: none;

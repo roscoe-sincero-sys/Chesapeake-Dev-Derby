@@ -89,10 +89,11 @@ test('with no sign variants, the crowd shows the regular signs whatever the name
 });
 
 test('pages use relative links and import map, so they work under a sub-path', async () => {
-  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html']) {
+  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html', 'character-prototype.html', 'wrestling-performance.html']) {
     const html = await readFile(path.join(ROOT, 'public', page), 'utf8');
     assert.doesNotMatch(html, /(?:href|src)="\/(?!\/)/, `${page} has a root-absolute link`);
     assert.match(html, /"three": "\.\/vendor\/three\/build\/three\.module\.js"/, `${page} import map`);
+    assert.match(html, /"three\/addons\/": "\.\/vendor\/three\/examples\/jsm\/"/, `${page} addon import map`);
   }
 });
 
@@ -109,6 +110,15 @@ test('npm run build:demo produces a self-contained demo with demo mode on and no
     await stat(path.join(out, f));
   }
   const all = await readdir(out, { recursive: true });
+  for (const file of ['character-prototype.html', 'js/character-prototype.js', 'js/wrestler-models.js', 'js/wrestler-looks.js',
+    'wrestling-performance.html', 'js/wrestling-performance.js', 'js/frame-stats.js', 'css/wrestling-performance.css',
+    'assets/wrestlers/superhero-male.glb', 'assets/wrestlers/superhero-female.glb', 'assets/wrestlers/hair-beard.glb',
+    'assets/wrestlers/hair-long.glb', 'assets/wrestlers/hair-parted.glb',
+    'assets/wrestlers/skin-light.png', 'assets/wrestlers/LICENSE-Quaternius.txt',
+    'vendor/three/examples/jsm/loaders/GLTFLoader.js', 'vendor/three/examples/jsm/controls/OrbitControls.js',
+    'vendor/three/examples/jsm/utils/SkeletonUtils.js', 'vendor/three/examples/jsm/utils/BufferGeometryUtils.js']) {
+    await stat(path.join(out, file));
+  }
   assert.ok(!all.some((f) => /names\.json|winners\.json|history\.json/.test(f)), 'no data files in the demo');
   // No sign variants anywhere in the demo's files.
   const { SIGN_VARIANTS: built } = await import(pathToFileURL(path.join(out, 'js', 'sign-variants.js')));
@@ -142,7 +152,7 @@ test('the demo build stamps every page, script, style and Three.js link, so a de
   const stamp = first.stdout.match(/build ([0-9a-f]{10})/)[1];
   assert.equal(build().stdout.match(/build ([0-9a-f]{10})/)[1], stamp, 'the same sources give the same stamp');
 
-  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html']) {
+  for (const page of ['index.html', 'roster.html', 'history.html', 'absences.html', 'character-prototype.html', 'wrestling-performance.html']) {
     const html = await readFile(path.join(out, page), 'utf8');
     const refs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !/^(?:data:|https?:|#)/.test(u));
     assert.ok(refs.length >= 3, page);

@@ -23,6 +23,12 @@ const threeDir = path.join(ROOT, 'node_modules', 'three');
 fs.mkdirSync(path.join(out, 'vendor', 'three', 'build'), { recursive: true });
 fs.copyFileSync(path.join(threeDir, 'build', 'three.module.js'), path.join(out, 'vendor', 'three', 'build', 'three.module.js'));
 fs.copyFileSync(path.join(threeDir, 'LICENSE'), path.join(out, 'vendor', 'three', 'LICENSE'));
+// GLTFLoader imports BufferGeometryUtils. Keep the upstream relative module layout.
+for (const file of ['loaders/GLTFLoader.js', 'controls/OrbitControls.js', 'utils/SkeletonUtils.js', 'utils/BufferGeometryUtils.js']) {
+  const target = path.join(out, 'vendor', 'three', 'examples', 'jsm', file);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(path.join(threeDir, 'examples', 'jsm', file), target);
+}
 
 fs.writeFileSync(
   path.join(out, 'js', 'config.js'),
@@ -57,7 +63,7 @@ for (const page of pages) {
   const file = path.join(out, page);
   const html = fs
     .readFileSync(file, 'utf8')
-    .replace(/(\b(?:src|href)=")((?:js|css)\/[^"?#]+\.(?:js|css)|[a-z-]+\.html|\.\/)"/g, (_, attr, url) => `${attr}${stamp(url)}"`)
+    .replace(/(\b(?:src|href)=")((?:js|css)\/[^"?#]+\.(?:js|css)|assets\/[^"?#]+|[a-z-]+\.html|\.\/)"/g, (_, attr, url) => `${attr}${stamp(url)}"`)
     .replace(/("three":\s*")(\.\/vendor\/three\/build\/three\.module\.js)"/, (_, key, url) => `${key}${stamp(url)}"`);
   fs.writeFileSync(file, html);
 }

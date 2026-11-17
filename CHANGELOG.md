@@ -7,6 +7,36 @@ to release.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-16
+
+### Changed
+- Kept **Preview wrestlers** as a permanent lobby link, aligned with the racers-on-the-grid hint
+  below the Rumble/HD buttons. The studio's return link now says **Back to the lobby**.
+- Renamed the lobby's wrestling action to **Let’s Rumble** and made it use the original models.
+  The adjacent **HD** button uses the detailed models. Both allow two to twelve participants
+  and share the same match and history rules. Classic mode does not load the HD model assets.
+
+### Performance
+- A full-screen wrestling performance test starts all twelve characters together, with a
+  ten-character comparison, live FPS/frame timing, full-ring and full-match measurements,
+  and downloadable results. Hidden, resized, paused and incomplete runs cannot pass the check.
+- Raised the normal wrestling limit from ten to twelve after repeated full twelve-character
+  matches met the 30 FPS / 50 ms p95 target on hardware-accelerated AMD graphics at 1080p.
+  The validated limit remains twelve, with one distinct character per participant.
+
+### Added
+- Free, skinned Quaternius models for all twelve wrestling characters, with custom weighted
+  dhotis, Hidimbi's choli/skirt, sashes, jewelry, crowns, facial hair and carried equipment.
+  Distinctive details include Arjuna's bow, Karna's sun armor, Duryodhana's cape, Jarasandha's
+  seam and beard, Hidimbi's braid, and Satyaki's peacock feather.
+- **Character studio**, linked from the lobby: select any two warriors, orbit/zoom, view seven
+  movement poses, compare original models, and preview a match with reversible roles. Preview
+  matches do not save winners or use the team roster.
+- Lazy local model loading in wrestling mode with an original-model fallback, static-demo addon
+  packaging, and tests for skeletal independence, grounding, pose direction and asset provenance.
+- **models.md:** instructions for recreating Arjuna from the free base pack, with tool/download
+  links, asset preparation commands, the character recipe, costume/prop construction and testing.
+
 ## [1.2.0] - 2026-11-15
 
 ### Added
@@ -111,5 +141,6 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.2.0...v1.3.0
 [1.0.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/releases/tag/v1.0.0

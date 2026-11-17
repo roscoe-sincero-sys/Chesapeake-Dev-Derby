@@ -2,6 +2,7 @@
 
 import { Game, runHeadless } from './game.js';
 import { Hud, who } from './hud.js';
+import { prepareWrestlerModels } from './wrestlers.js';
 import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
@@ -275,12 +276,15 @@ function updateRunButton() {
   const racing = selectRacers(state.roster, state.absent).length;
   $('racer-count').textContent = `${racing} racing`;
   $('run').disabled = $('pick').disabled = racing < 2;
-  // Let's Wrestle Instead: 2 to 10 wrestlers. aria-disabled (not disabled) keeps the tip reachable.
+  // aria-disabled (not disabled) keeps the count limit's explanation reachable.
   const canWrestle = racing >= MIN_WRESTLERS && racing <= MAX_WRESTLERS;
-  $('wrestle').setAttribute('aria-disabled', String(!canWrestle));
-  $('wrestle-tip').textContent = canWrestle
-    ? `You need 2 to 10 wrestlers. ${racing} ready to wrestle.`
-    : `You need 2 to 10 wrestlers. ${racing} ${racing === 1 ? 'is' : 'are'} checked.`;
+  const explanation = canWrestle
+    ? `You need ${MIN_WRESTLERS} to ${MAX_WRESTLERS} wrestlers. ${racing} ready to wrestle.`
+    : `You need ${MIN_WRESTLERS} to ${MAX_WRESTLERS} wrestlers. ${racing} ${racing === 1 ? 'is' : 'are'} checked.`;
+  for (const [id, description] of [['wrestle', 'Original character models.'], ['wrestle-hd', 'Detailed character models.']]) {
+    $(id).setAttribute('aria-disabled', String(!canWrestle || state.phase === 'loading'));
+    $(`${id}-tip`).textContent = `${description} ${explanation}`;
+  }
   $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it in your virtual meeting room.`;
 }
 
@@ -348,14 +352,32 @@ function closeCallText(w, other) {
   return `Close call — ${who(w)} ${saved}`;
 }
 
-/** "Let's Wrestle Instead": a battle royal in its own arena, with its own pacing. */
-function wrestle() {
+/** Rumble shares one set of rules; model style only selects the character renderer. */
+async function wrestle(modelStyle = 'classic') {
   if (state.phase !== 'lobby') return;
   const storedNames = selectRacers(state.roster, state.absent);
   if (storedNames.length < MIN_WRESTLERS || storedNames.length > MAX_WRESTLERS) return;
   const names = storedNames.map(show);
   state.raceNames = new Map(storedNames.map((name) => [show(name), name]));
   sfx.unlock();
+  let useStyle = modelStyle;
+  let hdFallback = false;
+  if (game && modelStyle === 'hd') {
+    state.phase = 'loading';
+    $('status').textContent = 'Preparing HD characters…';
+    $('wrestle').setAttribute('aria-disabled', 'true');
+    $('wrestle-hd').setAttribute('aria-disabled', 'true');
+    try {
+      await prepareWrestlerModels();
+      $('status').textContent = '';
+    } catch (error) {
+      console.warn('Free character assets unavailable; using the original roster.', error);
+      $('status').textContent = 'Character models could not load. Using the original wrestlers for this match.';
+      useStyle = 'classic';
+      hdFallback = true;
+    }
+    if (state.phase !== 'loading') return;
+  }
   const rng = seed === null ? Math.random : mulberry32(seed);
   state.phase = 'race';
   $('lobby').hidden = true;
@@ -372,6 +394,7 @@ function wrestle() {
 
   const lineup = game.startWrestle(names, {
     rng,
+    modelStyle: useStyle,
     onEvent: (e) => {
       if (e.type === 'bell') hud.note('🔔 Ding ding! Last one in the ring leads today’s standup.', true);
       else if (e.type === 'out') {
@@ -394,6 +417,7 @@ function wrestle() {
     },
   });
   hud.beginWrestle(lineup);
+  if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
   $('quit').textContent = '✕ Quit match';
   $('quit').hidden = false;
 }
@@ -426,6 +450,7 @@ function backToLobby() {
  * they're picked, so there's nothing to lose. If the server has already gone, the app is closed anyway.
  */
 async function exitApp() {
+  state.phase = 'exiting';
   $('exit-app').disabled = true;
   // Let go of the keep-alive connection first, so the server isn't cutting it off mid-stream.
   endSession();
@@ -434,6 +459,7 @@ async function exitApp() {
   } catch (err) {
     // "Lost connection" means the server is already gone; anything else, it's still running.
     if (!/Lost connection/.test(err.message)) {
+      state.phase = 'lobby';
       resumeSession();
       $('exit-app').disabled = false;
       $('status').innerHTML = '';
@@ -526,9 +552,11 @@ function init() {
   showSpeed();
 
   $('run').addEventListener('click', run);
-  $('wrestle').addEventListener('click', () => {
-    if ($('wrestle').getAttribute('aria-disabled') !== 'true') wrestle();
-  });
+  for (const [id, style] of [['wrestle', 'classic'], ['wrestle-hd', 'hd']]) {
+    $(id).addEventListener('click', () => {
+      if ($(id).getAttribute('aria-disabled') !== 'true') wrestle(style);
+    });
+  }
   $('pick').addEventListener('click', pick);
   $('exit-app').addEventListener('click', exitApp);
   $('check-all').addEventListener('click', () => setAll(true));

@@ -72,6 +72,13 @@ test('serves the game, Three.js, and blocks path traversal', async (t) => {
   assert.match(three.headers.get('content-type'), /javascript/);
   await three.arrayBuffer();
 
+    const model = await fetch(`${base}/assets/wrestlers/superhero-male.glb`, { method: 'HEAD' });
+    assert.equal(model.status, 200);
+    assert.equal(model.headers.get('content-type'), 'model/gltf-binary');
+    const loader = await fetch(`${base}/vendor/three/examples/jsm/loaders/GLTFLoader.js`);
+    assert.equal(loader.status, 200);
+    assert.match(await loader.text(), /BufferGeometryUtils/);
+
   assert.equal((await fetch(`${base}/js/does-not-exist.js`)).status, 404);
   assert.equal((await fetch(`${base}/api/nope`)).status, 404);
   // Encoded "../" must not escape public/ or node_modules/three/ and reach the project's own files.
