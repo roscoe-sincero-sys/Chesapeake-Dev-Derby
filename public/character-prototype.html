@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Character studio · Chesapeake Dev Derby</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/character-prototype.css" />
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="index.html" class="back">← Back to the lobby</a>
+      <span class="wordmark">KURUKSHETRA <span>/ CHARACTER STUDIO</span></span>
+      <span class="badge">12 WARRIORS / FREE ASSETS</span>
+    </header>
+    <main>
+      <div class="intro">
+        <div><p class="eyebrow">THE MAHABHARATA ROSTER</p><h1>Twelve warriors. One ring.</h1></div>
+        <p class="intro-note">Choose any two characters to inspect their costumes.<br />Explore the poses, then see them wrestle.</p>
+      </div>
+      <div class="character-picker" role="group" aria-label="Choose characters to preview">
+        <label for="left-character">Left warrior <select id="left-character" disabled></select></label>
+        <span aria-hidden="true">VS</span>
+        <label for="right-character">Right warrior <select id="right-character" disabled></select></label>
+      </div>
+      <section class="studio" aria-label="Interactive character preview">
+        <div class="viewport" id="viewport">
+          <canvas id="prototype-scene" aria-label="3D preview of Ghatotkacha and Abhimanyu"></canvas>
+          <div class="viewport-meta"><span id="view-label">COSTUME STUDY / FRONT</span><span id="motion-label">GUARD STANCE</span></div>
+          <div id="loading" class="loading" role="status">Preparing the two warriors…</div>
+          <p id="match-status" class="match-status" role="status" hidden></p>
+          <div class="view-tools" aria-label="Camera views">
+            <button type="button" data-view="front" aria-pressed="true">Front</button>
+            <button type="button" data-view="back" aria-pressed="false">Back &amp; gear</button>
+            <button type="button" data-view="detail" aria-pressed="false">Close-up</button>
+          </div>
+          <p class="orbit-hint" id="orbit-hint">Drag to orbit · Scroll to zoom</p>
+        </div>
+        <aside class="controls">
+          <div class="control-head"><span class="eyebrow">MOVEMENT STUDY</span><span class="live-dot" aria-hidden="true"></span></div>
+          <h2>Put them in motion.</h2>
+          <div class="poses" aria-label="Character poses">
+            <button type="button" data-pose="guard" aria-pressed="true"><span>01</span> Guard stance</button>
+            <button type="button" data-pose="walk" aria-pressed="false"><span>02</span> Walk cycle</button>
+            <button type="button" data-pose="grapple" aria-pressed="false"><span>03</span> Grapple &amp; crouch</button>
+            <button type="button" data-pose="lift" aria-pressed="false"><span>04</span> Overhead lift</button>
+            <button type="button" data-pose="fall" aria-pressed="false"><span>05</span> Fall &amp; floor contact</button>
+            <button type="button" data-pose="sit" aria-pressed="false"><span>06</span> Seated recovery</button>
+            <button type="button" data-pose="victory" aria-pressed="false"><span>07</span> Victory</button>
+          </div>
+          <div class="playback">
+            <button id="pause" type="button" aria-pressed="false">Pause motion</button>
+            <button id="compare" type="button" aria-pressed="false">Show original models</button>
+          </div>
+          <button id="watch-match" class="primary" type="button">Watch a two-character match <span>↗</span></button>
+          <a class="stress-link" href="wrestling-performance.html">Run all 12 · performance test ↗</a>
+          <p class="control-note">Preview only. No team names or meeting results are saved.</p>
+        </aside>
+      </section>
+      <section class="character-notes" aria-label="Character costume details">
+        <article id="left-notes" class="character giant"><p class="eyebrow">LEFT WARRIOR</p><h2>Ghatotkacha</h2><p>Preparing costume details…</p></article>
+        <article id="right-notes" class="character youth"><p class="eyebrow">RIGHT WARRIOR</p><h2>Abhimanyu</h2><p>Preparing costume details…</p></article>
+      </section>
+      <footer><p>Built from <a href="https://quaternius.itch.io/universal-base-characters" target="_blank" rel="noreferrer">Quaternius Universal Base Characters</a> · Free Standard / CC0. Male and female bases, fitted to the full roster. Costumes and props are custom; cloth motion is skeletal.</p><a href="assets/wrestlers/LICENSE-Quaternius.txt">Asset license ↗</a></footer>
+    </main>
+    <script type="module" src="js/character-prototype.js"></script>
+    <script type="module" src="js/session.js"></script>
+  </body>
+</html>

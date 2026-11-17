@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
     <script type="importmap">
-      { "imports": { "three": "./vendor/three/build/three.module.js" } }
+      { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
     </script>
   </head>
   <body>
@@ -126,8 +126,8 @@
             </ul>
             <h3>Racers</h3>
             <p class="guide-racers" id="guide-racers"></p>
-            <h3>Let’s Wrestle Instead</h3>
-            <p>A battle royal for 2 to 10 teammates in a wrestling ring, as Mahabharata wrestlers: <span id="guide-wrestlers"></span>. Everyone starts in the ring; go over the top rope and you're out. The last one in the ring leads today’s standup.</p>
+            <h3>Let’s Rumble</h3>
+            <p>A battle royal for 2 to 12 teammates in a wrestling ring, as Mahabharata wrestlers: <span id="guide-wrestlers"></span>. Choose <b>Let’s Rumble</b> for the original models, or <b>HD</b> for the detailed models. Everyone starts in the ring; go over the top rope and you're out. The last one in the ring leads today’s standup.</p>
           </div>
         </div>
       </details>
@@ -135,11 +135,20 @@
       <footer class="lobby-foot">
         <button id="run" type="button" class="primary" disabled>Start race</button>
         <button id="pick" type="button" class="secondary" disabled>Skip race, just pick</button>
-        <span class="wrestle-wrap">
-          <button id="wrestle" type="button" class="secondary wrestle" aria-disabled="true" aria-describedby="wrestle-tip">🤼 Let’s Wrestle Instead</button>
-          <span id="wrestle-tip" class="tip" role="tooltip">You need 2 to 10 wrestlers.</span>
+        <span class="rumble-buttons" role="group" aria-label="Rumble model style">
+          <span class="wrestle-wrap">
+            <button id="wrestle" type="button" class="secondary wrestle" aria-disabled="true" aria-describedby="wrestle-tip">🤼 Or Let’s Rumble</button>
+            <span id="wrestle-tip" class="tip" role="tooltip">Original character models. You need 2 to 12 wrestlers.</span>
+          </span>
+          <span class="wrestle-wrap">
+            <button id="wrestle-hd" type="button" class="secondary wrestle rumble-hd" aria-label="Let’s Rumble HD — detailed models" aria-disabled="true" aria-describedby="wrestle-hd-tip">HD</button>
+            <span id="wrestle-hd-tip" class="tip" role="tooltip">Detailed character models. You need 2 to 12 wrestlers.</span>
+          </span>
         </span>
-        <span id="run-hint" class="hint"></span>
+        <div class="lobby-summary">
+          <span id="run-hint" class="hint"></span>
+          <a class="link wrestler-preview" href="character-prototype.html">Preview wrestlers</a>
+        </div>
       </footer>
     </main>
 

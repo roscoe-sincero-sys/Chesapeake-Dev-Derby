@@ -1,4 +1,4 @@
-// "Let's Wrestle Instead": the 3D wrestling ring. Acts out the plan from wrestle-sim.js:
+// "Let's Rumble" and "HD": the same 3D ring acting out the plan from wrestle-sim.js:
 // intro orbit with the bell, wrestlers circling and grappling, ring-outs over the top rope,
 // a close call for the final two, and the winner's celebration.
 
@@ -45,11 +45,13 @@ const PUSHERS = new Set(['bruiser', 'crowd']); // Kichaka and Dushasana drive op
 
 export class WrestleMatch {
   /**
-   * @param {string[]} names  the wrestlers (2 to 10), as shown on screen
-   * @param {object} options  { rng, sfx, onEvent(e), onWinner(wrestler) }
+   * @param {string[]} names  the wrestlers (2 to 12), as shown on screen
+   * @param {object} options  { rng, sfx, modelStyle: 'classic' | 'hd', onEvent(e), onWinner(wrestler) }
    */
-  constructor(names, { rng = Math.random, sfx = null, onEvent = () => {}, onWinner = () => {} } = {}) {
-    this.plan = planMatch(names, rng);
+  constructor(names, { rng = Math.random, sfx = null, onEvent = () => {}, onWinner = () => {}, previewPlan = null, modelStyle = 'hd' } = {}) {
+    if (modelStyle !== 'classic' && modelStyle !== 'hd') throw new Error('Unknown wrestling model style.');
+    this.modelStyle = modelStyle;
+    this.plan = previewPlan ?? planMatch(names, rng);
     this.sfx = sfx;
     this.onEvent = onEvent;
     this.onWinner = onWinner;
@@ -73,7 +75,7 @@ export class WrestleMatch {
     this.wrestlers = this.plan.wrestlers.map((w, i) => {
       const hue = (i * 360) / this.plan.wrestlers.length;
       const color = `#${new THREE.Color().setHSL(hue / 360, 0.75, 0.55).getHexString()}`;
-      const rig = buildWrestler(w.kind, color, w.name);
+      const rig = buildWrestler(w.kind, color, w.name, { original: modelStyle === 'classic' });
       const angle = (i / this.plan.wrestlers.length) * Math.PI * 2;
       const state = {
         ...w,

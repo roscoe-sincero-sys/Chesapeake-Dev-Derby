@@ -150,7 +150,7 @@ export class Game {
   }
 
   /**
-   * Starts "Let's Wrestle Instead" in its own arena. `options`: { rng, onEvent, onWinner }.
+   * Starts Rumble in its own arena. `options`: { rng, modelStyle, onEvent, onWinner }.
    * Returns the line-up: [{ id, name, kind, color }].
    */
   startWrestle(names, options = {}) {

@@ -1,0 +1,35 @@
+{
+  "creator": "Quaternius",
+  "license": "CC0-1.0",
+  "source": "https://quaternius.itch.io/universal-base-characters",
+  "archive": "Universal Base Characters[Standard].zip",
+  "upstreamUploadId": 15861669,
+  "archiveSha256": "fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40",
+  "notes": "Free Standard only. PNGs resized to at most 1024px; missing normal-map URI suffixes repaired. The roster uses the free Superhero male and female bodies with distinct proportions; no Teen body is included in Standard. Costumes, jewelry and props are authored in wrestler-models.js; recipes are in wrestler-looks.js.",
+  "files": {
+    "hair-beard.glb": {
+      "bytes": 1738144,
+      "sha256": "9e6c9624492a9d1b826d468301634a73eb58744c634ca80ef5cd6613679dc8a0"
+    },
+    "hair-long.glb": {
+      "bytes": 2101984,
+      "sha256": "1af31a4ce3d59843bd56591a4cda64991db63531e004bb2fe16e60dc04f6976e"
+    },
+    "hair-parted.glb": {
+      "bytes": 1744900,
+      "sha256": "e4929e1961fed7b127982b865175bc2f267fc6a184cdbc66de48c5a0b05b02ea"
+    },
+    "skin-light.png": {
+      "bytes": 471574,
+      "sha256": "7ca05abb6b3cfb326fa006263c314231feb16aca72fe3526a8424a3660e1dd1c"
+    },
+    "superhero-female.glb": {
+      "bytes": 4957556,
+      "sha256": "7cb97fb062167e7eac2d072054eaf97a3e5c5250ad2c2f37be2cc6a4f8f87ea6"
+    },
+    "superhero-male.glb": {
+      "bytes": 4560204,
+      "sha256": "ce1555eb768302cb5cc3e45ddea0fba2bc237abd2ec2a7b405379621b159c4b8"
+    }
+  }
+}

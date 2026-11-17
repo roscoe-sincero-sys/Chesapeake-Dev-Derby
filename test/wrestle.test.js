@@ -1,21 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planMatch, matchLength, PACE, WRESTLER_KINDS, MIN_WRESTLERS, MAX_WRESTLERS } from '../public/js/wrestle-sim.js';
+import { planMatch, planRosterPreview, matchLength, PACE, WRESTLER_KINDS, MIN_WRESTLERS, MAX_WRESTLERS } from '../public/js/wrestle-sim.js';
 import { mulberry32 } from '../public/js/sim.js';
 
 const names = (n) => Array.from({ length: n }, (_, i) => `Wrestler ${i + 1}`);
 
-test('a battle royal needs 2 to 10 wrestlers', () => {
+test('the twelve-character performance preview uses every character and a full elimination plan', () => {
+  const plan = planRosterPreview(12, mulberry32(17));
+  assert.equal(plan.wrestlers.length, 12);
+  assert.deepEqual(new Set(plan.wrestlers.map((w) => w.kind.id)), new Set(WRESTLER_KINDS.map((k) => k.id)));
+  assert.ok(plan.wrestlers.every((w) => w.name === w.kind.label));
+  assert.equal(plan.beats.filter((b) => b.type === 'elimination').length, 11);
+  assert.equal(plan.beats.at(-1).winner, plan.winner);
+  assert.equal(plan.duration, matchLength(12));
+  assert.throws(() => planRosterPreview(13), /2 to 12/);
+  assert.throws(() => planRosterPreview(10.5), /2 to 12/);
+});
+
+test('ten- and twelve-character previews use the same opening ten characters for a given seed', () => {
+  const ten = planRosterPreview(10, mulberry32(17));
+  const twelve = planRosterPreview(12, mulberry32(17));
+  assert.deepEqual(ten.wrestlers.map((w) => w.kind.id), twelve.wrestlers.slice(0, 10).map((w) => w.kind.id));
+});
+
+test('a battle royal needs 2 to 12 wrestlers', () => {
   assert.equal(MIN_WRESTLERS, 2);
-  assert.equal(MAX_WRESTLERS, 10);
-  assert.throws(() => planMatch(names(1)), /2 to 10/);
-  assert.throws(() => planMatch(names(11)), /2 to 10/);
-  for (let n = 2; n <= 10; n++) assert.equal(planMatch(names(n), mulberry32(n)).wrestlers.length, n);
+  assert.equal(MAX_WRESTLERS, 12);
+  assert.throws(() => planMatch(names(1)), /2 to 12/);
+  assert.throws(() => planMatch(names(13)), /2 to 12/);
+  for (let n = 2; n <= MAX_WRESTLERS; n++) assert.equal(planMatch(names(n), mulberry32(n)).wrestlers.length, n);
 });
 
 test('the last wrestler in the ring wins, and everyone else is thrown out once', () => {
   for (let seed = 1; seed <= 50; seed++) {
-    const n = 2 + (seed % 9);
+    const n = 2 + (seed % (MAX_WRESTLERS - 1));
     const plan = planMatch(names(n), mulberry32(seed));
     const outs = plan.beats.filter((b) => b.type === 'elimination');
     assert.equal(outs.length, n - 1);
@@ -75,7 +93,7 @@ test('the final two get one close call before the last throw', () => {
 });
 
 test('the match has its own pacing: length depends only on the number of wrestlers', () => {
-  for (let n = 2; n <= 10; n++) {
+  for (let n = 2; n <= MAX_WRESTLERS; n++) {
     const a = planMatch(names(n), mulberry32(1));
     const b = planMatch(names(n), mulberry32(999));
     assert.equal(a.duration, b.duration);
@@ -83,6 +101,7 @@ test('the match has its own pacing: length depends only on the number of wrestle
   }
   assert.ok(matchLength(2) > 10 && matchLength(2) < 20, `2 wrestlers: ${matchLength(2)}s`);
   assert.ok(matchLength(10) > 45 && matchLength(10) < 70, `10 wrestlers: ${matchLength(10)}s`);
+  assert.ok(matchLength(12) > 70 && matchLength(12) < 80, `12 wrestlers: ${matchLength(12)}s`);
   // Beats run back to back, in order.
   const plan = planMatch(names(6), mulberry32(3));
   const timed = plan.beats.filter((b) => b.type !== 'victory');

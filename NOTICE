@@ -8,3 +8,12 @@ This product uses three.js (https://threejs.org/),
 Copyright 2010-2024 three.js authors, licensed under the MIT License.
 three.js is installed from npm into node_modules/three and is not part of
 this repository; its license is in node_modules/three/LICENSE.
+
+The wrestling characters use selected models, hair and textures from
+Universal Base Characters [Standard] by Quaternius, dedicated to the public
+domain under CC0 1.0 Universal:
+https://quaternius.itch.io/universal-base-characters
+https://creativecommons.org/publicdomain/zero/1.0/
+The original license and asset manifest are in public/assets/wrestlers/.
+Textures are resized and assets repackaged as GLB. Costumes and props are
+authored by this project; no paid Source or Pro assets are included.

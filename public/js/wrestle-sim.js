@@ -1,4 +1,4 @@
-// "Let's Wrestle Instead": the battle royal's rules and script. Pure logic (no Three.js, no DOM),
+// "Let's Rumble": the battle royal's shared rules and script. Pure logic (no Three.js, no DOM),
 // so it runs in Node for tests. The 3D ring (wrestle.js) only acts out the plan made here.
 //
 // Fairness: when the bell rings, the elimination order is drawn uniformly at random, so every
@@ -9,11 +9,11 @@ import { shuffle } from './sim.js';
 import { SIGN_VARIANTS } from './sign-variants.js';
 
 export const MIN_WRESTLERS = 2;
-export const MAX_WRESTLERS = 10;
+export const MAX_WRESTLERS = 12;
 
 /**
  * The 12-character Mahabharata roster. Each name is dealt one from a shuffled bag; a match has at
- * most 10 wrestlers, so nobody shares a character. Each `style` drives how they move, throw and survive.
+ * most 12 wrestlers, so nobody shares a character. Each `style` drives how they move, throw and survive.
  */
 export const WRESTLER_KINDS = [
   { id: 'bhima', label: 'Bhima', emoji: '💪', style: 'overhead', blurb: 'Power wrestler with a two-handed overhead toss' },
@@ -51,7 +51,7 @@ export function matchLength(n) {
 }
 
 /**
- * Plans a battle royal for `names` (2 to 10). Returns:
+ * Plans a battle royal for `names` (2 to 12). Returns:
  *   wrestlers    [{ id, name, kind }]
  *   order        ids in elimination order; the last one is the winner
  *   winner       id of the winner
@@ -65,6 +65,20 @@ export function planMatch(names, rng = Math.random) {
   if (!Array.isArray(names) || names.length < MIN_WRESTLERS || names.length > MAX_WRESTLERS) {
     throw new Error(`A battle royal needs ${MIN_WRESTLERS} to ${MAX_WRESTLERS} wrestlers.`);
   }
+  return buildPlan(names, rng);
+}
+
+/** A named, read-only preview for comparing populations without using the team roster. */
+export function planRosterPreview(count = WRESTLER_KINDS.length, rng = Math.random) {
+  if (!Number.isInteger(count) || count < MIN_WRESTLERS || count > WRESTLER_KINDS.length) {
+    throw new Error(`A roster preview needs ${MIN_WRESTLERS} to ${WRESTLER_KINDS.length} wrestlers.`);
+  }
+  const plan = buildPlan(Array.from({ length: count }, (_, i) => `Warrior ${i + 1}`), rng);
+  for (const wrestler of plan.wrestlers) wrestler.name = wrestler.kind.label;
+  return plan;
+}
+
+function buildPlan(names, rng) {
   let bag = [];
   const wrestlers = names.map((name, id) => {
     if (!bag.length) bag = shuffle(WRESTLER_KINDS.map((_, k) => k), rng);
