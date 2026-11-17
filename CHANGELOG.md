@@ -7,6 +7,8 @@ to release.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-16
+
 ### Changed
 - Kept **Preview wrestlers** as a permanent lobby link, aligned with the racers-on-the-grid hint
   below the Rumble/HD buttons. The studio's return link now says **Back to the lobby**.
@@ -139,5 +141,6 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.2.0...v1.3.0
 [1.0.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/releases/tag/v1.0.0
