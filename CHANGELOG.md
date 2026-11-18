@@ -7,6 +7,17 @@ to release.
 
 ## [Unreleased]
 
+### Changed
+- **Wrestling looks like a battle royal (#91):** everyone in the ring now fights at the same time instead
+  of watching two at a time. Wrestlers pair off for lock-ups, forearm strikes, shoves and circling, then
+  break away to find someone new; with an odd number, one joins a fight two on one. The elimination
+  order, its fairness and the match length are unchanged.
+- **Wrestling camera (#91):** circles the ring for the whole match, like the victory scene, turning to
+  watch each ring-out instead of swinging over and holding. In the final two it circles the pair.
+
+### Fixed
+- README: a twelve-wrestler match lasts about 73 seconds (it still said 62 seconds for ten).
+
 ## [1.3.0] - 2026-11-16
 
 ### Changed

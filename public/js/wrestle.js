@@ -1,10 +1,10 @@
 // "Let's Rumble" and "HD": the same 3D ring acting out the plan from wrestle-sim.js:
-// intro orbit with the bell, wrestlers circling and grappling, ring-outs over the top rope,
-// a close call for the final two, and the winner's celebration.
+// intro orbit with the bell, everyone in the ring brawling at once, ring-outs over the top rope,
+// a close call for the final two, and the winner's celebration, with the camera circling throughout.
 
 import * as THREE from 'three';
 import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI } from './util3d.js';
-import { planMatch, PACE } from './wrestle-sim.js';
+import { planMatch, pairUp, PACE } from './wrestle-sim.js';
 import { buildWrestler, pose, lowestBodyPoint } from './wrestlers.js';
 import { Particles } from './effects.js';
 import { Crowd } from './crowd.js';
@@ -42,6 +42,7 @@ const QUICK = new Set(['duck', 'rebound']); // Abhimanyu and Satyaki move faster
 const LIFTERS = new Set(['overhead', 'illusion']); // Bhima and the towering Ghatotkacha throw overhead
 const HIP_TOSS = new Set(['patient', 'composed']); // Karna and Shikhandi turn a charge into a sideways throw
 const PUSHERS = new Set(['bruiser', 'crowd']); // Kichaka and Dushasana drive opponents into the ropes
+const quick = (w) => (QUICK.has(w.kind.style) ? 1.3 : 1);
 
 export class WrestleMatch {
   /**
@@ -91,7 +92,10 @@ export class WrestleMatch {
         speed: 1.6,
         walk: Math.random() * 6,
         out: false,
-        tie: null,
+        foe: null, // who they're fighting (wrestle-sim.js pairUp)
+        fight: null, // the move the two of them are in, shared by both
+        last: null, // who they last broke away from
+        swing: 0,
         rebound: 0,
         phase: Math.random() * 6,
       };
@@ -242,10 +246,20 @@ export class WrestleMatch {
     const victory = this.plan.beats[this.plan.beats.length - 1];
     if (t >= victory.start) this.playVictory(victory, t, active, dt);
 
-    for (const w of this.wrestlers) {
-      if (active.has(w.id)) continue;
-      if (w.out) this.playOut(w, dt);
-      else this.roam(w, dt, beat);
+    for (const w of this.wrestlers) if (w.out && !active.has(w.id)) this.playOut(w, dt);
+    // A battle royal: everyone in the ring who isn't in a throw or the close call is fighting someone.
+    const free = this.wrestlers.filter((w) => !w.out && !active.has(w.id));
+    const foes = pairUp(free);
+    for (const w of free) {
+      w.mode = 'roam';
+      w.foe = foes.get(w.id) ?? null;
+      if (w.fight && w.fight !== this.wrestlers[w.foe]?.fight) w.fight = null;
+    }
+    for (const w of free) {
+      const o = w.foe === null ? null : this.wrestlers[w.foe];
+      if (!o) this.circle(w, dt, beat);
+      else if (o.foe !== w.id) this.gangUp(w, o, dt, beat);
+      else if (w.id < o.id) this.brawl(w, o, dt, beat);
     }
     this.separate();
     for (const w of this.wrestlers) this.place(w);
@@ -260,22 +274,10 @@ export class WrestleMatch {
     return this.wrestlers.filter((w) => !w.out);
   }
 
-  roam(w, dt, beat) {
-    const slow = (beat.type === 'final' || beat.type === 'closeCall' ? 0.65 : 1) * (QUICK.has(w.kind.style) ? 1.3 : 1);
+  /** Nobody free to fight (everyone else is in a throw): circle, and now and then run the ropes. */
+  circle(w, dt, beat) {
+    const slow = (beat.type === 'final' || beat.type === 'closeCall' ? 0.65 : 1) * quick(w);
     const ropeChance = w.kind.style === 'rebound' ? 0.45 : 0.22; // Satyaki lives on the ropes
-    // Tie-ups: two wrestlers close together lock up for a moment.
-    if (w.tie) {
-      w.tie.t -= dt;
-      const o = this.wrestlers[w.tie.with];
-      if (w.tie.t <= 0 || o.out || o.mode !== 'roam') {
-        w.tie = null;
-      } else {
-        w.heading = lerpAngle(w.heading, headingTo(w.x, w.z, o.x, o.z), damp(8, dt));
-        w.walk += dt * 3;
-        pose(w.rig, { armsForward: 1, crouch: 0.35, walk: w.walk, stride: 0.15, lean: 0.25 });
-        return;
-      }
-    }
     w.timer -= dt;
     const dx = (w.target?.x ?? w.x) - w.x;
     const dz = (w.target?.z ?? w.z) - w.z;
@@ -304,17 +306,143 @@ export class WrestleMatch {
     w.z += (dz / dist) * step;
     w.y = MAT_Y;
     w.walk += step * 3.2;
-    // Circling: face the nearest opponent when moving slowly, the way you're running when fast.
+    // Face the action when moving slowly, the way you're running when fast.
     const near = this.nearest(w);
     const face = w.speed > 2.5 || !near ? Math.atan2(-dx, -dz) : headingTo(w.x, w.z, near.x, near.z);
     w.heading = lerpAngle(w.heading, face, damp(6, dt));
     w.rebound = Math.max(0, w.rebound - dt);
     pose(w.rig, { walk: w.walk, stride: Math.min(0.7, w.speed * 0.2), guard: w.speed > 2.5 ? 0.2 : 0.8, crouch: 0.25, lean: w.rebound ? -0.5 : 0.1 });
-    // Lock up with someone close by now and then.
-    if (near && !near.tie && w.speed < 2.5 && Math.hypot(near.x - w.x, near.z - w.z) < 1.6 && Math.random() < dt * 0.4) {
-      w.tie = { with: near.id, t: 1.4 };
-      near.tie = { with: w.id, t: 1.4 };
+  }
+
+  /**
+   * Two wrestlers fighting each other: closing in, lock-ups, forearm strikes, shoves across the ring and
+   * circling, until they break apart and find someone new. Called once per pair, for both of them.
+   */
+  brawl(a, b, dt, beat) {
+    let f = a.fight;
+    if (!f || f !== b.fight) {
+      f = { move: 'close', t: 0, dur: 4, age: 0, life: 5 + Math.random() * 5, by: a };
+      a.fight = b.fight = f;
     }
+    f.t += dt;
+    f.age += dt;
+    const pace = beat.type === 'final' ? 0.8 : 1;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const d = Math.hypot(dx, dz) || 0.001;
+    const ux = dx / d;
+    const uz = dz / d;
+    const att = f.by;
+    const def = att === a ? b : a;
+    const ax = att === a ? ux : -ux; // from the attacker towards the defender
+    const az = att === a ? uz : -uz;
+    const step = (w, mx, mz, speed) => {
+      const s = speed * dt * pace;
+      w.x += mx * s;
+      w.z += mz * s;
+      w.walk += Math.abs(s) * 3.2;
+    };
+    const k = clamp01(f.t / f.dur);
+    if (f.move === 'close') {
+      // Size each other up and close in.
+      if (d > 1.15) {
+        step(a, ux, uz, 1.8 * quick(a));
+        step(b, -ux, -uz, 1.8 * quick(b));
+      } else f.t = f.dur;
+      for (const w of [a, b]) pose(w.rig, { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+    } else if (f.move === 'lockup') {
+      // Collar-and-elbow tie-up, the pair swaying back and forth as each tries to drive the other.
+      const sway = Math.cos(f.t * 3.2) * 0.7;
+      step(a, ux, uz, sway + (d > 1.1 ? 0.6 : 0));
+      step(b, ux, uz, sway - (d > 1.1 ? 0.6 : 0));
+      for (const w of [a, b]) {
+        w.pulse = w.kind.style === 'shapeshift' ? 1 + 0.08 * Math.sin(f.t * 24) : 1; // Hidimbi changes form
+        pose(w.rig, { armsForward: 1, crouch: 0.35, lean: 0.3, walk: w.walk, stride: 0.12 });
+      }
+    } else if (f.move === 'strikes') {
+      // Forearm shots, left and right; the defender rocks back with each one.
+      const p = (f.t * 2.4) % 1;
+      const side = Math.floor(f.t * 2.4) % 2 ? 1 : -1;
+      const blow = p < 0.35 ? Math.sin((p / 0.35) * Math.PI) : 0;
+      const recoil = p > 0.2 && p < 0.65 ? Math.sin(((p - 0.2) / 0.45) * Math.PI) : 0;
+      step(def, ax, az, recoil * 1.4);
+      step(att, ax, az, 0.5);
+      pose(att.rig, { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
+      pose(def.rig, { guard: 0.9, lean: -0.4 * recoil, crouch: 0.2, look: -0.25 * recoil, tilt: side * 0.2 * recoil });
+    } else if (f.move === 'shove') {
+      // Driving the defender back across the ring, maybe into the ropes.
+      const drive = Math.sin(k * Math.PI) * 2.6 * (PUSHERS.has(att.kind.style) ? 1.25 : 1);
+      step(att, ax, az, drive + (d > 1.15 ? 1.5 : 0));
+      step(def, ax, az, drive);
+      pose(att.rig, { armsForward: 1.2, lean: 0.45, crouch: 0.3, walk: att.walk, stride: 0.45 });
+      pose(def.rig, { armsForward: 0.6, lean: -0.3, crouch: 0.2, walk: def.walk, stride: 0.4 });
+    } else {
+      // Break, and circle each other looking for an opening.
+      step(a, -uz, ux, 1.3);
+      step(b, uz, -ux, 1.3);
+      if (d < 1.6) {
+        step(a, -ux, -uz, 1.2);
+        step(b, ux, uz, 1.2);
+      }
+      for (const w of [a, b]) pose(w.rig, { walk: w.walk, stride: 0.35, guard: 0.8, crouch: 0.3 });
+    }
+    // Keep clear of a throw or close call going on elsewhere in the ring.
+    const c = this.actionCentre(beat);
+    if (c) {
+      const mx = (a.x + b.x) / 2 - c.x;
+      const mz = (a.z + b.z) / 2 - c.z;
+      const m = Math.hypot(mx, mz) || 0.001;
+      if (m < 3.6) for (const w of [a, b]) step(w, mx / m, mz / m, 2);
+    }
+    a.y = b.y = MAT_Y;
+    a.heading = lerpAngle(a.heading, headingTo(a.x, a.z, b.x, b.z), damp(10, dt));
+    b.heading = lerpAngle(b.heading, headingTo(b.x, b.z, a.x, a.z), damp(10, dt));
+    if (f.t < f.dur) return;
+    a.pulse = b.pulse = 1;
+    if (f.age > f.life && f.move !== 'close') {
+      // Break apart and go find someone else.
+      a.last = b.id;
+      b.last = a.id;
+      a.foe = b.foe = a.fight = b.fight = null;
+    } else this.nextMove(f, a, b, d);
+  }
+
+  /** The next exchange in a fight, and who leads it. Pushers (Kichaka, Dushasana) like to shove. */
+  nextMove(f, a, b, d) {
+    f.t = 0;
+    f.by = Math.random() < 0.5 ? a : b;
+    if (d > 1.4) {
+      f.move = 'close';
+      f.dur = 4; // ends as soon as they meet
+      return;
+    }
+    const r = Math.random();
+    if (PUSHERS.has(f.by.kind.style) && r < 0.4) f.move = 'shove';
+    else f.move = r < 0.3 ? 'lockup' : r < 0.6 ? 'strikes' : r < 0.8 ? 'shove' : 'circle';
+    f.dur = { lockup: 1.2 + Math.random() * 0.8, strikes: 1.25, shove: 1, circle: 0.8 + Math.random() * 0.6 }[f.move];
+  }
+
+  /** Two on one: the odd wrestler out joins the nearest fight and lays in forearm shots. */
+  gangUp(w, o, dt, beat) {
+    const dx = o.x - w.x;
+    const dz = o.z - w.z;
+    const d = Math.hypot(dx, dz) || 0.001;
+    w.y = MAT_Y;
+    w.heading = lerpAngle(w.heading, headingTo(w.x, w.z, o.x, o.z), damp(10, dt));
+    if (d > 1.35) {
+      const s = Math.min(d - 1.3, 2 * quick(w) * dt * (beat.type === 'final' ? 0.8 : 1));
+      w.x += (dx / d) * s;
+      w.z += (dz / d) * s;
+      w.walk += s * 3.2;
+      w.swing = 0;
+      pose(w.rig, { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+      return;
+    }
+    w.swing += dt;
+    const p = (w.swing * 2) % 1;
+    const side = Math.floor(w.swing * 2) % 2 ? 1 : -1;
+    const blow = p < 0.35 ? Math.sin((p / 0.35) * Math.PI) : 0;
+    pose(w.rig, { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
   }
 
   pickSpot(beat, radius = 4.6) {
@@ -327,13 +455,17 @@ export class WrestleMatch {
     return { x: 0, z: 0 };
   }
 
+  /** Where in the ring a throw or close call is happening, if one is. */
+  actionCentre(beat) {
+    if (beat.type !== 'elimination' && beat.type !== 'closeCall') return null;
+    const [nx, nz] = SIDES[beat.side];
+    return { x: nx * (HALF - 1.5) + (nz ? beat.spot : 0), z: nz * (HALF - 1.5) + (nx ? beat.spot : 0) };
+  }
+
   /** Keep free wrestlers out of the way of a throw or close call. */
   nearAction(p, beat) {
-    if (beat.type !== 'elimination' && beat.type !== 'closeCall') return false;
-    const [nx, nz] = SIDES[beat.side];
-    const cx = nx * (HALF - 1.5) + (nz ? beat.spot : 0);
-    const cz = nz * (HALF - 1.5) + (nx ? beat.spot : 0);
-    return Math.hypot(p.x - cx, p.z - cz) < 3.2;
+    const c = this.actionCentre(beat);
+    return c !== null && Math.hypot(p.x - c.x, p.z - c.z) < 3.2;
   }
 
   nearest(w) {
@@ -360,7 +492,7 @@ export class WrestleMatch {
         const dx = b.x - a.x;
         const dz = b.z - a.z;
         const d = Math.hypot(dx, dz) || 0.001;
-        const min = a.tie?.with === b.id ? 1.05 : 1.55;
+        const min = a.foe === b.id || b.foe === a.id ? 1.05 : 1.45; // fighting: up close
         if (d < min) {
           const push = (min - d) / 2;
           a.x -= (dx / d) * push;
@@ -442,7 +574,7 @@ export class WrestleMatch {
     const h = this.wrestlers[b.thrower];
     active.add(v.id);
     active.add(h.id);
-    v.tie = h.tie = null;
+    v.foe = h.foe = v.fight = h.fight = null;
     v.mode = h.mode = 'script';
     const f = this.sideFrame(b.side, b.spot);
     const pv = f.at(HALF - 0.95);
@@ -598,7 +730,7 @@ export class WrestleMatch {
     const o = this.wrestlers[b.other];
     active.add(w.id);
     active.add(o.id);
-    w.tie = o.tie = null;
+    w.foe = o.foe = w.fight = o.fight = null;
     w.mode = o.mode = 'script';
     const f = this.sideFrame(b.side, b.spot);
     const pw = f.at(HALF - 0.55);
@@ -651,7 +783,7 @@ export class WrestleMatch {
     const w = this.wrestlers[b.winner];
     active.add(w.id);
     w.mode = 'script';
-    w.tie = null;
+    w.foe = w.fight = null;
     if (!this.fired.has('victory')) {
       this.sfx?.play('win', 0);
       this.crowd.victory(t);
@@ -688,6 +820,7 @@ export class WrestleMatch {
   updateCamera(dt, beat) {
     const t = this.t;
     const b = beat;
+    // The camera circles the ring the whole match, the way it circles the winner at the end (#91).
     let rate = 0.12;
     let radius = 16;
     let height = 9;
@@ -699,9 +832,9 @@ export class WrestleMatch {
       radius = 20 - 4 * k;
       height = 16 - 7 * k;
     } else if (b.type === 'final' || b.type === 'closeCall' || (b.type === 'elimination' && b.final)) {
-      // Final two: slow the orbit and frame both.
+      // Final two: circle the pair, the way the camera circles the winner.
       const pair = this.inRing();
-      rate = 0.05;
+      rate = 0.1;
       radius = 11;
       height = 6.5;
       if (pair.length) look.set(pair.reduce((s, w) => s + w.x, 0) / pair.length, MAT_Y + 1, pair.reduce((s, w) => s + w.z, 0) / pair.length);
@@ -712,27 +845,22 @@ export class WrestleMatch {
       height = 5;
       look.set(w.x, MAT_Y + 1.5, w.z);
     }
-    this.orbit += rate * dt;
-    const orbitPos = new THREE.Vector3(look.x + Math.cos(this.orbit) * radius, height, look.z + Math.sin(this.orbit) * radius);
-
-    // Ring-outs and the close call: ease towards that side and hold on the landing.
-    let weight = 0;
-    let actionPos = null;
-    let actionLook = null;
+    // Ring-outs and the close call: keep circling, but turn to watch that side of the ring and the
+    // landing, and drift a little towards it so the throw stays in view from anywhere on the circle.
     if (b.type === 'elimination' || b.type === 'closeCall') {
       const f = this.sideFrame(b.side, b.spot);
       const c = f.at(b.type === 'elimination' ? HALF + 0.8 : HALF - 0.8);
-      const along = this.orbitSide(f);
-      actionPos = new THREE.Vector3(c.x + f.ux * 7 * along + f.nx * 4.5, 5.2, c.z + f.uz * 7 * along + f.nz * 4.5);
-      actionLook = new THREE.Vector3(c.x, 1.6, c.z);
-      if (b.type === 'elimination') {
-        weight = ease((t - b.start) / (PACE.approach * 0.8)) * (1 - ease((t - (b.end - PACE.reset - 0.3)) / 0.7));
-      } else {
-        weight = ease((t - b.start) / 0.8) * (1 - ease((t - (b.end - 0.5)) / 0.5));
-      }
+      const weight = b.type === 'elimination'
+        ? ease((t - b.start) / (PACE.approach * 0.8)) * (1 - ease((t - (b.end - PACE.reset - 0.3)) / 0.7))
+        : ease((t - b.start) / 0.8) * (1 - ease((t - (b.end - 0.5)) / 0.5));
+      look.lerp(new THREE.Vector3(c.x, 1.6, c.z), 0.8 * weight);
+      radius -= 3 * weight;
     }
-    const targetPos = actionPos ? orbitPos.clone().lerp(actionPos, weight) : orbitPos;
-    const targetLook = actionLook ? look.clone().lerp(actionLook, weight) : look;
+    this.orbit += rate * dt;
+    const close = b.type === 'victory' || b.type === 'final' || b.type === 'closeCall' || (b.type === 'elimination' && b.final);
+    const centre = close ? look : look.clone().multiplyScalar(0.35); // the whole ring: stay round its middle
+    const targetPos = new THREE.Vector3(centre.x + Math.cos(this.orbit) * radius, height, centre.z + Math.sin(this.orbit) * radius);
+    const targetLook = look;
     if (!this.camReady) {
       this.camPos.copy(targetPos);
       this.camLook.copy(targetLook);
@@ -742,13 +870,6 @@ export class WrestleMatch {
     this.camLook.lerp(targetLook, damp(4, dt));
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
-  }
-
-  /** Which way along the side to stand, so the camera swings the short way round. */
-  orbitSide(f) {
-    const cx = Math.cos(this.orbit);
-    const cz = Math.sin(this.orbit);
-    return cx * f.ux + cz * f.uz >= 0 ? 1 : -1;
   }
 
   /**

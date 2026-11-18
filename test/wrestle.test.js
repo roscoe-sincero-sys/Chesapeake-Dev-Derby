@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planMatch, planRosterPreview, matchLength, PACE, WRESTLER_KINDS, MIN_WRESTLERS, MAX_WRESTLERS } from '../public/js/wrestle-sim.js';
+import { planMatch, planRosterPreview, pairUp, matchLength, PACE, WRESTLER_KINDS, MIN_WRESTLERS, MAX_WRESTLERS } from '../public/js/wrestle-sim.js';
 import { mulberry32 } from '../public/js/sim.js';
 
 const names = (n) => Array.from({ length: n }, (_, i) => `Wrestler ${i + 1}`);
@@ -241,4 +241,37 @@ test('lying on their back, every wrestler rests on their body, not propped up on
     const torso = new THREE.Box3().setFromObject(rig.torso.children[1], true);
     assert.ok(torso.min.y < 0.12 * rig.root.scale.y, `${kind.label}: back ${torso.min.y.toFixed(2)} above the floor`);
   }
+});
+
+// #91: a battle royal, not a queue. Everyone free in the ring is fighting someone at the same time.
+const spot = (id, x, z, extra = {}) => ({ id, x, z, foe: null, last: null, ...extra });
+
+test('battle royal: every free wrestler is fighting someone, in pairs, all at once', () => {
+  for (let n = 2; n <= 12; n++) {
+    const free = Array.from({ length: n }, (_, i) => spot(i, Math.cos(i) * 4, Math.sin(i * 1.7) * 4));
+    const foes = pairUp(free);
+    assert.equal(foes.size, n, `${n} wrestlers: nobody stands idle`);
+    for (const [id, foe] of foes) assert.notEqual(id, foe, 'nobody fights themselves');
+    const mutual = [...foes].filter(([id, foe]) => foes.get(foe) === id).length;
+    assert.equal(mutual, n - (n % 2), `${n} wrestlers: ${Math.floor(n / 2)} fights going on together`);
+  }
+});
+
+test('battle royal: the odd one out joins the nearest fight, two on one', () => {
+  const free = [spot(0, 0, 0), spot(1, 1, 0), spot(2, -4, 0), spot(3, -5, 0), spot(4, 2.5, 0)];
+  const foes = pairUp(free);
+  const loner = [...foes].find(([id, foe]) => foes.get(foe) !== id);
+  assert.deepEqual(loner, [4, 1]);
+});
+
+test('battle royal: fights carry on, broken-up pairs look for someone new, and a lone wrestler has no foe', () => {
+  const ongoing = [spot(0, 0, 0, { foe: 3 }), spot(1, 0.5, 0), spot(2, 5, 5), spot(3, 5, 4, { foe: 0 })];
+  const foes = pairUp(ongoing);
+  assert.equal(foes.get(0), 3, 'a fight in progress carries on even when someone else is nearer');
+  assert.equal(foes.get(1), 2);
+  const apart = pairUp([spot(0, 0, 0, { last: 1 }), spot(1, 1, 0, { last: 0 }), spot(2, 0.5, 2)]);
+  const paired = [...apart].filter(([id, foe]) => apart.get(foe) === id).map(([id]) => id);
+  assert.ok(paired.includes(2) && paired.length === 2, 'just broke away from each other: one of them squares up with someone new');
+  assert.equal(pairUp([spot(0, 0, 0)]).size, 0);
+  assert.equal(pairUp([]).size, 0);
 });
