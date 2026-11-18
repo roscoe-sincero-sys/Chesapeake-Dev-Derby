@@ -7,6 +7,8 @@ to release.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-17
+
 ### Changed
 - **Wrestling looks like a battle royal (#91):** everyone in the ring now fights at the same time instead
   of watching two at a time. Wrestlers pair off for lock-ups, forearm strikes, shoves and circling, then
@@ -152,6 +154,7 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.2.0...v1.3.0
 [1.0.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/releases/tag/v1.0.0
