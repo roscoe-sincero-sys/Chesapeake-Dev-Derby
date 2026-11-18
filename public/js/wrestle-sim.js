@@ -36,7 +36,7 @@ export const PACE = {
   approach: 1.6, // thrower and victim meet at the ropes
   grapple: 1.2,
   throw: 1.3, // over the top rope and down to the floor
-  callout: 1.5, // "Roscoe is out!" while the camera holds on the landing
+  callout: 1.5, // "Roscoe is out!" while the camera, still circling, watches the landing
   reset: 0.4,
   finalHold: 1.2, // the last two circle each other
   closeCall: 2.6, // one of them teeters on the top rope and survives
@@ -118,6 +118,50 @@ function buildPlan(names, rng) {
   }
   beats.push({ type: 'victory', winner, start: t, end: t + PACE.victory });
   return { wrestlers, order, winner, beats, duration: t };
+}
+
+/**
+ * Battle royal brawling: who each free wrestler is fighting right now. `free` lists the wrestlers in
+ * the ring who aren't in a scripted moment (a throw or the close call), as { id, x, z, foe, last }.
+ * Fights in progress carry on while both are free; everyone else pairs up with the nearest unpaired
+ * wrestler, preferring someone new over the one they just broke away from (`last`). With an odd number
+ * the one left over joins the nearest fight, two on one. Returns a Map of id → foe id; a wrestler alone
+ * in the ring has none. Only who fights whom is decided here: it never changes who is eliminated.
+ */
+export function pairUp(free) {
+  const byId = new Map(free.map((w) => [w.id, w]));
+  const foes = new Map();
+  for (const w of free) {
+    const o = byId.get(w.foe);
+    if (o && o.foe === w.id) foes.set(w.id, o.id);
+  }
+  const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z) + (a.last === b.id || b.last === a.id ? 6 : 0);
+  const loose = free.filter((w) => !foes.has(w.id));
+  while (loose.length >= 2) {
+    let best = null;
+    for (let i = 0; i < loose.length; i++) {
+      for (let j = i + 1; j < loose.length; j++) {
+        const d = gap(loose[i], loose[j]);
+        if (!best || d < best.d) best = { i, j, d };
+      }
+    }
+    const a = loose[best.i];
+    const b = loose[best.j];
+    foes.set(a.id, b.id);
+    foes.set(b.id, a.id);
+    loose.splice(best.j, 1);
+    loose.splice(best.i, 1);
+  }
+  for (const w of loose) {
+    let best = null;
+    for (const o of free) {
+      if (o === w) continue;
+      const d = Math.hypot(o.x - w.x, o.z - w.z);
+      if (!best || d < best.d) best = { id: o.id, d };
+    }
+    if (best) foes.set(w.id, best.id);
+  }
+  return foes;
 }
 
 /**

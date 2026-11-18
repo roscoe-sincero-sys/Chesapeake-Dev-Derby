@@ -144,16 +144,18 @@ It is a battle royal: everyone starts in the ring, and you're out when you go ov
 on the floor. The last one left **leads today's standup**.
 
 1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
-2. **Ring-outs.** Wrestlers circle, grapple and bounce off the ropes. When a throw starts, the camera eases
-   towards that side and holds while the wrestler clears the top rope and lands, with "Roscoe is out!"
-   on screen and their name crossed off the list.
-3. **Final two.** The orbit slows to frame both, one of them has a close call at the ropes, then the last
-   throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
+2. **Ring-outs.** Everyone in the ring is fighting at once: each wrestler squares off with someone,
+   trading lock-ups, forearm shots and shoves, and breaks away now and then to find someone new (an
+   odd one out joins a fight two on one). The camera keeps circling the ring, as it does around the
+   winner at the end. When a throw starts, it turns to watch that side while the wrestler clears the
+   top rope and lands, with "Roscoe is out!" on screen and their name crossed off the list.
+3. **Final two.** The camera circles the pair as they fight, one of them has a close call at the ropes,
+   then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.
 
 **Fair and fixed-length.** The elimination order is drawn uniformly at random when the bell rings, so
 every wrestler has the same chance. The match has its own pacing: about 15 seconds for 2 wrestlers, up
-to about 62 seconds for 10, whatever the **Race length** slider says (the slider is only for races).
+to about 73 seconds for 12, whatever the **Race length** slider says (the slider is only for races).
 
 ### Winner history
 
