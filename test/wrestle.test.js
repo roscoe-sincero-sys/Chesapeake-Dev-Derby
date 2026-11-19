@@ -126,7 +126,8 @@ test('some six- and twelve-wrestler plans throw two out at once, landing within 
         const [a, b] = together.slice(i, i + 2);
         assert.ok(b.landAt - a.landAt > 0 && b.landAt - a.landAt < 1, `${n}/${seed}: landings ${a.landAt} and ${b.landAt}`);
         assert.ok(b.start < a.end, 'both exchanges are on at the same time');
-        assert.notEqual(Math.floor(a.side / 2), Math.floor(b.side / 2), 'on neighbouring sides of the ring');
+        assert.equal(a.side, b.side, 'over the same side of the ring...');
+        assert.ok(Math.abs(a.spot - b.spot) > 4.3, `...at opposite ends of the rope (${a.spot.toFixed(1)}, ${b.spot.toFixed(1)})`);
         paired++;
       }
     }

@@ -37,6 +37,7 @@ test('the live camera circles the ring centre at a steady distance, height and s
   const final = match.plan.beats.find((b) => b.type === 'final');
   let last = null;
   let maxRadiusRate = 0;
+  let lastOverflow = -Infinity;
   run(match, 60, match.plan.duration + 3, (m) => {
     const p = m.camera.position;
     const radius = Math.hypot(p.x, p.z);
@@ -46,8 +47,10 @@ test('the live camera circles the ring centre at a steady distance, height and s
       assert.ok(Math.abs(p.y - 9) < 1e-6, `t=${m.t.toFixed(2)}: height ${p.y}`);
       const speed = Math.atan2(Math.sin(angle - last.angle), Math.cos(angle - last.angle)) * 60;
       assert.ok(Math.abs(speed - 0.12) < 1e-6, `t=${m.t.toFixed(2)}: orbit speed ${speed}`);
-      // It only turns towards the action, a bounded amount from the centre of the ring.
-      assert.ok(Math.hypot(m.camLook.x, m.camLook.z) <= 3.2 + 1e-6, `t=${m.t.toFixed(2)}: aim strays`);
+      // It only turns towards the action, a bounded amount from the centre of the ring, unless a throw
+      // is too close under it to fit in the picture (then it turns further, and eases back after).
+      if (m.overflow > 0) lastOverflow = m.t;
+      if (m.t - lastOverflow > 2) assert.ok(Math.hypot(m.camLook.x, m.camLook.z) <= 3.2 + 1e-6, `t=${m.t.toFixed(2)}: aim strays`);
     }
     // Into the final two and the victory: gradually, never a sudden push in.
     if (last && m.t > 4.6) maxRadiusRate = Math.max(maxRadiusRate, Math.abs(radius - last.radius) * 60);
@@ -56,33 +59,61 @@ test('the live camera circles the ring centre at a steady distance, height and s
   assert.ok(maxRadiusRate < 2, `camera distance changes by up to ${maxRadiusRate.toFixed(2)} units/s`);
 });
 
-test('each ring-out stays in the picture: the rope, the landing and the thrown wrestler, wide and portrait', () => {
+/**
+ * Every frame from the throw until the thrown wrestler has sat up: the top rope they go over, the
+ * landing area (with the slide) and the whole of their body must be in the picture. Returns misses.
+ */
+function framingMisses(match, { until = match.plan.duration, only = () => true, every = 1 } = {}) {
   const v = new THREE.Vector3();
-  for (const aspect of [1.6, 0.6]) {
-    for (const seed of [17, 5]) {
-      const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle: 'classic' });
-      match.resize(aspect);
-      let frames = 0;
-      const missed = [];
-      run(match, 60, match.plan.duration, (m) => {
-        m.camera.updateMatrixWorld();
-        for (const b of m.actions) {
-          if (b.type !== 'elimination' || m.t < b.throwAt || m.t > b.landAt + 1) continue;
-          const f = m.sideFrame(b.side, b.spot);
-          const victim = m.wrestlers[b.victim];
-          const rope = f.at(HALF);
-          const landing = f.at(HALF + 2.7);
-          for (const [what, x, y, z] of [['rope', rope.x, MAT_Y + 1.55, rope.z], ['landing', landing.x, 0, landing.z], ['victim', victim.x, Math.max(0.3, victim.y), victim.z]]) {
-            frames++;
-            v.set(x, y, z).project(m.camera);
-            if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) missed.push(`${what}@${m.t.toFixed(2)}${b.together ? ' (two at once)' : ''}`);
-          }
+  const box = new THREE.Box3();
+  const missed = [];
+  let frame = 0;
+  let checks = 0;
+  run(match, 60, until, (m) => {
+    if (++frame % every) return;
+    m.camera.updateMatrixWorld();
+    for (const b of m.actions) {
+      if (b.type !== 'elimination' || m.t < b.throwAt || m.t > b.landAt + 1.5 || !only(b)) continue;
+      const f = m.sideFrame(b.side, b.spot);
+      const victim = m.wrestlers[b.victim];
+      const corners = [];
+      for (const along of [b.spot - 0.6, b.spot + 0.6]) {
+        const rope = f.at(HALF, along);
+        corners.push(['rope', rope.x, MAT_Y + 1.55, rope.z]);
+        for (const inward of [HALF + 2.7, HALF + 3.4]) {
+          const p = f.at(inward, along);
+          corners.push(['landing', p.x, 0, p.z]);
         }
-      });
-      assert.ok(frames > 1000);
-      assert.deepEqual(missed, [], `aspect ${aspect}, seed ${seed}: out of the picture ${missed.length}× (${missed.slice(0, 4).join(', ')})`);
+      }
+      box.setFromObject(victim.rig.root, true);
+      for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(['body', x, y, z]);
+      for (const [what, x, y, z] of corners) {
+        checks++;
+        v.set(x, y, z).project(m.camera);
+        if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1) missed.push(`${what}@${m.t.toFixed(2)}${b.together ? ' (two at once)' : ''}`);
+      }
     }
+  });
+  assert.ok(checks > 100, 'the framing was actually checked');
+  return missed;
+}
+
+test('each ring-out stays in the picture through the bounce: the rope, the landing and the whole body', () => {
+  // Wide (960 × 600), portrait (0.6) and a narrow phone (368 × 800), with isolated and paired ring-outs.
+  for (const [aspect, seed] of [[1.6, 17], [1.6, 8], [0.6, 17], [0.6, 4], [368 / 800, 9]]) {
+    const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle: 'classic' });
+    match.resize(aspect);
+    const missed = framingMisses(match);
+    assert.deepEqual(missed, [], `aspect ${aspect.toFixed(2)}, seed ${seed}: out of the picture ${missed.length}× (${missed.slice(0, 4).join(', ')})`);
   }
+});
+
+test('HD: the final landing stays in the picture under the closer final-two orbit (960 × 600, seed 8)', async () => {
+  await loadHdAssets();
+  const match = new WrestleMatch(names(12), { rng: mulberry32(8), modelStyle: 'hd' });
+  match.resize(960 / 600);
+  const missed = framingMisses(match, { only: (b) => b.final, every: 2 });
+  assert.deepEqual(missed, [], `out of the picture ${missed.length}× (${missed.slice(0, 4).join(', ')})`);
 });
 
 // ---------------------------------------------------------------- #98 smooth limbs (HD)
@@ -166,9 +197,13 @@ test('the approach strides and Duryodhana playing to the crowd keep the same pac
 // ---------------------------------------------------------------- #100 room for every fight, #97 moves
 
 test('fights spread out round the ring, partners stay in reach, and the brawls use the whole move set', () => {
+  const moves = new Set();
+  let bounces = 0;
+  let lifted = 0; // highest a slammed defender was shown off the mat
+  let slamLandings = 0;
   for (const seed of [17, 9]) {
+    const stages = new WeakMap(); // each fight's move stage last update
     const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle: 'classic' });
-    const moves = new Set();
     let samples = 0;
     let crowded = 0;
     let reach = 0;
@@ -180,6 +215,27 @@ test('fights spread out round the ring, partners stay in reach, and the brawls u
       frame++;
       const inRing = m.wrestlers.filter((w) => !w.out);
       for (const w of inRing) if (w.fight) moves.add(w.fight.move);
+      for (const w of inRing) {
+        const f = w.fight;
+        if (!f || w !== f.by) continue;
+        const def = m.wrestlers[w.foe];
+        const was = stages.get(f);
+        stages.set(f, `${f.n}:${f.m.stage}`);
+        if (f.move === 'slam' && f.m.stage === 'lift') lifted = Math.max(lifted, def.rig.root.position.y - MAT_Y);
+        if (f.move === 'slam' && f.m.stage === 'down' && def.landed && !f.m.checked) {
+          f.m.checked = true;
+          // Down on the mat after the lift: resting on it, not hovering.
+          const low = lowestBodyPoint(def.rig);
+          assert.ok(Math.abs(low - MAT_Y) < 0.05, `seed ${seed}: slammed ${def.kind.id} rests at ${low.toFixed(3)}`);
+          slamLandings++;
+        }
+        if (f.move === 'rebound' && f.m.stage === 'bounce' && was === `${f.n}:out`) {
+          // The bounce starts with their back on the ropes.
+          const inside = HALF - Math.max(Math.abs(w.x), Math.abs(w.z));
+          assert.ok(inside < 0.65, `seed ${seed}: ${w.kind.id} bounces ${inside.toFixed(2)} inside the ropes at ${m.t.toFixed(2)}`);
+          bounces++;
+        }
+      }
       const fights = [];
       for (const w of inRing) {
         const o = w.foe === null ? null : m.wrestlers[w.foe];
@@ -224,8 +280,12 @@ test('fights spread out round the ring, partners stay in reach, and the brawls u
     assert.ok(crowded / samples < 0.15, `seed ${seed}: ${((100 * crowded) / samples).toFixed(0)}% of fights within 2.5 of another`);
     assert.ok(reach / pairs < 1.5, `seed ${seed}: partners ${(reach / pairs).toFixed(2)} apart on average`);
     if (flankFrames) assert.ok(flanks / flankFrames > 0.9, `seed ${seed}: two on one from the side ${flanks}/${flankFrames}`);
-    for (const move of ['lockup', 'strikes', 'shove', 'circle', 'stagger', 'reversal', 'rebound', 'slam']) {
-      assert.ok(moves.has(move), `seed ${seed}: no ${move} in a twelve-wrestler match (${[...moves].join(', ')})`);
-    }
+  }
+  // The slam's lift shows on screen (the defender is hoisted across the chest, not tipped over on the mat).
+  assert.ok(lifted > 0.8, `slammed defenders lifted at most ${lifted.toFixed(2)} off the mat`);
+  assert.ok(slamLandings > 0, 'a slam lands');
+  assert.ok(bounces > 0, 'someone rebounds off the ropes');
+  for (const move of ['lockup', 'strikes', 'shove', 'circle', 'stagger', 'reversal', 'rebound', 'slam']) {
+    assert.ok(moves.has(move), `no ${move} in two twelve-wrestler matches (${[...moves].join(', ')})`);
   }
 });

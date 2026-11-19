@@ -433,11 +433,28 @@ export function pose(w, p = {}, blend = null) {
 const _v = new THREE.Vector3();
 const supportVertices = new WeakMap();
 export function lowestBodyPoint(rig, every = 1) {
+  let lowest = Infinity;
+  eachVertex(rig, every, false, (p) => {
+    if (p.y < lowest) lowest = p.y;
+  });
+  return lowest;
+}
+
+/**
+ * The box round the whole posed body in world space, gear included (for keeping it in the picture),
+ * from every `every`-th vertex: a sample, so pad it by a few centimetres.
+ */
+export function bodyBounds(rig, box, every = 4) {
+  box.makeEmpty();
+  eachVertex(rig, every, true, (p) => box.expandByPoint(p));
+  return box;
+}
+
+function eachVertex(rig, every, gear, fn) {
   rig.root.updateMatrixWorld(true);
   if (rig.skinnedRig) rig.body.skeleton.update();
-  let lowest = Infinity;
   const visit = (o) => {
-    if (o.userData.gear) return;
+    if (o.userData.gear && !gear) return;
     if (o.isMesh) {
       const pos = o.geometry.attributes.position;
       let indices = supportVertices.get(o.geometry);
@@ -445,15 +462,11 @@ export function lowestBodyPoint(rig, every = 1) {
         indices = o.geometry.index ? [...new Set(o.geometry.index.array)] : Array.from({ length: pos.count }, (_, i) => i);
         supportVertices.set(o.geometry, indices);
       }
-      for (let n = 0; n < indices.length; n += every) {
-        const y = o.getVertexPosition(indices[n], _v).applyMatrix4(o.matrixWorld).y;
-        if (y < lowest) lowest = y;
-      }
+      for (let n = 0; n < indices.length; n += every) fn(o.getVertexPosition(indices[n], _v).applyMatrix4(o.matrixWorld));
     }
     for (const c of o.children) visit(c);
   };
   visit(rig.root);
-  return lowest;
 }
 
 /** For tests: the lowest point of the rig's feet relative to its root, after posing. */

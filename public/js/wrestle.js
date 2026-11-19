@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI } from './util3d.js';
 import { planMatch, pairUp, PACE } from './wrestle-sim.js';
-import { buildWrestler, pose, capturePose, lowestBodyPoint } from './wrestlers.js';
+import { buildWrestler, pose, capturePose, lowestBodyPoint, bodyBounds } from './wrestlers.js';
 import { mulberry32 } from './sim.js';
 import { Particles } from './effects.js';
 import { Crowd } from './crowd.js';
@@ -55,6 +55,7 @@ const SIGNATURE = {
 };
 const CONTACT = new Set(['reversal', 'slam']); // moves where the pair hold on to each other
 const KNOCKDOWN = { lie: 0.9, up: 1.7 }; // seconds after going down: start getting up, back on their feet
+const ROPE_CONTACT = 0.5; // a wrestler's root this far inside the rope line has their back on the ropes
 const ROOM = 4.4; // how far apart fights try to stay (#100)
 const BLEND = 0.22; // seconds for one move to ease into the next (#98)
 const SHOWMAN_TURN = 2.4; // Duryodhana's turn while playing to the crowd, radians per second (#99)
@@ -67,16 +68,21 @@ const UPRIGHT = { pitch: 0, roll: 0, ground: false, landed: false, hop: 0, pulse
 const CAMERA = {
   intro: { radius: 20, height: 16, rate: 0.22 },
   live: { radius: 16, height: 9, rate: 0.12, aim: 3.2 },
-  final: { radius: 12.5, height: 7, aim: 3.2 },
+  final: { radius: 14, height: 8, aim: 3.2 },
   portrait: {
     live: { radius: 18.5, height: 10, aim: 4.6 },
     final: { radius: 16, height: 8.5, aim: 4.6 },
   },
   victory: { radius: 10, height: 5, aim: 2 },
   toFinal: 3, // seconds to ease into the final-two orbit
-  toVictory: 2,
+  toVictory: 3.2,
   aimRate: 2.5,
 };
+// Widening the shot to keep a throw in the picture (#95, #96): from `lead` seconds before the throw to
+// `hold` after the landing, with `margin` round the region; it widens quickly and eases back slowly.
+// `pad` is how far a body lying round the landing spot can reach, flailing limbs and carried gear included.
+// Past `comfort` degrees of widening the camera also turns towards the throw (as far as it needs to).
+const FRAME = { lead: 0.8, hold: 1.6, pad: 1.5, margin: 1.12, widen: 8, narrow: 1.2, comfort: 12, maxFov: 80, maxPortraitFov: 105 };
 
 export class WrestleMatch {
   /**
@@ -251,7 +257,9 @@ export class WrestleMatch {
     // Portrait: as wide a view across as a 0.6 screen with a 68° lens gives, however narrow the screen,
     // so both ropes and the floor beyond them stay in the picture (#95).
     const across = Math.tan((34 * Math.PI) / 180) * Math.min(aspect, 0.6);
-    this.camera.fov = aspect < 1 ? Math.min(84, (2 * Math.atan(across / aspect) * 180) / Math.PI) : 50;
+    this.baseFov = aspect < 1 ? Math.min(84, (2 * Math.atan(across / aspect) * 180) / Math.PI) : 50;
+    this.fitFov = undefined; // fitShot works out the widening afresh for the new shape
+    this.camera.fov = this.baseFov;
     this.camera.updateProjectionMatrix();
   }
 
@@ -420,6 +428,8 @@ export class WrestleMatch {
     const face = new Map(); // headings other than squaring up to each other
     const m = f.m; // this move's own state
     const k = clamp01(f.t / f.dur);
+    // On the mat unless the move says otherwise (a slam lifts the defender off it).
+    a.y = b.y = MAT_Y;
     if (f.move === 'close') {
       // Size each other up and close in.
       if (d > 1.15) {
@@ -477,7 +487,6 @@ export class WrestleMatch {
       }
       for (const w of [a, b]) act(w, { walk: w.walk, stride: 0.35, guard: 0.8, crouch: 0.3 });
     }
-    a.y = b.y = MAT_Y;
     a.heading = lerpAngle(a.heading, face.get(a) ?? headingTo(a.x, a.z, b.x, b.z), damp(10, dt));
     b.heading = lerpAngle(b.heading, face.get(b) ?? headingTo(b.x, b.z, a.x, a.z), damp(10, dt));
     if (f.t < f.dur) return;
@@ -659,15 +668,18 @@ export class WrestleMatch {
     this.act(w, `${w.fight?.n}:down`, { sit: Math.sin(rise * Math.PI) * 0.9, spread: 0.45 * (1 - rise), look: 0.3, crouch: 0.3 * rise, guard: 0.8 * rise, flail: since < 0.3 ? 0.4 : 0, walk: since * 8 }, 0.15);
   }
 
-  /** Where the attacker runs to the ropes for a rebound: straight back, away from the other one. */
+  /**
+   * Where the attacker runs to the ropes for a rebound: straight back, away from the other one, to
+   * where their back meets the rope line (`reach` is how far that is).
+   */
   ropePoint(att, def) {
     const dx = att.x - def.x;
     const dz = att.z - def.z;
     const d = Math.hypot(dx, dz) || 0.001;
     const ux = dx / d;
     const uz = dz / d;
-    const lim = HALF - 0.75;
-    let reach = 4;
+    const lim = HALF - ROPE_CONTACT;
+    let reach = Infinity;
     if (Math.abs(ux) > 0.01) reach = Math.min(reach, ((ux > 0 ? lim : -lim) - att.x) / ux);
     if (Math.abs(uz) > 0.01) reach = Math.min(reach, ((uz > 0 ? lim : -lim) - att.z) / uz);
     return { x: att.x + ux * reach, z: att.z + uz * reach, reach };
@@ -701,7 +713,7 @@ export class WrestleMatch {
       // A rope rebound needs a run-up, and no throw going on where they'd run.
       const att = f.by;
       const rope = this.ropePoint(att, att === a ? b : a);
-      if (rope.reach < 1.2 || this.nearAction(rope)) f.move = 'strikes';
+      if (rope.reach < 1.2 || rope.reach > 4.5 || this.nearAction(rope)) f.move = 'strikes';
     }
     f.dur = { lockup: 1.2 + this.random() * 0.8, strikes: 1.25, stagger: 0.8, shove: 1, circle: 0.8 + this.random() * 0.6, reversal: 2.3, rebound: 6, slam: 1.35 - 0.3 + KNOCKDOWN.up }[f.move];
   }
@@ -876,7 +888,9 @@ export class WrestleMatch {
     r.root.visible = !w.flicker;
     // Thrown wrestlers (and those sitting at ringside) rest on the floor: measure the body's actual
     // lowest point and lift it there. Sitting is measured once; it doesn't change.
-    if (w.ground) {
+    // Still tipped over (getting up after being pulled out of a knockdown into a throw): keep the body
+    // above the mat until upright.
+    if (w.ground || (!w.out && Math.abs(w.shownPitch) > 0.05)) {
       r.root.position.y += this.groundLift(w) + (w.hop ?? 0);
     } else if (w.out) {
       w.outLift ??= this.groundLift(w);
@@ -1259,9 +1273,79 @@ export class WrestleMatch {
       this.camLook.copy(look);
       this.camReady = true;
     }
+    // A throw too close under the camera to fit in the picture: look more towards it (see fitShot).
+    if (this.roi && this.overflow > 0) look.lerp(this.roi, Math.min(0.85, this.overflow * 2));
     this.camLook.lerp(look, damp(CAMERA.aimRate, dt));
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
+    this.fitShot(dt);
+  }
+
+  /**
+   * Widens the shot (the camera itself keeps to its orbit) when a throw would go out of the picture:
+   * the top rope, the landing area with the bounce and slide, and the thrown wrestler's whole body,
+   * with a margin, from just before the throw until they have sat up; likewise the close call. The
+   * landing spot is known as the exchange starts, so the lens widens ahead of time, then eases back.
+   */
+  fitShot(dt) {
+    const base = this.baseFov ?? 50;
+    const cam = this.camera;
+    const forward = this.camLook.clone().sub(cam.position).normalize();
+    const right = new THREE.Vector3().crossVectors(forward, cam.up).normalize();
+    const up = new THREE.Vector3().crossVectors(right, forward);
+    const aspect = cam.aspect || 1;
+    const d = new THREE.Vector3();
+    let need = 0; // tan of the half vertical angle the shot needs
+    const roi = new THREE.Vector3();
+    let count = 0;
+    const include = (x, y, z) => {
+      roi.x += x;
+      roi.y += y;
+      roi.z += z;
+      count++;
+      d.set(x, y, z).sub(cam.position);
+      const depth = d.dot(forward);
+      if (depth < 0.5) {
+        need = Infinity;
+        return;
+      }
+      need = Math.max(need, Math.abs(d.dot(up)) / depth, Math.abs(d.dot(right)) / depth / aspect);
+    };
+    const region = (f, inward, along, low, high) => {
+      for (const i of inward) for (const a of along) for (const y of [low, high]) {
+        const p = f.at(i, a);
+        include(p.x, y, p.z);
+      }
+    };
+    const t = this.t;
+    for (const b of this.actions ?? []) {
+      const f = this.sideFrame(b.side, b.spot);
+      if (b.type === 'elimination') {
+        if (t < b.throwAt - FRAME.lead || t > b.landAt + FRAME.hold) continue;
+        region(f, [HALF], [b.spot - 0.8, b.spot + 0.8], MAT_Y, MAT_Y + ROPES[2]); // the ropes they go over
+        region(f, [HALF + 2.7 - FRAME.pad, HALF + 3.4 + FRAME.pad], [b.spot - FRAME.pad, b.spot + FRAME.pad], 0, 1.2); // landing, bounce and slide
+        if (t >= b.throwAt) this.bodyRegion(this.wrestlers[b.victim], include);
+      } else {
+        region(f, [HALF - 1.9, HALF + 0.4], [b.spot - 0.9, b.spot + 0.9], MAT_Y, MAT_Y + 2.6);
+      }
+    }
+    const fit = Number.isFinite(need) ? (2 * Math.atan(need * FRAME.margin) * 180) / Math.PI : FRAME.maxFov;
+    const limit = this.aspect < 1 ? FRAME.maxPortraitFov : FRAME.maxFov;
+    const target = Math.min(limit, Math.max(base, fit));
+    // How far past a comfortable widening the throw needs: the camera then also turns towards it.
+    this.overflow = Math.max(0, Math.min(1, (fit - base - FRAME.comfort) / (limit - base - FRAME.comfort)));
+    this.roi = count ? roi.divideScalar(count) : null;
+    this.fitFov = this.fitFov === undefined ? target : this.fitFov + (target - this.fitFov) * damp(target > this.fitFov ? FRAME.widen : FRAME.narrow, dt);
+    if (Math.abs(cam.fov - this.fitFov) > 1e-3) {
+      cam.fov = this.fitFov;
+      cam.updateProjectionMatrix();
+    }
+  }
+
+  /** The space a wrestler's body takes up, from the posed body itself (limbs and gear included). */
+  bodyRegion(w, include) {
+    const box = bodyBounds(w.rig, (this.bodyBox ??= new THREE.Box3())).expandByScalar(0.06);
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) include(x, y, z);
   }
 
   /**

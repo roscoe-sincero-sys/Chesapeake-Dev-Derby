@@ -150,11 +150,12 @@ on the floor. The last one left **leads today's standup**.
    new (an odd one out joins a fight two on one, from the side). Each character has a favourite: Bhima,
    Ghatotkacha and Jarasandha slam, Satyaki rebounds off the ropes, Kichaka and Dushasana shove, and
    Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi reverse. Fights keep their own part of the mat.
-   Ring-outs come at uneven intervals, and now and then two go over the ropes at once on neighbouring
-   sides ("Roscoe and Ada are out!"). The camera circles the middle of the ring at a steady distance,
-   height and speed, as it does around the winner at the end; when a throw starts it turns a little to
-   watch that side while the wrestler clears the top rope and lands, with "Roscoe is out!" on screen and
-   their name crossed off the list.
+   Ring-outs come at uneven intervals, and now and then two go over the same side at once, at opposite
+   ends of the rope ("Roscoe and Ada are out!"). The camera circles the middle of the ring at a steady
+   distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
+   little to watch that side, and widens the shot if needed, so the rope, the landing and the whole body
+   stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
+   crossed off the list.
 3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
    the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.

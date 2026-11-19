@@ -73,7 +73,7 @@ export function matchLength(n) {
  *   duration     seconds until the victory beat starts
  * Beat types: intro; elimination { victim, thrower, side, spot, final, start, grappleAt, throwAt,
  * landAt, end }; final { pair }; closeCall { wrestler, other, side, spot }; victory { winner }.
- * Sides are 0: +x, 1: -x, 2: +z, 3: -z; `spot` is how far along that side (-2.5..2.5).
+ * Sides are 0: +x, 1: -x, 2: +z, 3: -z; `spot` is how far along that side (-2.8..2.8).
  */
 export function planMatch(names, rng = Math.random) {
   if (!Array.isArray(names) || names.length < MIN_WRESTLERS || names.length > MAX_WRESTLERS) {
@@ -153,16 +153,22 @@ function buildPlan(names, rng) {
       start = Math.max(start, ...overlapping(start).map((o) => o.end));
       throwers = assign(start);
     }
+    // Two at once go over the same side, at opposite ends of the rope: each pair has its own rope
+    // area, and the two landings stay close enough together for one camera shot (#95, #96).
+    const end = rng() < 0.5 ? -1 : 1;
+    const pairSide = pickSide();
+    const pairSpots = [end * (2.2 + rng() * 0.6), -end * (2.2 + rng() * 0.6)];
     victims.forEach((victim, i) => {
-      // Ring-outs that overlap use neighbouring sides: apart, so each pair has room and both can be
-      // followed, but towards their shared corner, so one camera shot shows both.
       const from = start + offsets[i];
       const others = overlapping(from);
       let side = pickSide();
       let spot = pickSpot();
-      if (others.length) {
-        // The neighbouring side on the corner the other one is nearer; then the spot along it that
-        // best gives each its own room (about 4.8 apart where they meet) without drifting apart.
+      if (together) {
+        side = pairSide;
+        spot = pairSpots[i];
+      } else if (others.length) {
+        // Starting while the last one is still sitting up at ringside: a neighbouring side, on the
+        // corner nearer that one, with room between them (about 4.8 apart where they meet).
         const near = meetPoint(others.at(-1).side, others.at(-1).spot);
         side = others.at(-1).side < 2 ? (near.z >= 0 ? 2 : 3) : near.x >= 0 ? 0 : 1;
         let best = Infinity;
