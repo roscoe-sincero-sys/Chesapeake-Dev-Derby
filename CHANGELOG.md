@@ -37,8 +37,9 @@ to release.
   Duryodhana's celebration turns at a steady 2.4 radians per second, at any update rate.
 - The match's free movement uses its own seeded stream, so a seeded match (and the performance test's
   seed) replays the same way.
-- Wrestlers sitting at ringside are no longer re-posed every update once settled, which more than pays for
-  the new moves (twelve HD wrestlers: 3.9 ms per update, against 4.4 ms in 1.4.0, measured in Node).
+- Wrestlers sitting at ringside are no longer re-posed every update once settled, which pays for the new
+  moves and framing on average (twelve HD wrestlers, measured in Node: 4.2 ms per update against 4.4–4.7 ms
+  in 1.4.0; the slowest 5% of updates, during throws, take 7.4 ms against 6.5–6.9 ms).
 
 ## [1.4.0] - 2026-11-17
 
