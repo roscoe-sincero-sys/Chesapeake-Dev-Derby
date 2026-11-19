@@ -145,17 +145,25 @@ on the floor. The last one left **leads today's standup**.
 
 1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
 2. **Ring-outs.** Everyone in the ring is fighting at once: each wrestler squares off with someone,
-   trading lock-ups, forearm shots and shoves, and breaks away now and then to find someone new (an
-   odd one out joins a fight two on one). The camera keeps circling the ring, as it does around the
-   winner at the end. When a throw starts, it turns to watch that side while the wrestler clears the
-   top rope and lands, with "Roscoe is out!" on screen and their name crossed off the list.
-3. **Final two.** The camera circles the pair as they fight, one of them has a close call at the ropes,
-   then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
+   trading lock-ups, forearm shots and shoves, reeling back from a hard shot, reversing a tie-up, running
+   the ropes for a shoulder tackle or hitting a body slam, and breaks away now and then to find someone
+   new (an odd one out joins a fight two on one, from the side). Each character has a favourite: Bhima,
+   Ghatotkacha and Jarasandha slam, Satyaki rebounds off the ropes, Kichaka and Dushasana shove, and
+   Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi reverse. Fights keep their own part of the mat.
+   Ring-outs come at uneven intervals, and now and then two go over the same side at once, at opposite
+   ends of the rope ("Roscoe and Ada are out!"). The camera circles the middle of the ring at a steady
+   distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
+   little to watch that side, and gradually widens the shot if needed, so the rope, the landing and the whole body
+   stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
+   crossed off the list.
+3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
+   the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.
 
-**Fair and fixed-length.** The elimination order is drawn uniformly at random when the bell rings, so
-every wrestler has the same chance. The match has its own pacing: about 15 seconds for 2 wrestlers, up
-to about 73 seconds for 12, whatever the **Race length** slider says (the slider is only for races).
+**Fair, with its own pacing.** The elimination order is drawn uniformly at random when the bell rings,
+so every wrestler has the same chance; when and where each ring-out happens never changes who wins. The
+match has its own pacing: about 15 seconds for 2 wrestlers, and about 45 to 75 seconds for 12 (a minute
+on average), whatever the **Race length** slider says (the slider is only for races).
 
 ### Winner history
 
@@ -289,6 +297,12 @@ Uses Node's built-in test runner — no extra packages. Covers:
   snapping older or typed-in speeds to the nearest length.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
   controls stay readable (see [Accessibility](#accessibility)).
+- **`test/wrestle.test.js`** — the battle royal's plan: a fair draw, everyone but the winner thrown out
+  once, ring-outs together and apart, nobody in two exchanges at once, and the match's length.
+- **`test/wrestle-match.test.js`** — the 3D match run headless (`test/headless.js` stubs canvas drawing and
+  loads the HD bodies without a browser): the camera's orbit and framing in wide and portrait views, HD
+  limbs that never snap between moves, the same pacing at 30, 60 and 120 updates per second, room between
+  fights, and every brawling move in use.
 
 ## How it's put together
 

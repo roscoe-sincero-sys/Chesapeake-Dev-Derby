@@ -2,30 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createWrestlerRig, poseWrestlerModel, modelLowestFoot } from '../public/js/wrestler-models.js';
+import { createWrestlerRig, poseWrestlerModel, captureWrestlerModel, modelLowestFoot } from '../public/js/wrestler-models.js';
+import { loadHdAssets } from './headless.js';
 import { lowestBodyPoint } from '../public/js/wrestlers.js';
 import { WRESTLER_LOOKS, WRESTLER_MODEL_IDS } from '../public/js/wrestler-looks.js';
 import { WRESTLER_KINDS } from '../public/js/wrestle-sim.js';
 
-// Decode the shipped geometry/skin, removing only images so this runs without a browser/GPU.
-globalThis.ProgressEvent ??= class ProgressEvent { constructor(type, values) { Object.assign(this, { type }, values); } };
-async function readGeometry(file) {
-  const binary = await readFile(new URL(`../public/assets/wrestlers/${file}`, import.meta.url));
-  const jsonLength = binary.readUInt32LE(12);
-  const document = JSON.parse(binary.subarray(20, 20 + jsonLength));
-  document.materials = [{}];
-  for (const mesh of document.meshes) for (const primitive of mesh.primitives) primitive.material = 0;
-  delete document.images;
-  delete document.textures;
-  document.buffers[0].uri = `data:application/octet-stream;base64,${binary.subarray(28 + jsonLength).toString('base64')}`;
-  const { scene } = await new GLTFLoader().parseAsync(JSON.stringify(document), '');
-  return scene;
-}
-const [body, female, longHair, partedHair, beard] = await Promise.all([
-  'superhero-male.glb', 'superhero-female.glb', 'hair-long.glb', 'hair-parted.glb', 'hair-beard.glb',
-].map(readGeometry));
-const source = { body, female, longHair, partedHair, beard };
+const source = await loadHdAssets();
+const { body, female } = source;
 const kind = (id) => ({ id });
 
 test('free models have independent skeletons/materials while sharing source geometry', () => {
@@ -136,4 +120,20 @@ test('asset manifest identifies free Standard files and matches their hashes', a
     assert.equal(contents.length, metadata.bytes);
     assert.equal(createHash('sha256').update(contents).digest('hex'), metadata.sha256);
   }
+});
+
+test('a new pose can ease in from the last one, bone by bone (#98)', () => {
+  const rig = createWrestlerRig(kind('bhima'), '#ffffff', source);
+  poseWrestlerModel(rig, { armsForward: 1, crouch: 0.35 });
+  const from = captureWrestlerModel(rig);
+  const grip = rig.bones.upperarm_l.quaternion.clone();
+  poseWrestlerModel(rig, { armsUp: 1 }, { from, k: 0 });
+  assert.ok(rig.bones.upperarm_l.quaternion.angleTo(grip) < 1e-6, 'k = 0: still the captured pose');
+  assert.ok(modelLowestFoot(rig) > -0.002 && modelLowestFoot(rig) < 0.002, 'blended poses keep a foot on the floor');
+  poseWrestlerModel(rig, { armsUp: 1 });
+  const up = rig.bones.upperarm_l.quaternion.clone();
+  poseWrestlerModel(rig, { armsUp: 1 }, { from, k: 0.5 });
+  const half = rig.bones.upperarm_l.quaternion;
+  assert.ok(Math.abs(half.angleTo(grip) - half.angleTo(up)) < 1e-3, 'k = 0.5: halfway between');
+  rig.disposeBody();
 });

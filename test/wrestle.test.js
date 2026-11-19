@@ -12,7 +12,7 @@ test('the twelve-character performance preview uses every character and a full e
   assert.ok(plan.wrestlers.every((w) => w.name === w.kind.label));
   assert.equal(plan.beats.filter((b) => b.type === 'elimination').length, 11);
   assert.equal(plan.beats.at(-1).winner, plan.winner);
-  assert.equal(plan.duration, matchLength(12));
+  assert.ok(plan.duration <= matchLength(12));
   assert.throws(() => planRosterPreview(13), /2 to 12/);
   assert.throws(() => planRosterPreview(10.5), /2 to 12/);
 });
@@ -92,22 +92,97 @@ test('the final two get one close call before the last throw', () => {
   }
 });
 
-test('the match has its own pacing: length depends only on the number of wrestlers', () => {
+test('the match has its own pacing: never longer than matchLength(n), whatever the Race length', () => {
   for (let n = 2; n <= MAX_WRESTLERS; n++) {
-    const a = planMatch(names(n), mulberry32(1));
-    const b = planMatch(names(n), mulberry32(999));
-    assert.equal(a.duration, b.duration);
-    assert.ok(Math.abs(a.duration - matchLength(n)) < 1e-9);
+    for (let seed = 1; seed <= 40; seed++) {
+      const plan = planMatch(names(n), mulberry32(seed));
+      assert.ok(plan.duration <= matchLength(n) + 1e-9, `${n} wrestlers, seed ${seed}: ${plan.duration}s`);
+      assert.equal(plan.beats.at(-1).start, plan.duration);
+    }
   }
   assert.ok(matchLength(2) > 10 && matchLength(2) < 20, `2 wrestlers: ${matchLength(2)}s`);
-  assert.ok(matchLength(10) > 45 && matchLength(10) < 70, `10 wrestlers: ${matchLength(10)}s`);
-  assert.ok(matchLength(12) > 70 && matchLength(12) < 80, `12 wrestlers: ${matchLength(12)}s`);
-  // Beats run back to back, in order.
+  assert.ok(matchLength(12) > 70 && matchLength(12) < 95, `12 wrestlers: at most ${matchLength(12)}s`);
+  // Two wrestlers: no ring-outs to vary, so always the same length.
+  assert.equal(planMatch(names(2), mulberry32(1)).duration, planMatch(names(2), mulberry32(9)).duration);
   const plan = planMatch(names(6), mulberry32(3));
-  const timed = plan.beats.filter((b) => b.type !== 'victory');
-  assert.equal(timed[0].start, 0);
-  assert.equal(timed[0].end, PACE.intro);
+  assert.equal(plan.beats[0].type, 'intro');
+  assert.equal(plan.beats[0].end, PACE.intro);
   for (const b of plan.beats) assert.ok(b.end > b.start);
+  for (let i = 1; i < plan.beats.length; i++) assert.ok(plan.beats[i].start >= plan.beats[i - 1].start, 'beats are in start order');
+});
+
+// #96: ring-outs that sometimes happen together, and gaps that vary.
+const outsOf = (plan) => plan.beats.filter((b) => b.type === 'elimination');
+
+test('some six- and twelve-wrestler plans throw two out at once, landing within a second', () => {
+  for (const n of [6, 12]) {
+    let paired = 0;
+    let isolatedOnly = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const outs = outsOf(planMatch(names(n), mulberry32(seed)));
+      const together = outs.filter((b) => b.together);
+      if (!together.length) isolatedOnly++;
+      for (let i = 0; i < together.length; i += 2) {
+        const [a, b] = together.slice(i, i + 2);
+        assert.ok(b.landAt - a.landAt > 0 && b.landAt - a.landAt < 1, `${n}/${seed}: landings ${a.landAt} and ${b.landAt}`);
+        assert.ok(b.start < a.end, 'both exchanges are on at the same time');
+        assert.equal(a.side, b.side, 'over the same side of the ring...');
+        assert.ok(Math.abs(a.spot - b.spot) > 4.3, `...at opposite ends of the rope (${a.spot.toFixed(1)}, ${b.spot.toFixed(1)})`);
+        paired++;
+      }
+    }
+    assert.ok(paired >= 5, `${n} wrestlers: ${paired} pairs of ring-outs together in 40 seeds`);
+    assert.ok(isolatedOnly >= 2, `${n} wrestlers: some seeds have none (${isolatedOnly})`);
+  }
+  // Two or three wrestlers never do: the final two always get their own close call and last throw.
+  for (let seed = 1; seed <= 30; seed++) {
+    assert.ok(outsOf(planMatch(names(2), mulberry32(seed))).every((b) => !b.together));
+    assert.equal(outsOf(planMatch(names(2), mulberry32(seed))).length, 1, 'two wrestlers: a single ring-out');
+    assert.ok(outsOf(planMatch(names(3), mulberry32(seed))).every((b) => !b.together));
+  }
+});
+
+test('the gaps between ring-outs that happen on their own vary', () => {
+  const gaps = new Set();
+  for (let seed = 1; seed <= 10; seed++) {
+    const outs = outsOf(planMatch(names(12), mulberry32(seed))).filter((b) => !b.final);
+    for (let i = 1; i < outs.length; i++) if (!outs[i].together || !outs[i - 1].together) gaps.add((outs[i].landAt - outs[i - 1].landAt).toFixed(1));
+  }
+  assert.ok(gaps.size >= 10, `isolated landing gaps: ${[...gaps].join(', ')}`);
+  const longest = Math.max(...[...gaps].map(Number));
+  assert.ok(longest > 6.5, `some longer gaps too (longest ${longest}s)`);
+});
+
+test('nobody is in two scripted exchanges at once, and the order of landings is the elimination order', () => {
+  for (let seed = 1; seed <= 80; seed++) {
+    const n = 2 + (seed % (MAX_WRESTLERS - 1));
+    const plan = planMatch(names(n), mulberry32(seed));
+    const scripted = plan.beats.filter((b) => b.type === 'elimination' || b.type === 'closeCall');
+    const who = (b) => (b.type === 'closeCall' ? [b.wrestler, b.other] : [b.victim, b.thrower]);
+    for (let i = 0; i < scripted.length; i++) {
+      for (let j = i + 1; j < scripted.length; j++) {
+        const [a, b] = [scripted[i], scripted[j]];
+        if (a.start < b.end && b.start < a.end) {
+          const shared = who(a).filter((id) => who(b).includes(id));
+          assert.deepEqual(shared, [], `seed ${seed}: wrestler ${shared} is in two exchanges at once`);
+        }
+      }
+    }
+    const outs = outsOf(plan);
+    assert.deepEqual([...outs].sort((a, b) => a.landAt - b.landAt).map((b) => b.victim), plan.order.slice(0, -1));
+    // Nobody throws after they've been thrown out.
+    for (const b of outs) for (const earlier of outs) if (earlier.landAt < b.start) assert.notEqual(earlier.victim, b.thrower);
+    assert.equal(outs.filter((b) => b.final).length, 1, 'exactly one final throw');
+    assert.equal(outs.at(-1).final, true);
+    assert.equal(plan.beats.filter((b) => b.type === 'victory').length, 1, 'exactly one result');
+  }
+});
+
+test('two ring-outs landing together share one callout', async () => {
+  const { outText } = await import('../public/js/hud.js');
+  assert.equal(outText(['Roscoe']), 'Roscoe is out!');
+  assert.equal(outText(['Roscoe', 'Ada']), 'Roscoe and Ada are out!');
+  assert.equal(outText(['Roscoe', 'Ada', 'Lin']), 'Roscoe, Ada and Lin are out!');
 });
 
 // ---------------------------------------------------------------- feet on the floor (issue #68 comment)

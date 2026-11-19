@@ -2,8 +2,9 @@
 // so it runs in Node for tests. The 3D ring (wrestle.js) only acts out the plan made here.
 //
 // Fairness: when the bell rings, the elimination order is drawn uniformly at random, so every
-// wrestler is equally likely to be the last one in the ring. The match has its own pacing, which
-// depends only on the number of wrestlers; the lobby's Race length slider does not affect it.
+// wrestler is equally likely to be the last one in the ring. When and where each ring-out happens is
+// drawn afterwards and never changes that. The match has its own pacing (see GAPS and matchLength);
+// the lobby's Race length slider does not affect it.
 
 import { shuffle } from './sim.js';
 import { SIGN_VARIANTS } from './sign-variants.js';
@@ -43,11 +44,24 @@ export const PACE = {
   victory: 3,
 };
 
-const ELIMINATION = PACE.approach + PACE.grapple + PACE.throw + PACE.callout + PACE.reset;
+/**
+ * Ring-out timing (#96). After a landing, the next ring-out starts a pause drawn from [min, max] seconds
+ * later, so they aren't evenly spaced. While at least `minInRing` are in the ring, two independent
+ * ring-outs sometimes (`chance`) run side by side, starting up to `offset` seconds apart so they land
+ * within a second of each other.
+ */
+export const GAPS = { min: 0.9, max: 3.3, together: { chance: 0.35, minInRing: 4, offset: 0.9 } };
 
-/** Length of a match with `n` wrestlers, in seconds, up to the victory. */
+const TO_LANDING = PACE.approach + PACE.grapple + PACE.throw;
+const ELIMINATION = TO_LANDING + PACE.callout + PACE.reset;
+
+/**
+ * The longest a match with `n` wrestlers can last, in seconds, up to the victory. Matches vary (the
+ * pauses between ring-outs are random, and some ring-outs happen together), and are usually shorter.
+ */
 export function matchLength(n) {
-  return PACE.intro + (n - 1) * ELIMINATION + PACE.finalHold + PACE.closeCall;
+  const before = Math.max(0, n - 3) * (TO_LANDING + Math.max(GAPS.max, PACE.callout + PACE.reset)) + (n > 2 ? ELIMINATION : 0);
+  return PACE.intro + before + PACE.finalHold + PACE.closeCall + ELIMINATION;
 }
 
 /**
@@ -59,7 +73,7 @@ export function matchLength(n) {
  *   duration     seconds until the victory beat starts
  * Beat types: intro; elimination { victim, thrower, side, spot, final, start, grappleAt, throwAt,
  * landAt, end }; final { pair }; closeCall { wrestler, other, side, spot }; victory { winner }.
- * Sides are 0: +x, 1: -x, 2: +z, 3: -z; `spot` is how far along that side (-2.5..2.5).
+ * Sides are 0: +x, 1: -x, 2: +z, 3: -z; `spot` is how far along that side (-2.8..2.8).
  */
 export function planMatch(names, rng = Math.random) {
   if (!Array.isArray(names) || names.length < MIN_WRESTLERS || names.length > MAX_WRESTLERS) {
@@ -85,40 +99,108 @@ function buildPlan(names, rng) {
     return { id, name, kind: WRESTLER_KINDS[bag.pop()] };
   });
 
-  // The bell rings: draw the elimination order uniformly at random. The last one left wins.
+  // The bell rings: draw the elimination order uniformly at random. The last one left wins. Everything
+  // drawn after this (who throws, where and when) is presentation: it never changes who wins.
   const order = shuffle(wrestlers.map((w) => w.id), rng);
   const winner = order[order.length - 1];
   const pickSide = () => Math.floor(rng() * 4);
   const pickSpot = () => -2.5 + rng() * 5;
 
   const beats = [{ type: 'intro', start: 0, end: PACE.intro }];
-  let t = PACE.intro;
-  const inRing = new Set(order);
-  for (let k = 0; k < order.length - 1; k++) {
-    const victim = order[k];
-    const final = inRing.size === 2;
-    const others = [...inRing].filter((id) => id !== victim);
-    if (final) {
-      const [a, b] = order.slice(-2);
-      beats.push({ type: 'final', pair: [a, b], start: t, end: t + PACE.finalHold });
-      t += PACE.finalHold;
-      // One close call at the ropes before the last throw; either of the two can be the one
-      // who nearly goes over, and they survive it.
-      const teeter = rng() < 0.5 ? a : b;
-      beats.push({ type: 'closeCall', wrestler: teeter, other: teeter === a ? b : a, side: pickSide(), spot: pickSpot(), start: t, end: t + PACE.closeCall });
-      t += PACE.closeCall;
-    }
-    const thrower = others[Math.floor(rng() * others.length)];
-    const grappleAt = t + PACE.approach;
+  const outs = [];
+  const elimination = (fields, start) => {
+    const grappleAt = start + PACE.approach;
     const throwAt = grappleAt + PACE.grapple;
     const landAt = throwAt + PACE.throw;
-    beats.push({ type: 'elimination', victim, thrower, side: pickSide(), spot: pickSpot(), final, start: t, grappleAt, throwAt, landAt, end: landAt + PACE.callout + PACE.reset });
-    t = landAt + PACE.callout + PACE.reset;
-    inRing.delete(victim);
+    return { type: 'elimination', ...fields, start, grappleAt, throwAt, landAt, end: landAt + PACE.callout + PACE.reset };
+  };
+  const overlapping = (from) => outs.filter((o) => o.start < from + ELIMINATION && o.end > from);
+  let t = PACE.intro; // earliest start for the next ring-out
+  let k = 0;
+  while (k < order.length - 1) {
+    const inRing = order.slice(k);
+    if (inRing.length === 2) {
+      // Final two: they circle, one of them has a close call at the ropes and survives it, then the
+      // last throw. Nothing else is going on in the ring by then.
+      const [a, b] = inRing;
+      let s = outs.length ? Math.max(...outs.map((o) => o.end)) : PACE.intro;
+      beats.push({ type: 'final', pair: [a, b], start: s, end: s + PACE.finalHold });
+      s += PACE.finalHold;
+      const teeter = rng() < 0.5 ? a : b;
+      beats.push({ type: 'closeCall', wrestler: teeter, other: teeter === a ? b : a, side: pickSide(), spot: pickSpot(), start: s, end: s + PACE.closeCall });
+      s += PACE.closeCall;
+      outs.push(elimination({ victim: a, thrower: b, side: pickSide(), spot: pickSpot(), final: true, together: false }, s));
+      k++;
+      continue;
+    }
+    // Sometimes two ring-outs at once, on neighbouring sides, while enough are left in the ring.
+    const together = inRing.length >= GAPS.together.minInRing && rng() < GAPS.together.chance;
+    const victims = together ? [order[k], order[k + 1]] : [order[k]];
+    const offsets = together ? [0, 0.15 + rng() * (GAPS.together.offset - 0.15)] : [0];
+    // A wrestler is in at most one scripted exchange at a time. Whoever is still finishing one (a
+    // thrower squaring up after a landing) sits this one out; if that leaves too few, wait for them.
+    const assign = (start) => {
+      const taken = new Set();
+      for (const o of overlapping(start)) taken.add(o.victim).add(o.thrower);
+      if (victims.some((v) => taken.has(v))) return null;
+      const free = inRing.filter((id) => !victims.includes(id) && !taken.has(id));
+      if (free.length < victims.length) return null;
+      return victims.map(() => free.splice(Math.floor(rng() * free.length), 1)[0]);
+    };
+    let start = t;
+    let throwers = assign(start);
+    if (!throwers) {
+      start = Math.max(start, ...overlapping(start).map((o) => o.end));
+      throwers = assign(start);
+    }
+    // Two at once go over the same side, at opposite ends of the rope: each pair has its own rope
+    // area, and the two landings stay close enough together for one camera shot (#95, #96).
+    const end = rng() < 0.5 ? -1 : 1;
+    const pairSide = pickSide();
+    const pairSpots = [end * (2.2 + rng() * 0.6), -end * (2.2 + rng() * 0.6)];
+    victims.forEach((victim, i) => {
+      const from = start + offsets[i];
+      const others = overlapping(from);
+      let side = pickSide();
+      let spot = pickSpot();
+      if (together) {
+        side = pairSide;
+        spot = pairSpots[i];
+      } else if (others.length) {
+        // Starting while the last one is still sitting up at ringside: a neighbouring side, on the
+        // corner nearer that one, with room between them (about 4.8 apart where they meet).
+        const near = meetPoint(others.at(-1).side, others.at(-1).spot);
+        side = others.at(-1).side < 2 ? (near.z >= 0 ? 2 : 3) : near.x >= 0 ? 0 : 1;
+        let best = Infinity;
+        for (let tries = 0; tries < 12; tries++) {
+          const s = pickSpot();
+          const miss = Math.max(...others.map((o) => Math.abs(spread(meetPoint(o.side, o.spot), meetPoint(side, s)) - 4.8)));
+          if (miss < best) {
+            best = miss;
+            spot = s;
+          }
+        }
+      }
+      outs.push(elimination({ victim, thrower: throwers[i], side, spot, final: false, together }, from));
+    });
+    k += victims.length;
+    // The next one starts a varied pause after this landing (the later one, if two landed).
+    t = outs.at(-1).landAt + GAPS.min + rng() * (GAPS.max - GAPS.min);
   }
-  beats.push({ type: 'victory', winner, start: t, end: t + PACE.victory });
-  return { wrestlers, order, winner, beats, duration: t };
+  beats.push(...outs);
+  beats.sort((a, b) => a.start - b.start);
+  const duration = outs.at(-1).end;
+  beats.push({ type: 'victory', winner, start: duration, end: duration + PACE.victory });
+  return { wrestlers, order, winner, beats, duration };
 }
+
+// Where a thrower and victim meet at the ropes on `side`, `spot` along it (as wrestle.js stages it).
+function meetPoint(side, spot) {
+  const nx = side === 0 ? 1 : side === 1 ? -1 : 0;
+  const nz = side === 2 ? 1 : side === 3 ? -1 : 0;
+  return { x: nx * 5 - nz * spot, z: nz * 5 + nx * spot };
+}
+const spread = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /**
  * Battle royal brawling: who each free wrestler is fighting right now. `free` lists the wrestlers in

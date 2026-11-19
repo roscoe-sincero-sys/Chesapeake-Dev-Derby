@@ -7,6 +7,11 @@ const $ = (id) => document.getElementById(id);
 
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 export const who = (racer) => `<b>${escapeHtml(racer.name)}</b>`;
+const OUT_MERGE_MS = 1300; // ring-outs landing this close together share one callout
+/** "Roscoe is out!", "Roscoe and Ada are out!", "Roscoe, Ada and Lin are out!". */
+export const outText = (names) => (names.length === 1
+  ? `${names[0]} is out!`
+  : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} are out!`);
 const ordinal = (n) => `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : Math.min(n % 10, 4) % 4]}`;
 
 const HIT_TEXT = {
@@ -201,6 +206,17 @@ export class Hud {
       this.count.textContent = '';
       this.count.className = '';
     }, ms);
+  }
+
+  /**
+   * "Roscoe is out!". When two ring-outs land moments apart (#96), the second joins the first instead of
+   * replacing it: "Roscoe and Ada are out!".
+   */
+  outCallout(name, now = performance.now()) {
+    const recent = this.outNames && now - this.outAt < OUT_MERGE_MS;
+    this.outNames = recent ? [...this.outNames, name] : [name];
+    this.outAt = now;
+    this.callout(outText(this.outNames), 1600 + (this.outNames.length - 1) * 500);
   }
 
   /** Adds a line to the event feed from outside the race (e.g. the wrestling match). */
