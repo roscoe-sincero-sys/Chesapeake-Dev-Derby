@@ -11,8 +11,9 @@ to release.
 - **Wrestling camera (#95):** circles the middle of the ring at a steady distance, height and speed for the
   whole match, turning only a bounded amount towards a throw instead of pushing in and pulling back for
   each ring-out. Where a throw would leave the picture (one close under the camera, or on a narrow
-  phone), the lens widens ahead of it, and the camera turns further only if that isn't enough, so the
-  rope, the landing and the whole body stay in view through the bounce. It eases into a slightly closer
+  phone), the lens widens gradually over the approach (never changing the picture's scale by more than
+  about 6% in a quarter-second, widening or easing back), and the camera turns further only if that isn't
+  enough, so the rope, the landing and the whole body stay in view through the bounce. It eases into a slightly closer
   orbit for the final two over three seconds, and from there into the victory shot. Portrait screens
   watch from a little further back, with a view as wide as on a 0.6 screen.
 - **Ring-outs (#96):** come at uneven intervals, and while at least four are in the ring two sometimes go

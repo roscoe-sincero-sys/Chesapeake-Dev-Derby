@@ -79,10 +79,13 @@ const CAMERA = {
   aimRate: 2.5,
 };
 // Widening the shot to keep a throw in the picture (#95, #96): from `lead` seconds before the throw to
-// `hold` after the landing, with `margin` round the region; it widens quickly and eases back slowly.
-// `pad` is how far a body lying round the landing spot can reach, flailing limbs and carried gear included.
+// `hold` after the landing, with `margin` round the region. The whole throw is known as the approach
+// starts, so the lens has the approach and grapple (2.8 s) to widen: it eases, and the scale of the picture
+// never changes faster than `rate` (log of the lens's half-angle tangent per second; 0.24 is under 7% in a
+// quarter-second), widening or narrowing. `pad` is how far a body lying round the landing spot can reach,
+// flailing limbs and carried gear included; `body` is the same round the thrown body in the air.
 // Past `comfort` degrees of widening the camera also turns towards the throw (as far as it needs to).
-const FRAME = { lead: 0.8, hold: 1.6, pad: 1.5, margin: 1.12, widen: 8, narrow: 1.2, comfort: 12, maxFov: 80, maxPortraitFov: 105 };
+const FRAME = { hold: 1.6, pad: 1.6, body: 1.7, margin: 1.16, ease: 4, rate: 0.24, comfort: 12, maxFov: 80, maxPortraitFov: 105 };
 
 export class WrestleMatch {
   /**
@@ -1284,8 +1287,9 @@ export class WrestleMatch {
   /**
    * Widens the shot (the camera itself keeps to its orbit) when a throw would go out of the picture:
    * the top rope, the landing area with the bounce and slide, and the thrown wrestler's whole body,
-   * with a margin, from just before the throw until they have sat up; likewise the close call. The
-   * landing spot is known as the exchange starts, so the lens widens ahead of time, then eases back.
+   * with a margin, from the start of the approach until they have sat up; likewise the close call. The
+   * throw's whole path is known as the approach starts, so the lens widens gradually ahead of it, and
+   * eases back as gradually afterwards: no sudden zoom either way (#95).
    */
   fitShot(dt) {
     const base = this.baseFov ?? 50;
@@ -1321,9 +1325,16 @@ export class WrestleMatch {
     for (const b of this.actions ?? []) {
       const f = this.sideFrame(b.side, b.spot);
       if (b.type === 'elimination') {
-        if (t < b.throwAt - FRAME.lead || t > b.landAt + FRAME.hold) continue;
+        if (t > b.landAt + FRAME.hold) continue;
         region(f, [HALF], [b.spot - 0.8, b.spot + 0.8], MAT_Y, MAT_Y + ROPES[2]); // the ropes they go over
         region(f, [HALF + 2.7 - FRAME.pad, HALF + 3.4 + FRAME.pad], [b.spot - FRAME.pad, b.spot + FRAME.pad], 0, 1.2); // landing, bounce and slide
+        // The flight over the ropes, as playElimination flies it, with room for the tumbling body.
+        const overhead = LIFTERS.has(this.wrestlers[b.thrower].kind.style);
+        for (const q of [0, 0.25, 0.5, 0.75, 1]) {
+          const y = overhead ? MAT_Y + 1.9 + (0.25 - MAT_Y - 1.9) * q + 6.4 * q * (1 - q) : MAT_Y + (0.25 - MAT_Y) * q + 11.6 * q * (1 - q);
+          const inward = HALF - (overhead ? 1.1 : 0.5) + (overhead ? 3.8 : 3.2) * q;
+          region(f, [inward - FRAME.body, inward + FRAME.body], [b.spot - FRAME.body, b.spot + FRAME.body], Math.max(0, y - 1), y + FRAME.body + 0.1);
+        }
         if (t >= b.throwAt) this.bodyRegion(this.wrestlers[b.victim], include);
       } else {
         region(f, [HALF - 1.9, HALF + 0.4], [b.spot - 0.9, b.spot + 0.9], MAT_Y, MAT_Y + 2.6);
@@ -1335,11 +1346,27 @@ export class WrestleMatch {
     // How far past a comfortable widening the throw needs: the camera then also turns towards it.
     this.overflow = Math.max(0, Math.min(1, (fit - base - FRAME.comfort) / (limit - base - FRAME.comfort)));
     this.roi = count ? roi.divideScalar(count) : null;
-    this.fitFov = this.fitFov === undefined ? target : this.fitFov + (target - this.fitFov) * damp(target > this.fitFov ? FRAME.widen : FRAME.narrow, dt);
+    if (this.fitFov === undefined) this.fitFov = target;
+    else {
+      // Ease the lens in log-scale (how big things look), never faster than FRAME.rate, counting any
+      // change in the camera's distance (easing into the final-two and victory orbits) towards the limit.
+      const scale = (fov) => Math.log(Math.tan((fov * Math.PI) / 360));
+      const now = scale(this.fitFov);
+      const moved = this.lastDist === undefined ? 0 : this.ringDistance() - this.lastDist;
+      const step = Math.max(-FRAME.rate * dt - moved, Math.min(FRAME.rate * dt - moved, (scale(target) - now) * damp(FRAME.ease, dt)));
+      this.fitFov = (Math.atan(Math.exp(now + step)) * 360) / Math.PI;
+    }
+    this.lastDist = this.ringDistance();
     if (Math.abs(cam.fov - this.fitFov) > 1e-3) {
       cam.fov = this.fitFov;
       cam.updateProjectionMatrix();
     }
+  }
+
+  /** Log of the camera's distance from the middle of the ring: it changes only as the orbit eases in. */
+  ringDistance() {
+    const p = this.camera.position;
+    return Math.log(Math.hypot(p.x, p.y - MAT_Y, p.z));
   }
 
   /** The space a wrestler's body takes up, from the posed body itself (limbs and gear included). */

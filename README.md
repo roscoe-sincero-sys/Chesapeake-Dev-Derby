@@ -153,7 +153,7 @@ on the floor. The last one left **leads today's standup**.
    Ring-outs come at uneven intervals, and now and then two go over the same side at once, at opposite
    ends of the rope ("Roscoe and Ada are out!"). The camera circles the middle of the ring at a steady
    distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
-   little to watch that side, and widens the shot if needed, so the rope, the landing and the whole body
+   little to watch that side, and gradually widens the shot if needed, so the rope, the landing and the whole body
    stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
    crossed off the list.
 3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at

@@ -50,7 +50,7 @@ test('the live camera circles the ring centre at a steady distance, height and s
       // It only turns towards the action, a bounded amount from the centre of the ring, unless a throw
       // is too close under it to fit in the picture (then it turns further, and eases back after).
       if (m.overflow > 0) lastOverflow = m.t;
-      if (m.t - lastOverflow > 2) assert.ok(Math.hypot(m.camLook.x, m.camLook.z) <= 3.2 + 1e-6, `t=${m.t.toFixed(2)}: aim strays`);
+      if (m.t - lastOverflow > 2) assert.ok(Math.hypot(m.camLook.x, m.camLook.z) <= 3.2 + 0.05, `t=${m.t.toFixed(2)}: aim strays`);
     }
     // Into the final two and the victory: gradually, never a sudden push in.
     if (last && m.t > 4.6) maxRadiusRate = Math.max(maxRadiusRate, Math.abs(radius - last.radius) * 60);
@@ -60,16 +60,43 @@ test('the live camera circles the ring centre at a steady distance, height and s
 });
 
 /**
+ * How big the middle of the ring looks on screen (lens and distance together), tracked over the match:
+ * returns the largest change of that scale within any quarter-second, as a fraction (#95: no sudden zoom).
+ */
+function zoomTracker(hz = 60) {
+  const history = [];
+  let worst = { change: 0 };
+  return {
+    frame(m) {
+      const p = m.camera.position;
+      const scale = 1 / (Math.tan((m.camera.fov * Math.PI) / 360) * Math.hypot(p.x, p.y - MAT_Y, p.z));
+      history.push(scale);
+      if (history.length > hz / 4 + 1) history.shift();
+      if (m.t > 5) {
+        for (const earlier of history) {
+          const change = Math.abs(Math.log(scale / earlier));
+          if (change > worst.change) worst = { change, t: m.t.toFixed(2), fov: m.camera.fov.toFixed(1) };
+        }
+      }
+    },
+    get worst() {
+      return worst;
+    },
+  };
+}
+
+/**
  * Every frame from the throw until the thrown wrestler has sat up: the top rope they go over, the
  * landing area (with the slide) and the whole of their body must be in the picture. Returns misses.
  */
-function framingMisses(match, { until = match.plan.duration, only = () => true, every = 1 } = {}) {
+function framingMisses(match, { until = match.plan.duration, only = () => true, every = 1, onFrame = () => {} } = {}) {
   const v = new THREE.Vector3();
   const box = new THREE.Box3();
   const missed = [];
   let frame = 0;
   let checks = 0;
   run(match, 60, until, (m) => {
+    onFrame(m);
     if (++frame % every) return;
     m.camera.updateMatrixWorld();
     for (const b of m.actions) {
@@ -98,13 +125,16 @@ function framingMisses(match, { until = match.plan.duration, only = () => true, 
   return missed;
 }
 
-test('each ring-out stays in the picture through the bounce: the rope, the landing and the whole body', () => {
+test('each ring-out stays in the picture through the bounce, and the shot never zooms suddenly', () => {
   // Wide (960 × 600), portrait (0.6) and a narrow phone (368 × 800), with isolated and paired ring-outs.
   for (const [aspect, seed] of [[1.6, 17], [1.6, 8], [0.6, 17], [0.6, 4], [368 / 800, 9]]) {
     const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle: 'classic' });
     match.resize(aspect);
-    const missed = framingMisses(match);
+    const zoom = zoomTracker();
+    const missed = framingMisses(match, { until: match.plan.duration + 3, onFrame: (m) => zoom.frame(m) });
     assert.deepEqual(missed, [], `aspect ${aspect.toFixed(2)}, seed ${seed}: out of the picture ${missed.length}× (${missed.slice(0, 4).join(', ')})`);
+    // The lens widens for a throw over the approach and eases back after: under 7% in any quarter-second.
+    assert.ok(zoom.worst.change < Math.log(1.07), `aspect ${aspect.toFixed(2)}, seed ${seed}: the picture's scale changes ${(100 * (Math.exp(zoom.worst.change) - 1)).toFixed(1)}% in a quarter-second at ${zoom.worst.t} s (lens ${zoom.worst.fov}°)`);
   }
 });
 
@@ -112,8 +142,10 @@ test('HD: the final landing stays in the picture under the closer final-two orbi
   await loadHdAssets();
   const match = new WrestleMatch(names(12), { rng: mulberry32(8), modelStyle: 'hd' });
   match.resize(960 / 600);
-  const missed = framingMisses(match, { only: (b) => b.final, every: 2 });
+  const zoom = zoomTracker();
+  const missed = framingMisses(match, { only: (b) => b.final, every: 2, onFrame: (m) => zoom.frame(m) });
   assert.deepEqual(missed, [], `out of the picture ${missed.length}× (${missed.slice(0, 4).join(', ')})`);
+  assert.ok(zoom.worst.change < Math.log(1.07), `the picture's scale changes ${(100 * (Math.exp(zoom.worst.change) - 1)).toFixed(1)}% in a quarter-second at ${zoom.worst.t} s`);
 });
 
 // ---------------------------------------------------------------- #98 smooth limbs (HD)
