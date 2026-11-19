@@ -40,18 +40,21 @@ async function openBrowser(t, flags = ['--disable-gpu']) {
   // CI's Ubuntu runners don't allow Chrome's sandbox; the page is only ever this test's own server.
   const sandbox = process.env.CI ? ['--no-sandbox'] : [];
   const proc = spawn(chrome, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
-    '--no-first-run', '--no-default-browser-check', ...sandbox, ...flags, 'about:blank'], { stdio: 'ignore' });
+    '--no-first-run', '--no-default-browser-check', ...sandbox, ...flags, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let errors = '';
+  proc.stderr.on('data', (d) => { errors = (errors + d).slice(-4000); });
   t.after(async () => {
     proc.kill();
     await new Promise((resolve) => setTimeout(resolve, 300));
     await rm(profile, { recursive: true, force: true }).catch(() => {});
   });
   let port;
-  for (let i = 0; i < 100 && !port; i++) {
+  // A cold CI runner can take a while to start Chrome the first time.
+  for (let i = 0; i < 300 && !port && proc.exitCode === null; i++) {
     port = (await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8').catch(() => '')).split('\n')[0];
     if (!port) await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  assert.ok(port, 'Chrome started');
+  assert.ok(port, `Chrome started (exit code ${proc.exitCode}): ${errors.trim() || 'no output'}`);
   const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   const ws = new WebSocket(pages.find((p) => p.type === 'page').webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
@@ -277,9 +280,22 @@ async function liveCallout(t, width, height, { mobile = false, openRoster = fals
     const frames = [];
     const seen = [];
     await steppedClock.start();
+    const began = Date.now();
+    // Software WebGL draws slowly (CI has no GPU), and nothing here looks at pixels: until a callout is
+    // up, draw one frame in ten and only bring the scene's positions up to date for the rest, as a draw
+    // would; every frame is drawn while a callout is up.
+    const renderer = window.derbyTest.game.renderer;
+    const draw = renderer.render.bind(renderer);
+    let drawing = true;
+    renderer.render = (scene, camera) => {
+      if (drawing) return draw(scene, camera);
+      scene.updateMatrixWorld();
+      if (camera.parent === null) camera.updateMatrixWorld();
+    };
     for (let step = 1; ; step++) {
+      drawing = step % 10 === 0 || document.getElementById('countdown').classList.contains('callout');
       steppedClock.step(1000 / 60);
-      if (step % 30 === 0) await steppedClock.pause();
+      if (step % 300 === 0) await steppedClock.pause();
       const c = document.getElementById('countdown');
       const text = c.classList.contains('callout') ? c.textContent : '';
       const match = window.derbyTest.game.wrestle;
@@ -301,7 +317,7 @@ async function liveCallout(t, width, height, { mobile = false, openRoster = fals
           .filter((el) => el.offsetHeight > 0).map((el) => ({ id: el.id, ...box(el.getBoundingClientRect()) }));
         frames.push({ t: match.t, view, text, callout: box(c.getBoundingClientRect()), font: parseFloat(getComputedStyle(c).fontSize), bodies, controls });
       } else if (frames.length) {
-        return frames;
+        return { frames, msPerStep: (Date.now() - began) / step, steps: step };
       }
       if (step > 60 * 120) throw new Error('no paired callout within 120 s of the match: at ' + match.t.toFixed(1) + ' s; callouts ' + JSON.stringify(seen));
     }
@@ -321,8 +337,9 @@ for (const [label, width, height, options] of [
   ['1280 x 800', 1280, 800, {}],
   ['844 x 390, roster open', 844, 390, { mobile: true, openRoster: true }],
 ]) {
-  test(`live seed-17 HD match at ${label}: the paired callout leaves both landings in view and clears the controls`, { skip, timeout: 300000 }, async (t) => {
-    const frames = await liveCallout(t, width, height, options);
+  test(`live seed-17 HD match at ${label}: the paired callout leaves both landings in view and clears the controls`, { skip, timeout: 600000 }, async (t) => {
+    const { frames, msPerStep, steps } = await liveCallout(t, width, height, options);
+    t.diagnostic(`${steps} steps, ${msPerStep.toFixed(1)} ms each`);
     // A pair's callout is up for 2.1 s: every one of its frames, at 60 a second.
     assert.ok(frames.length >= 120, `followed the callout for ${frames.length} frames`);
     const first = frames[0];

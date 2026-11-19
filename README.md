@@ -318,7 +318,7 @@ Uses Node's built-in test runner — no extra packages. Covers:
   at 844 × 390 with the list open: every frame the first paired message is up, none of either thrown body
   (measured from the 3D scene) is under it. The match runs on a stepped clock, 60 frames for each second
   of match time however long they take to draw, so it plays the same with or without a GPU (a GPU only
-  makes it quicker). Skipped when Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is
+  makes it quicker). Nothing checks pixels, so until a message is up it draws one frame in ten. Skipped when Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is
   older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
   a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
   checks that all of them ran.
