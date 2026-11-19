@@ -7,6 +7,8 @@ to release.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-18
+
 ### Changed
 - **Wrestling camera (#95):** circles the middle of the ring at a steady distance, height and speed for the
   whole match, turning only a bounded amount towards a throw instead of pushing in and pulling back for
@@ -185,7 +187,8 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.2.0...v1.3.0
 [1.0.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/releases/tag/v1.0.0
