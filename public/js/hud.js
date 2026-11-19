@@ -30,42 +30,56 @@ export function throwText(e) {
 
 
 /**
- * Where a callout goes so all of it is on screen and none of it covers the wrestling roster (#107).
- * `roster` and `callout` are screen rectangles (the callout where it sits by default; no roster when
- * none is shown), `view` the viewport size, and `measure(maxWidth, scale)` the callout's size when
- * wrapped to `maxWidth` with its font scaled by `scale`. Returns null to leave it where it is;
- * otherwise its centre `x`, top `y`, `maxWidth` and font `scale`: in the room beside the roster if it
- * fits there, else below it, at full size if possible, smaller only if it fits nowhere at full size.
+ * Where a callout goes so all of it is on screen and none of it covers the wrestling roster or the
+ * toolbar (#107). `blocks` are the screen rectangles to keep clear (the roster and its count, the Mute
+ * and Quit buttons; only those shown), `callout` the callout where it sits by default, `view` the
+ * viewport size, and `measure(maxWidth, scale)` the callout's size when wrapped to `maxWidth` with its
+ * font scaled by `scale`. Returns null to leave it where it is; otherwise its centre `x`, top `y`,
+ * `maxWidth` and font `scale`. It goes in the room beside or below the controls, wherever it takes
+ * the fewest lines (so two long names aren't broken up in a narrow strip), as near its usual height as
+ * that room allows; at full size if it fits anywhere, smaller only if it doesn't.
  */
-export function calloutPlacement(roster, callout, view, measure, gap = 10) {
-  const covers = roster && !(callout.right + gap <= roster.left || callout.left >= roster.right + gap
-    || callout.bottom + gap <= roster.top || callout.top >= roster.bottom + gap);
+export function calloutPlacement(blocks, callout, view, measure, gap = 10) {
+  const near = (r, b) => !(r.right + gap <= b.left || r.left >= b.right + gap || r.bottom + gap <= b.top || r.top >= b.bottom + gap);
   const onScreen = callout.left >= 0 && callout.top >= 0 && callout.right <= view.width && callout.bottom <= view.height;
-  if (!covers && onScreen) return null;
+  if (onScreen && !blocks.some((b) => near(callout, b))) return null;
   const screen = { left: gap, right: view.width - gap, top: gap, bottom: view.height - gap };
-  const areas = roster
-    ? [{ ...screen, left: Math.max(gap, roster.right + gap) }, { ...screen, top: Math.max(gap, roster.bottom + gap) }]
-    : [screen];
+  // The room beside each control, below each, and the whole screen; each then trimmed clear of every
+  // control: below one in its upper half, above one in its lower half.
+  const areas = [
+    ...blocks.map((b) => ({ ...screen, left: b.right + gap })),
+    ...blocks.map((b) => ({ ...screen, top: b.bottom + gap })),
+    screen,
+  ].map((area) => {
+    const a = { ...area };
+    for (const b of blocks) {
+      if (b.right + gap <= a.left || b.left >= a.right + gap || b.bottom + gap <= a.top || b.top >= a.bottom + gap) continue;
+      if ((b.top + b.bottom) / 2 < (a.top + a.bottom) / 2) a.top = Math.max(a.top, b.bottom + gap);
+      else a.bottom = Math.min(a.bottom, b.top - gap);
+    }
+    return a;
+  });
   const middle = (callout.top + callout.bottom) / 2;
   const fit = (a, scale, force = false) => {
     const maxWidth = Math.floor(a.right - a.left);
     if (maxWidth < 40 || a.bottom - a.top < 20) return null;
     const size = measure(maxWidth, scale);
     if (!force && (size.width > maxWidth + 0.5 || size.height > a.bottom - a.top + 0.5)) return null;
-    // As near its usual height as the room allows.
     const y = Math.max(a.top, Math.min(middle - size.height / 2, a.bottom - size.height));
-    return { x: (a.left + a.right) / 2, y, maxWidth, scale };
+    return { x: (a.left + a.right) / 2, y, maxWidth, scale, height: size.height };
   };
   for (let scale = 1; scale >= 0.4; scale *= 0.85) {
-    for (const a of areas) {
-      const place = fit(a, scale);
-      if (place) return place;
+    // Of the places it fits at this size, the one where it takes the fewest lines (the first, if equal).
+    const fits = areas.map((a) => fit(a, scale)).filter(Boolean);
+    if (fits.length) {
+      const { height, ...place } = fits.reduce((best, p) => (p.height < best.height - 1 ? p : best));
+      return place;
     }
   }
   // Nothing fits even at the smallest size (a very long message): the roomiest area, at that size.
-  const size = (a) => (a.right - a.left) * (a.bottom - a.top);
-  const roomiest = areas.reduce((a, b) => (size(b) > size(a) ? b : a));
-  return fit(roomiest, 0.4, true) ?? fit(screen, 0.4, true);
+  const room = (a) => Math.max(0, a.right - a.left) * Math.max(0, a.bottom - a.top);
+  const { height, ...place } = fit(areas.reduce((a, b) => (room(b) > room(a) ? b : a)), 0.4, true) ?? fit(screen, 0.4, true);
+  return place;
 }
 const OUT_MERGE_MS = 1300; // ring-outs landing this close together share one callout
 /** "Roscoe is out!", "Roscoe and Ada are out!", "Roscoe, Ada and Lin are out!". */
@@ -273,27 +287,31 @@ export class Hud {
   }
 
   /**
-   * Keeps a ring-out callout wholly on screen and off the roster (#107): placed again whenever the
-   * message, the screen size or the roster changes.
+   * Keeps a ring-out callout wholly on screen and off the roster and the toolbar (#107): placed again
+   * whenever the message, the screen size or the roster changes.
    */
   placeCallout() {
     const style = this.count.style;
     const vars = ['--callout-x', '--callout-y', '--callout-shift', '--callout-max', '--callout-scale'];
     for (const name of vars) style.removeProperty(name);
     if (!this.root.classList.contains('wrestling') || !this.count.classList.contains('callout')) return;
-    const shown = [$('ring-roster'), this.ringToggle].filter((el) => el && el.offsetParent !== null && el.offsetHeight > 0);
-    const rects = shown.map((el) => el.getBoundingClientRect());
-    const roster = rects.length ? {
-      left: Math.min(...rects.map((r) => r.left)), top: Math.min(...rects.map((r) => r.top)),
-      right: Math.max(...rects.map((r) => r.right)), bottom: Math.max(...rects.map((r) => r.bottom)),
-    } : null;
+    const shown = (els) => els.filter((el) => el && el.offsetHeight > 0 && getComputedStyle(el).display !== 'none' && !el.closest('[hidden]'));
+    // The roster with its count above it, as one block; and the Mute and Quit buttons.
+    const rosterParts = shown([$('ring-roster'), this.ringToggle]).map((el) => el.getBoundingClientRect());
+    const blocks = shown([...document.querySelectorAll('#toolbar button')]).map((el) => el.getBoundingClientRect());
+    if (rosterParts.length) {
+      blocks.push({
+        left: Math.min(...rosterParts.map((r) => r.left)), top: Math.min(...rosterParts.map((r) => r.top)),
+        right: Math.max(...rosterParts.map((r) => r.right)), bottom: Math.max(...rosterParts.map((r) => r.bottom)),
+      });
+    }
     const measure = (maxWidth, scale) => {
       style.setProperty('--callout-max', `${maxWidth}px`);
       style.setProperty('--callout-scale', String(scale));
       return { width: this.count.offsetWidth, height: this.count.offsetHeight };
     };
     const view = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
-    const place = calloutPlacement(roster, this.count.getBoundingClientRect(), view, measure);
+    const place = calloutPlacement(blocks, this.count.getBoundingClientRect(), view, measure);
     style.removeProperty('--callout-max');
     style.removeProperty('--callout-scale');
     if (!place) return;

@@ -558,36 +558,45 @@ test('ring-out callouts stay on screen, beside or below the roster rather than c
   const apart = (p, size, r) => p.x + size.width / 2 <= r.left || p.x - size.width / 2 >= r.right
     || p.y + size.height <= r.top || p.y >= r.bottom;
 
-  // 390 x 844 phone: the folded roster chip at the top left; a full-width callout at 20% sits clear of it.
+  // 390 x 844 phone: the folded roster count at the top left, Mute and Quit at the top right; a short
+  // callout at 20% sits clear of them.
   const phone = { width: 390, height: 844 };
   const chip = rect(12, 12, 170, 30);
-  assert.equal(calloutPlacement(chip, rect(16, 120, 358, 120), phone, text(20, 31)), null);
-  // ...but over the opened roster, it goes below it.
+  const tools = (view) => [rect(view.width - 150, 12, 44, 36), rect(view.width - 98, 12, 86, 36)];
+  assert.equal(calloutPlacement([chip, ...tools(phone)], rect(16, 120, 358, 120), phone, text(20, 31)), null);
+  // Two 34-character names (82 characters) up against the controls: a wide banner below them all, not
+  // the names broken up down the narrow strip beside the count.
+  const pair = text(82, 31);
+  const folded = calloutPlacement([chip, ...tools(phone)], rect(16, 30, 358, 240), phone, pair);
+  const foldedSize = pair(folded.maxWidth, folded.scale);
+  assert.ok(folded.maxWidth > 350 && folded.y >= 48 + 10 && inside(folded, foldedSize, phone), JSON.stringify(folded));
+  // Over the opened roster, it goes below it.
   const open = rect(12, 52, 300, 360);
-  const below = calloutPlacement(open, rect(16, 120, 358, 120), phone, text(20, 31));
+  const below = calloutPlacement([open, ...tools(phone)], rect(16, 120, 358, 120), phone, text(20, 31));
   assert.ok(below.y >= open.bottom && inside(below, text(20, 31)(below.maxWidth, below.scale), phone), JSON.stringify(below));
-  // Two 34-character names (82 characters) on a short landscape screen (844 x 390), roster open: the
-  // message wraps in the room beside the roster, all of it on screen, at full size.
+  // A short landscape screen (844 x 390), roster open: the message wraps in the room beside the roster,
+  // below the toolbar, all of it on screen, at full size.
   const land = { width: 844, height: 390 };
   const openLand = rect(12, 52, 320, 240);
-  const pair = text(82, 35);
-  const p = calloutPlacement(openLand, rect(16, 40, 812, 160), land, pair);
-  const size = pair(p.maxWidth, p.scale);
-  assert.ok(inside(p, size, land) && apart(p, size, openLand) && apart(p, size, chip) && p.scale === 1, JSON.stringify({ p, size }));
+  const landPair = text(82, 35);
+  const blocks = [openLand, ...tools(land)];
+  const p = calloutPlacement(blocks, rect(16, 40, 812, 160), land, landPair);
+  const size = landPair(p.maxWidth, p.scale);
+  assert.ok(inside(p, size, land) && blocks.every((b) => apart(p, size, b)) && p.scale === 1, JSON.stringify({ p, size }));
   // Placed in portrait, then turned: placed again from the new screen, never left below it.
-  const turned = calloutPlacement(openLand, rect(16, 422, 812, 160), land, pair);
-  assert.ok(inside(turned, pair(turned.maxWidth, turned.scale), land), JSON.stringify(turned));
-  // Off the bottom of the screen with no roster showing (results open): brought back on.
-  const back = calloutPlacement(null, rect(16, 300, 812, 160), land, pair);
-  assert.ok(inside(back, pair(back.maxWidth, back.scale), land), JSON.stringify(back));
+  const turned = calloutPlacement(blocks, rect(16, 422, 812, 160), land, landPair);
+  assert.ok(inside(turned, landPair(turned.maxWidth, turned.scale), land), JSON.stringify(turned));
+  // Off the bottom of the screen with no roster or toolbar showing (results open): brought back on.
+  const back = calloutPlacement([], rect(16, 300, 812, 160), land, landPair);
+  assert.ok(inside(back, landPair(back.maxWidth, back.scale), land), JSON.stringify(back));
   // Too big for any room at full size: made smaller until it fits.
   const tiny = { width: 320, height: 240 };
-  const small = calloutPlacement(chip, rect(10, 20, 300, 400), tiny, text(82, 40));
+  const small = calloutPlacement([chip], rect(10, 20, 300, 400), tiny, text(82, 40));
   assert.ok(small.scale < 1 && inside(small, text(82, 40)(small.maxWidth, small.scale), tiny), JSON.stringify(small));
-  // Wide screen with the full roster: a paired callout goes in the room beside it.
+  // Wide screen with the full roster: a paired callout fits clear of it and of the toolbar.
   const roster = rect(14, 14, 320, 360);
   const desk = { width: 1280, height: 800 };
-  const beside = calloutPlacement(roster, rect(290, 120, 700, 80), desk, text(40, 64));
-  assert.equal(beside.x, (344 + 1270) / 2);
-  assert.ok(apart(beside, text(40, 64)(beside.maxWidth, 1), roster), 'clear of the roster');
+  const deskBlocks = [roster, ...tools(desk)];
+  const clear = calloutPlacement(deskBlocks, rect(290, 120, 700, 80), desk, text(40, 64));
+  assert.ok(deskBlocks.every((b) => apart(clear, text(40, 64)(clear.maxWidth, 1), b)) && clear.scale === 1, JSON.stringify(clear));
 });

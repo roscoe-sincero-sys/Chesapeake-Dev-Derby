@@ -1,5 +1,6 @@
 // Ring-out callouts in a real browser (#107): two long names at once, on a phone held either way, with
-// the roster folded or open, and the phone turning while the message is up. Drives headless Chrome over
+// the roster folded or open, the match's Mute and Quit buttons showing, and the phone turning while the
+// message is up. Drives headless Chrome over
 // the DevTools protocol; skipped when there's no Chrome (or no built-in WebSocket, before Node 22).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -66,7 +67,7 @@ async function openBrowser(t) {
   });
 }
 
-test('paired ring-out callouts with long names stay on screen and off the roster, through a rotation', { skip, timeout: 60000 }, async (t) => {
+test('paired ring-out callouts with long names stay on screen, off the roster and the toolbar, through a rotation', { skip, timeout: 60000 }, async (t) => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-srv-'));
   await writeFile(path.join(dir, 'names.json'), JSON.stringify({ names: ['Ada', 'Grace'] }));
   const server = createServer({ dataDir: dir });
@@ -88,29 +89,34 @@ test('paired ring-out callouts with long names stay on screen and off the roster
   for (let i = 0; i < 100 && (await evaluate('document.readyState').catch(() => '')) !== 'complete'; i++) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  // Twelve wrestlers with 34-character names (the longest a display name can be).
+  // Twelve wrestlers with 34-character names (the longest a display name can be), and the toolbar as
+  // in a match: Mute and Quit.
   await evaluate(`(async () => {
     const { Hud, outText } = await import('/js/hud.js');
     const kind = { label: 'Bhima', blurb: '' };
-    const name = (i) => ('Wrestler ' + i + ' Featherstonehaugh-Cholmondeley').slice(0, 34);
+    const name = (i) => String(i).padStart(2, '0') + ' Alexandria Charlotte Montgomery';
+    const quit = document.getElementById('quit');
+    quit.textContent = '✕ Quit match';
+    quit.hidden = false;
+    document.getElementById('toolbar').hidden = false;
     // The page's own HUD listens on the toggle too: leave only this one, so a click toggles once.
     const toggle = document.getElementById('ring-toggle');
     toggle.replaceWith(toggle.cloneNode(true));
     window.testHud = new Hud();
     testHud.beginWrestle(Array.from({ length: 12 }, (_, i) => ({ id: i, name: name(i + 1), color: '#c33', kind })));
-    window.showPair = () => testHud.callout(outText([name(1), name(2)]), 60000);
+    window.showPair = () => testHud.callout(outText([name(5), name(10)]), 60000);
   })()`);
-  const check = async (label) => {
+  const check = async (label, { wide = false } = {}) => {
     // Two frames for the resize (and any re-placement) to land.
     await evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
     const s = await evaluate(`(() => {
       const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
       const c = document.getElementById('countdown');
-      const shown = ['ring-roster', 'ring-toggle'].map((id) => document.getElementById(id)).filter((el) => el.offsetHeight > 0);
+      const shown = ['ring-roster', 'ring-toggle', 'mute', 'quit'].map((id) => document.getElementById(id)).filter((el) => el.offsetHeight > 0);
       return {
         view: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
         callout: box(c), clipped: c.scrollWidth > c.clientWidth + 1 || c.scrollHeight > c.clientHeight + 1,
-        font: parseFloat(getComputedStyle(c).fontSize), shown: shown.map(box), text: c.textContent,
+        font: parseFloat(getComputedStyle(c).fontSize), shown: shown.map((el) => ({ id: el.id, ...box(el) })), text: c.textContent,
       };
     })()`);
     const c = s.callout;
@@ -119,15 +125,18 @@ test('paired ring-out callouts with long names stay on screen and off the roster
       `${label}: callout ${JSON.stringify(c)} inside the ${s.view.width} x ${s.view.height} screen`);
     assert.ok(!s.clipped, `${label}: none of the text is cut off`);
     assert.ok(s.font >= 14, `${label}: still readable (${s.font}px)`);
+    assert.deepEqual(s.shown.filter((r) => r.id === 'mute' || r.id === 'quit').length, 2, `${label}: Mute and Quit are showing`);
     for (const r of s.shown) {
       const apart = c.right <= r.left || c.left >= r.right || c.bottom <= r.top || c.top >= r.bottom;
-      assert.ok(apart, `${label}: callout ${JSON.stringify(c)} clear of the roster ${JSON.stringify(r)}`);
+      assert.ok(apart, `${label}: callout ${JSON.stringify(c)} clear of #${r.id} ${JSON.stringify(r)}`);
     }
+    // Where there's room for it, a wide banner, not the names broken up down a narrow strip.
+    if (wide) assert.ok(c.right - c.left >= 0.85 * s.view.width, `${label}: ${Math.round(c.right - c.left)} px wide of ${s.view.width}`);
   };
   const toggle = () => evaluate("document.getElementById('ring-toggle').click()");
 
   await evaluate('showPair()');
-  await check('portrait, roster folded');
+  await check('portrait, roster folded', { wide: true });
   await toggle();
   await check('portrait, roster open');
   await screen(844, 390); // turned while the message is up
@@ -140,6 +149,8 @@ test('paired ring-out callouts with long names stay on screen and off the roster
   await check('landscape, roster opened');
   await screen(390, 844);
   await check('turned back to portrait, roster open');
+  await toggle();
+  await check('portrait, roster folded again', { wide: true });
   await screen(1280, 800); // a laptop: the whole roster shows
   await check('laptop');
 });
