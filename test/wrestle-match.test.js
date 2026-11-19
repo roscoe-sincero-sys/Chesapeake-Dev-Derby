@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { loadHdAssets } from './headless.js';
 import { WrestleMatch } from '../public/js/wrestle.js';
 import { planMatch, WRESTLER_KINDS } from '../public/js/wrestle-sim.js';
-import { lowestBodyPoint } from '../public/js/wrestlers.js';
+import { lowestBodyPoint, eachVertex } from '../public/js/wrestlers.js';
 import { mulberry32 } from '../public/js/sim.js';
 
 const names = (n) => Array.from({ length: n }, (_, i) => `Wrestler ${i + 1}`);
@@ -320,4 +320,174 @@ test('fights spread out round the ring, partners stay in reach, and the brawls u
   for (const move of ['lockup', 'strikes', 'shove', 'circle', 'stagger', 'reversal', 'rebound', 'slam']) {
     assert.ok(moves.has(move), `no ${move} in two twelve-wrestler matches (${[...moves].join(', ')})`);
   }
+});
+
+// ---------------------------------------------------------------- #105 over the top rope, not through it
+
+/**
+ * Follows every vertex of each thrown wrestler's body (every other one) from the throw to the landing:
+ * none may cross the line of the ropes below the top of the top rope, or touch that rope. Returns, per
+ * throw, the thrower, victim, smallest clearance and any crossings; and whether each landed at ringside.
+ */
+function ropeCrossings(match, until, only = () => true) {
+  const plane = HALF + 0.1;
+  const top = MAT_Y + 1.55 + 0.05; // the top rope's top
+  const throws = new Map();
+  run(match, 60, until, (m) => {
+    for (const b of m.actions) {
+      if (b.type !== 'elimination' || m.t < b.throwAt || !only(b)) continue;
+      const v = m.wrestlers[b.victim];
+      const f = m.sideFrame(b.side, b.spot);
+      const r = throws.get(b) ?? { label: `${m.wrestlers[b.thrower].kind.id} throws ${v.kind.id} at ${b.throwAt.toFixed(1)}s`, clearance: Infinity, through: [], prev: null, landed: null };
+      throws.set(b, r);
+      if (m.t > b.landAt) {
+        r.landed ??= v.x * f.nx + v.z * f.nz;
+        continue;
+      }
+      const now = [];
+      let i = 0;
+      eachVertex(v.rig, 2, true, (p) => {
+        const out = p.x * f.nx + p.z * f.nz;
+        now.push(out, p.y);
+        const before = r.prev && [r.prev[i], r.prev[i + 1]];
+        i += 2;
+        if (Math.abs(p.x * f.ux + p.z * f.uz) > HALF + 0.15) return; // past the end of the rope
+        if (Math.hypot(out - plane, p.y - (top - 0.05)) < 0.05) r.through.push(`touch@${m.t.toFixed(2)}`);
+        if (before && before[0] < plane && out >= plane) {
+          const y = before[1] + ((plane - before[0]) / (out - before[0])) * (p.y - before[1]);
+          r.clearance = Math.min(r.clearance, y - top);
+          if (y < top) r.through.push(`cross@${m.t.toFixed(2)}`);
+        }
+      });
+      r.prev = now;
+    }
+  });
+  return [...throws.values()];
+}
+
+test('HD: thrown wrestlers clear the top rope from entry to exit, and land at ringside', async () => {
+  await loadHdAssets();
+  // Seed 17: Satyaki's rope rebound on Hidimbi, then two hip tosses (Karna, Shikhandi).
+  const match = new WrestleMatch(names(12), { rng: mulberry32(17), modelStyle: 'hd' });
+  const outs = [];
+  match.onEvent = (e) => e.type === 'out' && outs.push(e);
+  const firstThree = match.plan.beats.filter((b) => b.type === 'elimination').slice(0, 3);
+  const results = ropeCrossings(match, firstThree.at(-1).landAt + 0.2, (b) => firstThree.includes(b));
+  // An overhead toss (Bhima, Ghatotkacha) and both stature extremes as the one thrown.
+  for (const [thrower, victim] of [['bhima', 'ghatotkacha'], ['ghatotkacha', 'abhimanyu'], ['kichaka', 'hidimbi'], ['karna', 'ghatotkacha']]) {
+    const d = duel(thrower, victim, 5, 'hd');
+    results.push(...ropeCrossings(d, d.plan.duration + 0.2));
+  }
+  assert.equal(results.length, 7);
+  for (const r of results) {
+    assert.deepEqual(r.through, [], `${r.label}: through the rope ${r.through.length}x (${r.through.slice(0, 3).join(', ')})`);
+    assert.ok(r.clearance > 0.05, `${r.label}: clears the top rope by ${r.clearance.toFixed(3)}`);
+    assert.ok(r.landed > HALF + 2, `${r.label}: lands at ringside (${r.landed?.toFixed(2)} from the middle)`);
+  }
+  assert.equal(outs[0].move, 'rebound', 'seed 17 opens with Satyaki coming off the ropes');
+});
+
+// ---------------------------------------------------------------- #104 the slam is held, hands on the body
+
+test("HD body slams: the lifter's hands stay on the body through the hold, then a grounded landing", async () => {
+  await loadHdAssets();
+  // Both base bodies, the tallest and smallest characters, each way round.
+  for (const [lifter, lifted] of [['jarasandha', 'bhima'], ['ghatotkacha', 'abhimanyu'], ['abhimanyu', 'ghatotkacha'], ['hidimbi', 'bhima'], ['bhima', 'hidimbi']]) {
+    const plan = planMatch(['A', 'B'], mulberry32(3));
+    plan.wrestlers[0].kind = kind(lifter);
+    plan.wrestlers[1].kind = kind(lifted);
+    const match = new WrestleMatch(['A', 'B'], { previewPlan: plan, rng: mulberry32(4), modelStyle: 'hd' });
+    const [a, b] = match.wrestlers;
+    run(match, 60, 1);
+    while (!(a.fight && a.fight === b.fight)) match.update(1 / 60);
+    // Start a slam by the first of the two.
+    const f = a.fight;
+    Object.assign(f, { move: 'slam', n: f.n + 1, t: 0, dur: 2.75, by: a, m: {} });
+    let held = 0;
+    let reach = 0;
+    let highest = 0;
+    let grounded = null;
+    while (a.fight === f && f.t < f.dur) {
+      match.update(1 / 60);
+      highest = Math.max(highest, b.rig.root.position.y - MAT_Y);
+      if (f.m.stage === 'hold') {
+        held++;
+        for (const hand of match.hands(a)) {
+          let near = Infinity;
+          eachVertex(b.rig, 2, false, (p) => { near = Math.min(near, p.distanceTo(hand)); });
+          reach = Math.max(reach, near);
+        }
+      }
+      if (f.m.stage === 'down' && b.landed && grounded === null) grounded = lowestBodyPoint(b.rig);
+    }
+    assert.ok(held >= 8, `${lifter} lifts ${lifted}: held for ${held} updates`);
+    // From the wrist joint to the nearest point of the body: the hand itself spans about 0.1 of that.
+    assert.ok(reach < 0.25, `${lifter} lifts ${lifted}: a wrist is ${reach.toFixed(2)} from the body while holding`);
+    assert.ok(highest > 0.8, `${lifter} lifts ${lifted}: lifted ${highest.toFixed(2)} off the mat`);
+    assert.ok(Math.abs(grounded - MAT_Y) < 0.05, `${lifter} slams ${lifted}: lands resting on the mat (${grounded?.toFixed(3)})`);
+  }
+});
+
+// ---------------------------------------------------------------- #106 Satyaki's rope rebound
+
+test('Satyaki comes off the ropes for a ring-out when there is room, and the feed says what he did', async () => {
+  const { throwText } = await import('../public/js/hud.js');
+  let rebounds = 0;
+  let standard = 0;
+  let pairedRebound = 0;
+  let pairedStandard = 0;
+  for (const seed of [17, 1, 2, 6]) {
+    const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle: 'classic' });
+    const outs = [];
+    match.onEvent = (e) => e.type === 'out' && outs.push(e);
+    const nearest = new Map(); // Satyaki's closest approach to a rope before each of his throws
+    run(match, 60, match.plan.duration + 0.1, (m) => {
+      for (const b of m.actions) {
+        const h = m.wrestlers[b.thrower];
+        if (b.type !== 'elimination' || h.kind.style !== 'rebound' || m.t >= b.throwAt || m.t < b.start + 0.05) continue;
+        nearest.set(b, Math.min(nearest.get(b) ?? Infinity, HALF - Math.max(Math.abs(h.x), Math.abs(h.z))));
+      }
+    });
+    assert.deepEqual(outs.map((e) => e.victim.id), match.plan.order.slice(0, -1), `seed ${seed}: the elimination order plays out`);
+    for (const [b, inside] of nearest) {
+      const e = outs.find((o) => o.victim.id === b.victim);
+      const text = throwText(e);
+      if (e.move === 'rebound') {
+        assert.ok(inside < 0.6, `seed ${seed}: Satyaki reaches the ropes before the tackle (${inside.toFixed(2)} inside)`);
+        assert.match(text, /came off the ropes/);
+        rebounds++;
+        if (b.together) pairedRebound++;
+      } else {
+        assert.doesNotMatch(text, /off the ropes/, `seed ${seed}: no rope rebound shown, none in the feed`);
+        standard++;
+        if (b.together) pairedStandard++;
+      }
+    }
+  }
+  assert.ok(rebounds >= 2 && standard >= 1, `rebounds ${rebounds}, standard throws ${standard}`);
+  assert.ok(pairedRebound >= 1 && pairedStandard >= 1, `paired: ${pairedRebound} rebounds, ${pairedStandard} without room`);
+});
+
+// ---------------------------------------------------------------- #107 callouts clear of the roster
+
+test('ring-out callouts move beside or below the roster rather than covering it', async () => {
+  const { calloutPlacement } = await import('../public/js/hud.js');
+  const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+  // 390 x 844 phone: the folded roster chip at the top left; a full-width callout at 20% sits clear of it.
+  const chip = rect(12, 12, 170, 30);
+  assert.equal(calloutPlacement(chip, rect(16, 120, 358, 120), { width: 390, height: 844 }), null);
+  // ...but over the opened roster, it goes just below it.
+  const open = rect(12, 12, 300, 340);
+  assert.deepEqual(calloutPlacement(open, rect(16, 120, 358, 120), { width: 390, height: 844 }), { x: 195, y: 362, shift: '0px' });
+  // A short landscape screen (844 x 390): a callout that would overlap the chip moves into the room beside it.
+  const place = calloutPlacement(chip, rect(150, 20, 540, 60), { width: 844, height: 390 });
+  assert.ok(place.x - 270 >= chip.right && place.shift === '-50%', `beside the chip: ${JSON.stringify(place)}`);
+  // ...and one too wide for that room goes below it.
+  const below = calloutPlacement(chip, rect(100, 20, 700, 60), { width: 844, height: 390 });
+  assert.ok(below.y >= chip.bottom && below.shift === '0px', `below the chip: ${JSON.stringify(below)}`);
+  // Wide screen with the full roster: a paired callout fits in the room beside it, centred there.
+  const roster = rect(14, 14, 320, 360);
+  const beside = calloutPlacement(roster, rect(290, 120, 700, 80), { width: 1280, height: 800 });
+  assert.deepEqual(beside, { x: 334 + 10 + (1280 - 334 - 20) / 2, y: 160, shift: '-50%' });
+  assert.ok(beside.x - 350 >= roster.right, 'clear of the roster');
 });

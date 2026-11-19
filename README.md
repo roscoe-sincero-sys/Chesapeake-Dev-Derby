@@ -146,7 +146,7 @@ on the floor. The last one left **leads today's standup**.
 1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
 2. **Ring-outs.** Everyone in the ring is fighting at once: each wrestler squares off with someone,
    trading lock-ups, forearm shots and shoves, reeling back from a hard shot, reversing a tie-up, running
-   the ropes for a shoulder tackle or hitting a body slam, and breaks away now and then to find someone
+   the ropes for a shoulder tackle or hoisting someone across the chest for a body slam, and breaks away now and then to find someone
    new (an odd one out joins a fight two on one, from the side). Each character has a favourite: Bhima,
    Ghatotkacha and Jarasandha slam, Satyaki rebounds off the ropes, Kichaka and Dushasana shove, and
    Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi reverse. Fights keep their own part of the mat.
@@ -155,7 +155,11 @@ on the floor. The last one left **leads today's standup**.
    distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
    little to watch that side, and gradually widens the shot if needed, so the rope, the landing and the whole body
    stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
-   crossed off the list.
+   crossed off the list. Thrown wrestlers go cleanly over the top rope, never through it. When Satyaki
+   throws someone out and there's room, he runs to the ropes on another side, comes off them and
+   tackles them over; otherwise the feed says he drove them over, matching what you saw. On a phone or
+   a short screen the list of wrestlers folds into a count ("🤼 8 of 12 in the ring") that you can tap
+   to open, and ring-out messages never cover it.
 3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
    the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.

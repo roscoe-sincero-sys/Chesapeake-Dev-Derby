@@ -921,10 +921,30 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
 #ring-roster li.out .swatch { opacity: 0.45; }
 #ring-roster li.out .who { text-decoration: line-through; }
 #hud.wrestling.results-open #ring-roster { display: none; }
-#countdown.callout { font-size: min(8vw, 64px); font-family: var(--ui); top: 20%; padding: 10px 22px; white-space: nowrap; }
+/* Ring-out callouts ("Roscoe is out!"). hud.js moves them beside or below the roster when they would
+   cover it, through these variables (#107). */
+#countdown.callout {
+  font-size: min(8vw, 64px); font-family: var(--ui); padding: 10px 22px; white-space: nowrap;
+  left: var(--callout-x, 50%); top: var(--callout-y, 20%); transform: translate(-50%, var(--callout-shift, -50%));
+}
+/* On a wide screen the whole roster shows; on a narrow or short one it folds into a count you can open. */
+#ring-toggle {
+  display: none; position: absolute; top: 12px; left: 12px; pointer-events: auto;
+  padding: 6px 12px; border-radius: 999px; font: 700 13px var(--ui);
+  color: var(--text); background: var(--panel); border: 1px solid var(--panel-border);
+}
 @media (max-width: 560px) {
   #countdown.callout { white-space: normal; text-align: center; width: calc(100vw - 32px); }
   #hud.wrestling #ring-roster { font-size: 12px; }
+}
+@media (max-width: 560px), (max-height: 480px) {
+  #hud.wrestling #ring-toggle { display: inline-block; }
+  #hud.wrestling.results-open #ring-toggle { display: none; }
+  #hud.wrestling:not(.roster-open) #ring-roster { display: none; }
+  #hud.wrestling.roster-open #ring-roster {
+    top: 52px; left: 12px; max-height: calc(100vh - 150px); overflow-y: auto; pointer-events: auto;
+  }
+  #countdown.callout { font-size: min(8vw, 64px, 9vh); }
 }
 
 /* App version, next to the name in the lobby. */

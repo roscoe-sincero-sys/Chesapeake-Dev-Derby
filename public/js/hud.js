@@ -7,7 +7,44 @@ const $ = (id) => document.getElementById(id);
 
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 export const who = (racer) => `<b>${escapeHtml(racer.name)}</b>`;
-const OUT_MERGE_MS = 1300; // ring-outs landing this close together share one callout
+/** Feed lines for a ring-out, in the thrower's style. */
+const THROW_TEXT = {
+  overhead: (h, v) => `${who(h)} (Bhima) lifted ${who(v)} overhead and tossed them out`,
+  bruiser: (h, v) => `${who(h)} (Kichaka) muscled ${who(v)} over the top rope`,
+  patient: (h, v) => `${who(h)} (Karna) turned ${who(v)}'s charge into a throw over the ropes`,
+  composed: (h, v) => `${who(h)} (Shikhandi) caught ${who(v)} off balance and over the ropes`,
+  illusion: (h, v) => `${who(h)} (Ghatotkacha) feinted with an illusion, then threw ${who(v)} out`,
+  crowd: (h, v) => `${who(h)} (Dushasana) crowded ${who(v)} into the ropes and over`,
+  rebound: (h, v) => `${who(h)} (Satyaki) came off the ropes and took ${who(v)} over the top`,
+};
+
+/**
+ * The feed line for a ring-out event (wrestle.js `out`). It describes the move that was actually shown
+ * (`e.move`): Satyaki only "came off the ropes" when the rope rebound played (#106).
+ */
+export function throwText(e) {
+  const style = e.thrower.kind.style;
+  if (style === 'rebound' && e.move !== 'rebound') return `${who(e.thrower)} (Satyaki) drove ${who(e.victim)} back over the top rope`;
+  return THROW_TEXT[style]?.(e.thrower, e.victim) ?? `${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`;
+}
+
+const OUT_MERGE_MS = 1300;
+
+/**
+ * Where a callout goes so it doesn't cover the wrestling roster (#107). `roster` and `callout` are
+ * screen rectangles (callout where it would sit by default), `view` the viewport size. Returns null to
+ * leave it where it is; otherwise its centre `x`, its `y` and `shift` (the CSS vertical translate):
+ * centred in the room beside the roster if it fits there, or else just below the roster.
+ */
+export function calloutPlacement(roster, callout, view, gap = 10) {
+  if (!roster) return null;
+  const clear = callout.right + gap <= roster.left || callout.left >= roster.right + gap
+    || callout.bottom + gap <= roster.top || callout.top >= roster.bottom + gap;
+  if (clear) return null;
+  const room = view.width - roster.right - 2 * gap;
+  if (callout.width <= room) return { x: roster.right + gap + room / 2, y: (callout.top + callout.bottom) / 2, shift: '-50%' };
+  return { x: view.width / 2, y: roster.bottom + gap, shift: '0px' };
+} // ring-outs landing this close together share one callout
 /** "Roscoe is out!", "Roscoe and Ada are out!", "Roscoe, Ada and Lin are out!". */
 export const outText = (names) => (names.length === 1
   ? `${names[0]} is out!`
@@ -76,6 +113,14 @@ export class Hud {
     this.lastLine = 0;
     this.resultsTimer = null;
     window.addEventListener('resize', () => this.layout());
+    // On narrow or short screens the wrestling roster folds into a count that opens it (#107).
+    this.ringToggle = $('ring-toggle');
+    this.ringToggle?.addEventListener('click', () => {
+      const open = !this.root.classList.contains('roster-open');
+      this.root.classList.toggle('roster-open', open);
+      this.ringToggle.setAttribute('aria-expanded', String(open));
+      this.placeCallout();
+    });
   }
 
   /** Sets up the display for a new race. `lineup` is [{ id, name, color, kind }]. */
@@ -187,12 +232,42 @@ export class Hud {
       li.title = `${entry.name} wrestles as ${entry.kind.label}: ${entry.kind.blurb}`;
       roster.append(li);
     }
+    this.root.classList.remove('roster-open');
+    this.ringToggle?.setAttribute('aria-expanded', 'false');
+    this.countInRing();
     this.root.hidden = false;
+  }
+
+  /** The folded roster's label: how many are still in the ring. */
+  countInRing() {
+    const rows = $('ring-roster').children;
+    const out = [...rows].filter((li) => li.classList.contains('out')).length;
+    if (this.ringToggle) this.ringToggle.textContent = `🤼 ${rows.length - out} of ${rows.length} in the ring`;
+  }
+
+  /** Moves a ring-out callout beside or below the roster if it would cover it (#107). */
+  placeCallout() {
+    const style = this.count.style;
+    for (const name of ['--callout-x', '--callout-y', '--callout-shift']) style.removeProperty(name);
+    if (!this.root.classList.contains('wrestling') || !this.count.classList.contains('callout')) return;
+    const shown = [$('ring-roster'), this.ringToggle].filter((el) => el && el.offsetParent !== null && el.offsetHeight > 0);
+    if (!shown.length) return;
+    const rects = shown.map((el) => el.getBoundingClientRect());
+    const roster = {
+      left: Math.min(...rects.map((r) => r.left)), top: Math.min(...rects.map((r) => r.top)),
+      right: Math.max(...rects.map((r) => r.right)), bottom: Math.max(...rects.map((r) => r.bottom)),
+    };
+    const place = calloutPlacement(roster, this.count.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
+    if (!place) return;
+    style.setProperty('--callout-x', `${place.x}px`);
+    style.setProperty('--callout-y', `${place.y}px`);
+    style.setProperty('--callout-shift', place.shift);
   }
 
   /** Crosses a wrestler off the list once they are thrown out. */
   wrestleOut(id) {
     $('ring-roster').querySelector(`li[data-id="${id}"]`)?.classList.add('out');
+    this.countInRing();
   }
 
   /** A short message across the middle of the screen, e.g. "Roscoe is out!". */
@@ -202,6 +277,7 @@ export class Hud {
     this.count.className = '';
     void this.count.offsetWidth;
     this.count.className = 'callout';
+    this.placeCallout();
     this.countdownTimer = setTimeout(() => {
       this.count.textContent = '';
       this.count.className = '';
@@ -308,7 +384,7 @@ export class Hud {
     clearTimeout(this.countdownTimer);
     clearTimeout(this.resultsTimer);
     this.root.hidden = true;
-    this.root.classList.remove('results-open', 'wrestling');
+    this.root.classList.remove('results-open', 'wrestling', 'roster-open');
     $('ring-roster').replaceChildren();
     this.results.hidden = true;
     this.board.replaceChildren();

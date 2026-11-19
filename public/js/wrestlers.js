@@ -195,7 +195,7 @@ function humanoid(look, belt) {
     fore.end.add(at(ball(0.022, skin), side * -0.04, -0.04, -0.035)); // thumb
     upper.end.add(fore.joint);
     torso.add(upper.joint);
-    return { upper: upper.joint, fore: fore.joint };
+    return { upper: upper.joint, fore: fore.joint, hand: fore.end };
   });
 
   // ---- head: neck, face, long hair, crown
@@ -450,7 +450,8 @@ export function bodyBounds(rig, box, every = 4) {
   return box;
 }
 
-function eachVertex(rig, every, gear, fn) {
+/** Calls `fn` with each `every`-th vertex of the posed body in world space (gear included if `gear`). */
+export function eachVertex(rig, every, gear, fn) {
   rig.root.updateMatrixWorld(true);
   if (rig.skinnedRig) rig.body.skeleton.update();
   const visit = (o) => {
