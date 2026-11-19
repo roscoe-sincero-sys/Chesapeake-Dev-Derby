@@ -10,17 +10,20 @@ to release.
 ### Fixed
 - **Body slams (#104):** the lifted wrestler now lies across the lifter's chest, resting on both hands
   (back on one, legs on the other) through the lift and hold, for every pair of sizes, before being driven
-  down flat on the mat. Before, they floated beside the raised hands. A wrestler ganging up on someone
-  waits while their target is being slammed.
+  down flat on the mat from exactly where they were held. Before, they floated beside the raised hands.
+  A wrestler ganging up on someone waits while their target is being slammed.
 - **Over the top rope, not through it (#105):** thrown bodies turn about their middle and fly an arc that
   peaks early, over the ropes, so trailing legs, capes and braids clear the top rope, with a check on the
   body itself as a last resort. Grappled wrestlers back up against the ropes without going into them.
 - **Satyaki's ring-outs (#106):** with room for it, he now runs to the ropes on another side, bounces off
-  them and tackles his opponent over the top rope, as the feed says. When there's no clear run (for
-  example, during two ring-outs at once), he uses the standard throw and the feed says he drove them over.
+  them and tackles his opponent over the top rope, as the feed says. He turns smoothly into the ropes,
+  off them and through the tackle, at any frame rate. When there's no clear run (for example, during two
+  ring-outs at once), he uses the standard throw and the feed says he drove them over.
 - **Phone layout (#107):** on narrow or short screens the wrestler list folds into a count ("🤼 8 of 12 in
   the ring") that opens the full list, and a ring-out message moves beside or below the list rather than
-  covering it, including two names at once.
+  covering it. Long messages (two long names at once) wrap on every screen and always fit on it, shrinking
+  only if there's no room at full size, and are placed again when the list opens or closes or the phone
+  turns. A new browser test (`test/callout-browser.test.js`) checks this in headless Chrome.
 
 ## [1.5.0] - 2026-11-18
 

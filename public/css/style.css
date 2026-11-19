@@ -921,10 +921,14 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
 #ring-roster li.out .swatch { opacity: 0.45; }
 #ring-roster li.out .who { text-decoration: line-through; }
 #hud.wrestling.results-open #ring-roster { display: none; }
-/* Ring-out callouts ("Roscoe is out!"). hud.js moves them beside or below the roster when they would
-   cover it, through these variables (#107). */
+/* Ring-out callouts ("Roscoe is out!"). Long ones (two long names) wrap within the screen; hud.js moves
+   them beside or below the roster when they would cover it, and keeps them on screen, through these
+   variables (#107). */
 #countdown.callout {
-  font-size: min(8vw, 64px); font-family: var(--ui); padding: 10px 22px; white-space: nowrap;
+  --callout-font: min(8vw, 64px);
+  font-size: calc(var(--callout-font) * var(--callout-scale, 1)); font-family: var(--ui); padding: 10px 22px;
+  box-sizing: border-box; width: max-content; max-width: var(--callout-max, calc(100vw - 32px));
+  white-space: normal; text-align: center; overflow-wrap: anywhere;
   left: var(--callout-x, 50%); top: var(--callout-y, 20%); transform: translate(-50%, var(--callout-shift, -50%));
 }
 /* On a wide screen the whole roster shows; on a narrow or short one it folds into a count you can open. */
@@ -934,7 +938,6 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
   color: var(--text); background: var(--panel); border: 1px solid var(--panel-border);
 }
 @media (max-width: 560px) {
-  #countdown.callout { white-space: normal; text-align: center; width: calc(100vw - 32px); }
   #hud.wrestling #ring-roster { font-size: 12px; }
 }
 @media (max-width: 560px), (max-height: 480px) {
@@ -944,7 +947,7 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
   #hud.wrestling.roster-open #ring-roster {
     top: 52px; left: 12px; max-height: calc(100vh - 150px); overflow-y: auto; pointer-events: auto;
   }
-  #countdown.callout { font-size: min(8vw, 64px, 9vh); }
+  #countdown.callout { --callout-font: min(8vw, 64px, 9vh); }
 }
 
 /* App version, next to the name in the lobby. */

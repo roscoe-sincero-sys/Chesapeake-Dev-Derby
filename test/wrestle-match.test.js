@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { loadHdAssets } from './headless.js';
 import { WrestleMatch } from '../public/js/wrestle.js';
-import { planMatch, WRESTLER_KINDS } from '../public/js/wrestle-sim.js';
+import { planMatch, WRESTLER_KINDS, PACE } from '../public/js/wrestle-sim.js';
 import { lowestBodyPoint, eachVertex } from '../public/js/wrestlers.js';
 import { mulberry32 } from '../public/js/sim.js';
 
@@ -393,16 +393,9 @@ test("HD body slams: the lifter's hands stay on the body through the hold, then 
   await loadHdAssets();
   // Both base bodies, the tallest and smallest characters, each way round.
   for (const [lifter, lifted] of [['jarasandha', 'bhima'], ['ghatotkacha', 'abhimanyu'], ['abhimanyu', 'ghatotkacha'], ['hidimbi', 'bhima'], ['bhima', 'hidimbi']]) {
-    const plan = planMatch(['A', 'B'], mulberry32(3));
-    plan.wrestlers[0].kind = kind(lifter);
-    plan.wrestlers[1].kind = kind(lifted);
-    const match = new WrestleMatch(['A', 'B'], { previewPlan: plan, rng: mulberry32(4), modelStyle: 'hd' });
+    const match = forcedSlam(lifter, lifted, 'hd');
     const [a, b] = match.wrestlers;
-    run(match, 60, 1);
-    while (!(a.fight && a.fight === b.fight)) match.update(1 / 60);
-    // Start a slam by the first of the two.
     const f = a.fight;
-    Object.assign(f, { move: 'slam', n: f.n + 1, t: 0, dur: 2.75, by: a, m: {} });
     let held = 0;
     let reach = 0;
     let highest = 0;
@@ -428,7 +421,87 @@ test("HD body slams: the lifter's hands stay on the body through the hold, then 
   }
 });
 
+/** A two-wrestler match, run until they lock up, then the first starts a body slam on the second. */
+function forcedSlam(lifter, lifted, modelStyle, hz = 60) {
+  const plan = planMatch(['A', 'B'], mulberry32(3));
+  plan.wrestlers[0].kind = kind(lifter);
+  plan.wrestlers[1].kind = kind(lifted);
+  const match = new WrestleMatch(['A', 'B'], { previewPlan: plan, rng: mulberry32(4), modelStyle });
+  const [a, b] = match.wrestlers;
+  run(match, hz, 1);
+  while (!(a.fight && a.fight === b.fight)) match.update(1 / hz);
+  Object.assign(a.fight, { move: 'slam', n: a.fight.n + 1, t: 0, dur: 2.75, by: a, m: {} });
+  return match;
+}
+
+test('body slams drop from where the hold was shown: no jump from the hands into the drop', async () => {
+  await loadHdAssets();
+  const worst = [];
+  // The forced slams, both styles and update rates, then every slam in the seed-17 match.
+  const check = (match, label, hz, until) => {
+    const last = new Map();
+    let jump = 0;
+    let handoffs = 0;
+    run(match, hz, until, (m) => {
+      for (const b of m.wrestlers) {
+        const f = b.fight;
+        if (f?.move !== 'slam' || f.by === b) {
+          last.delete(b);
+          continue;
+        }
+        const p = b.rig.root.position.clone();
+        const before = last.get(b);
+        if (before?.stage === 'hold' && f.m.stage === 'slam') {
+          handoffs++;
+          // Falling from rest: the first update of the drop lowers it a centimetre or so, not a body's depth.
+          jump = Math.max(jump, Math.abs(p.y - before.p.y) - 0.02 * (60 / hz) ** 2);
+        }
+        last.set(b, { p, stage: f.m.stage });
+      }
+    });
+    worst.push(`${label} @${hz}: ${handoffs} handoffs, worst ${jump.toFixed(3)}`);
+    assert.ok(handoffs >= 1, `${label} @${hz}: a slam reached the drop`);
+    assert.ok(jump <= 0, `${label} @${hz}: the slammed body drops ${jump.toFixed(3)} more than falling from rest at the handoff`);
+  };
+  for (const modelStyle of ['hd', 'classic']) {
+    for (const hz of [30, 60]) {
+      check(forcedSlam('jarasandha', 'bhima', modelStyle, hz), `${modelStyle} jarasandha slams bhima`, hz, 5);
+      check(new WrestleMatch(names(12), { rng: mulberry32(17), modelStyle }), `${modelStyle} seed 17`, hz, 20);
+    }
+  }
+});
+
 // ---------------------------------------------------------------- #106 Satyaki's rope rebound
+
+test("Satyaki's facing turns smoothly from the run out, off the ropes, through the tackle, at 30 and 60 updates/s", async () => {
+  await loadHdAssets();
+  for (const modelStyle of ['hd', 'classic']) {
+    for (const hz of [30, 60]) {
+      const match = new WrestleMatch(names(12), { rng: mulberry32(17), modelStyle });
+      const outs = [];
+      match.onEvent = (e) => e.type === 'out' && outs.push(e);
+      const b = match.plan.beats.find((x) => x.type === 'elimination');
+      const h = match.wrestlers[b.thrower];
+      assert.equal(h.kind.style, 'rebound', 'seed 17 opens with a Satyaki ring-out');
+      let prev = null;
+      let worst = { turn: 0 };
+      let nearest = Infinity;
+      run(match, hz, b.landAt + 0.5, (m) => {
+        if (m.t < b.start) return;
+        if (prev !== null && m.t < b.throwAt + PACE.throw) {
+          const turn = Math.abs(Math.atan2(Math.sin(h.heading - prev), Math.cos(h.heading - prev))) * (180 / Math.PI);
+          if (turn > worst.turn) worst = { turn, at: (m.t - b.start).toFixed(2) };
+        }
+        if (m.t < b.throwAt) nearest = Math.min(nearest, HALF - Math.max(Math.abs(h.x), Math.abs(h.z)));
+        prev = h.heading;
+      });
+      assert.equal(outs[0]?.move, 'rebound', `${modelStyle} @${hz}: the rope rebound plays`);
+      assert.ok(nearest < 0.6, `${modelStyle} @${hz}: he reaches the ropes (${nearest.toFixed(2)} inside)`);
+      // At most 400 degrees a second: a quick turn, never a snap from one update to the next.
+      assert.ok(worst.turn <= 400 / hz, `${modelStyle} @${hz}: turns ${worst.turn.toFixed(1)} degrees in one update, ${worst.at}s in`);
+    }
+  }
+});
 
 test('Satyaki comes off the ropes for a ring-out when there is room, and the feed says what he did', async () => {
   const { throwText } = await import('../public/js/hud.js');
@@ -470,24 +543,51 @@ test('Satyaki comes off the ropes for a ring-out when there is room, and the fee
 
 // ---------------------------------------------------------------- #107 callouts clear of the roster
 
-test('ring-out callouts move beside or below the roster rather than covering it', async () => {
+test('ring-out callouts stay on screen, beside or below the roster rather than covering it', async () => {
   const { calloutPlacement } = await import('../public/js/hud.js');
   const rect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+  // A callout of `chars` characters at `font` px: wrapped to the width it's given, padded, scaled.
+  const text = (chars, font) => (maxWidth, scale) => {
+    const f = font * scale;
+    const line = chars * 0.55 * f;
+    const lines = Math.ceil(line / (maxWidth - 48));
+    return { width: Math.min(maxWidth, line + 48), height: lines * f * 1.2 + 24 };
+  };
+  const inside = (p, size, view) => p.y >= 0 && p.y + size.height <= view.height
+    && p.x - size.width / 2 >= 0 && p.x + size.width / 2 <= view.width;
+  const apart = (p, size, r) => p.x + size.width / 2 <= r.left || p.x - size.width / 2 >= r.right
+    || p.y + size.height <= r.top || p.y >= r.bottom;
+
   // 390 x 844 phone: the folded roster chip at the top left; a full-width callout at 20% sits clear of it.
+  const phone = { width: 390, height: 844 };
   const chip = rect(12, 12, 170, 30);
-  assert.equal(calloutPlacement(chip, rect(16, 120, 358, 120), { width: 390, height: 844 }), null);
-  // ...but over the opened roster, it goes just below it.
-  const open = rect(12, 12, 300, 340);
-  assert.deepEqual(calloutPlacement(open, rect(16, 120, 358, 120), { width: 390, height: 844 }), { x: 195, y: 362, shift: '0px' });
-  // A short landscape screen (844 x 390): a callout that would overlap the chip moves into the room beside it.
-  const place = calloutPlacement(chip, rect(150, 20, 540, 60), { width: 844, height: 390 });
-  assert.ok(place.x - 270 >= chip.right && place.shift === '-50%', `beside the chip: ${JSON.stringify(place)}`);
-  // ...and one too wide for that room goes below it.
-  const below = calloutPlacement(chip, rect(100, 20, 700, 60), { width: 844, height: 390 });
-  assert.ok(below.y >= chip.bottom && below.shift === '0px', `below the chip: ${JSON.stringify(below)}`);
-  // Wide screen with the full roster: a paired callout fits in the room beside it, centred there.
+  assert.equal(calloutPlacement(chip, rect(16, 120, 358, 120), phone, text(20, 31)), null);
+  // ...but over the opened roster, it goes below it.
+  const open = rect(12, 52, 300, 360);
+  const below = calloutPlacement(open, rect(16, 120, 358, 120), phone, text(20, 31));
+  assert.ok(below.y >= open.bottom && inside(below, text(20, 31)(below.maxWidth, below.scale), phone), JSON.stringify(below));
+  // Two 34-character names (82 characters) on a short landscape screen (844 x 390), roster open: the
+  // message wraps in the room beside the roster, all of it on screen, at full size.
+  const land = { width: 844, height: 390 };
+  const openLand = rect(12, 52, 320, 240);
+  const pair = text(82, 35);
+  const p = calloutPlacement(openLand, rect(16, 40, 812, 160), land, pair);
+  const size = pair(p.maxWidth, p.scale);
+  assert.ok(inside(p, size, land) && apart(p, size, openLand) && apart(p, size, chip) && p.scale === 1, JSON.stringify({ p, size }));
+  // Placed in portrait, then turned: placed again from the new screen, never left below it.
+  const turned = calloutPlacement(openLand, rect(16, 422, 812, 160), land, pair);
+  assert.ok(inside(turned, pair(turned.maxWidth, turned.scale), land), JSON.stringify(turned));
+  // Off the bottom of the screen with no roster showing (results open): brought back on.
+  const back = calloutPlacement(null, rect(16, 300, 812, 160), land, pair);
+  assert.ok(inside(back, pair(back.maxWidth, back.scale), land), JSON.stringify(back));
+  // Too big for any room at full size: made smaller until it fits.
+  const tiny = { width: 320, height: 240 };
+  const small = calloutPlacement(chip, rect(10, 20, 300, 400), tiny, text(82, 40));
+  assert.ok(small.scale < 1 && inside(small, text(82, 40)(small.maxWidth, small.scale), tiny), JSON.stringify(small));
+  // Wide screen with the full roster: a paired callout goes in the room beside it.
   const roster = rect(14, 14, 320, 360);
-  const beside = calloutPlacement(roster, rect(290, 120, 700, 80), { width: 1280, height: 800 });
-  assert.deepEqual(beside, { x: 334 + 10 + (1280 - 334 - 20) / 2, y: 160, shift: '-50%' });
-  assert.ok(beside.x - 350 >= roster.right, 'clear of the roster');
+  const desk = { width: 1280, height: 800 };
+  const beside = calloutPlacement(roster, rect(290, 120, 700, 80), desk, text(40, 64));
+  assert.equal(beside.x, (344 + 1270) / 2);
+  assert.ok(apart(beside, text(40, 64)(beside.maxWidth, 1), roster), 'clear of the roster');
 });

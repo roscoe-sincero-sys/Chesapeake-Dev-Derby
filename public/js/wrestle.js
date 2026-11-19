@@ -58,7 +58,11 @@ const CONTACT = new Set(['reversal', 'slam']); // moves where the pair hold on t
 const SLAM = { lift: 0.5, hold: 0.95, drop: 1.12, down: 1.35 };
 const KNOCKDOWN = { lie: 0.9, up: 1.7 }; // seconds after going down: start getting up, back on their feet
 // Satyaki's rope rebound in a ring-out (#106): his running speed, and the time off the ropes.
-const RUN = { speed: 5.2, bounce: 0.3 };
+// Satyaki's rope rebound (#106). He turns to run for the ropes over `start` seconds, then from the run
+// out to the charge back over `turn` seconds: starting `early` before he reaches the ropes (side first
+// into them), through the bounce and on into the charge; and over the first `tackle` of the throw he
+// squares up to the ropes. His facing is set by time, so it never jumps, at any update rate.
+const RUN = { speed: 5.2, bounce: 0.3, start: 0.65, early: 0.25, turn: 0.75, tackle: 0.45 };
 const ROPE_CONTACT = 0.5; // a wrestler's root this far inside the rope line has their back on the ropes
 const ROOM = 4.4; // how far apart fights try to stay (#100)
 const BLEND = 0.22; // seconds for one move to ease into the next (#98)
@@ -664,7 +668,9 @@ export class WrestleMatch {
     } else if (m.stage === 'slam') {
       // Driven down, still across, flat onto the mat in front of the lifter.
       const q = (s - SLAM.drop) / (SLAM.down - SLAM.drop);
-      const held = m.held ?? { x: def.x, y: MAT_Y, z: def.z }; // where gripSlam last held them
+      // From exactly where the body was last shown on the hands (the root as drawn, after place() kept
+      // it off the mat), so the drop starts in the hands, not below them.
+      const held = m.held ?? { x: def.x, y: MAT_Y, z: def.z, tag: MAT_Y - 1.4 };
       const land = ahead(0.95);
       const off = m.offset ?? { x: 0, z: 0 }; // from the body's middle to its root (feet), from the hold
       def.x = held.x + (land.x + off.x - held.x) * q;
@@ -672,7 +678,7 @@ export class WrestleMatch {
       def.y = held.y + (MAT_Y - held.y) * q * q; // falling, faster as it goes
       def.pitch = ON_BACK;
       def.ground = true;
-      def.tagDrop = -1.4;
+      def.tagDrop = (held.tag - held.y) + (-1.4 - (held.tag - held.y)) * q;
       face.set(def, across);
       m.grip = 0;
       act(att, { armsForward: 1.2, crouch: 0.55, lean: 0.55 }, 0.1);
@@ -712,8 +718,8 @@ export class WrestleMatch {
     r.tags.position.add(delta);
     def.x = r.root.position.x;
     def.z = r.root.position.z;
-    def.y += delta.y;
-    m.held = { x: def.x, y: def.y, z: def.z };
+    // Where it's drawn: the drop starts from here (#104).
+    m.held = { x: def.x, y: r.root.position.y, z: def.z, tag: r.tags.position.y };
     m.offset = { x: def.x - (body.chest.x + body.thigh.x) / 2 - delta.x, z: def.z - (body.chest.z + body.thigh.z) / 2 - delta.z };
   }
 
@@ -1217,7 +1223,8 @@ export class WrestleMatch {
           const go = ease(Math.min(1, q * 2.5));
           h.x = run.contact.x + f.nx * 0.55 * go;
           h.z = run.contact.z + f.nz * 0.55 * go;
-          h.heading = headingTo(h.x, h.z, h.x + f.nx, h.z + f.nz);
+          // He keeps the line of his charge through the contact, squaring to the ropes as he follows through.
+          h.heading = lerpAngle(run.charge, headingTo(0, 0, f.nx, f.nz), ease(q / RUN.tackle));
           this.act(h, 'run:tackle', { lean: 0.65 - 0.45 * q, armsForward: 0.7, crouch: 0.35 - 0.15 * q, spread: 0.2 }, 0.1);
         } else this.act(h, overhead ? 'throw' : 'throw:release', overhead
           ? { armsUp: 1 - q * 0.4, spread: q * 0.3, crouch: 0.2 * (1 - q) }
@@ -1326,7 +1333,7 @@ export class WrestleMatch {
           if (time - t1 <= 0 || speed < 4 || speed > 7.5) continue;
           if (this.crossesAction(from, rope, b) || this.crossesAction(rope, contact, b)) continue;
           const score = Math.abs(speed - RUN.speed);
-          if (!best || score < best.score) best = { rope, contact, t1, score };
+          if (!best || score < best.score) best = { rope, contact, t1, score, charge: headingTo(rope.x, rope.z, contact.x, contact.z) };
         }
       }
     }
@@ -1366,17 +1373,19 @@ export class WrestleMatch {
     v.heading = lerpAngle(lerpAngle(av.heading, headingTo(v.x, v.z, h.x, h.z), k), intoRing(v), brace);
     if (since < PACE.approach) this.act(v, 'run:back', { walk: v.walk, stride: 0.35 * (1 - k), guard: 0.6, crouch: 0.2, lean: -0.15 });
     else this.act(v, 'run:dazed', { guard: 0.4 + 0.5 * brace, crouch: 0.2 + 0.1 * brace, look: -0.3 * (1 - brace), tilt: 0.15 * Math.sin(t * 3) * (1 - brace), lean: -0.1 });
-    // Satyaki: out to the ropes, off them, and back at full speed.
+    // Satyaki: out to the ropes, off them, and back at full speed. His facing is set by time alone:
+    // towards the ropes he runs to, then round to the charge as he reaches them.
     const ah = this.anchor(b, h);
+    const outH = headingTo(ah.x, ah.z, run.rope.x, run.rope.z);
+    const turn = ease((since - run.t1 + RUN.early) / RUN.turn);
+    h.heading = lerpAngle(lerpAngle(ah.heading, outH, ease(since / RUN.start)), run.charge, turn);
     if (since < run.t1) {
       const q = (since / run.t1) ** 1.5; // building speed into the ropes
       step(h, ah.x + (run.rope.x - ah.x) * q, ah.z + (run.rope.z - ah.z) * q);
-      h.heading = lerpAngle(h.heading, headingTo(h.x, h.z, run.rope.x, run.rope.z), damp(12, this.dt));
       this.act(h, 'run:out', { walk: h.walk, stride: 0.7, guard: 0.2, crouch: 0.2, lean: 0.25 });
     } else if (since < run.t1 + RUN.bounce) {
       const s = Math.sin(((since - run.t1) / RUN.bounce) * Math.PI);
       step(h, run.rope.x, run.rope.z);
-      h.heading = lerpAngle(h.heading, headingTo(h.x, h.z, run.contact.x, run.contact.z), damp(14, this.dt));
       this.act(h, 'run:bounce', { lean: -0.55 * s, spread: 0.5 * s, crouch: 0.25 }, 0.1);
       if (!this.fired.has(`bounce-rope:${b.start}`)) {
         this.fired.add(`bounce-rope:${b.start}`);
@@ -1385,7 +1394,6 @@ export class WrestleMatch {
     } else {
       const q = (since - run.t1 - RUN.bounce) / (b.throwAt - b.start - run.t1 - RUN.bounce);
       step(h, run.rope.x + (run.contact.x - run.rope.x) * q, run.rope.z + (run.contact.z - run.rope.z) * q);
-      h.heading = headingTo(run.rope.x, run.rope.z, run.contact.x, run.contact.z);
       const dip = ease((q - 0.7) / 0.3); // shoulder down for the tackle
       this.act(h, 'run:charge', { walk: h.walk, stride: 0.7 * (1 - 0.5 * dip), guard: 0.2 * (1 - dip), crouch: 0.25 + 0.15 * dip, lean: 0.3 + 0.35 * dip, armsForward: 0.5 * dip });
     }

@@ -28,23 +28,46 @@ export function throwText(e) {
   return THROW_TEXT[style]?.(e.thrower, e.victim) ?? `${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`;
 }
 
-const OUT_MERGE_MS = 1300;
 
 /**
- * Where a callout goes so it doesn't cover the wrestling roster (#107). `roster` and `callout` are
- * screen rectangles (callout where it would sit by default), `view` the viewport size. Returns null to
- * leave it where it is; otherwise its centre `x`, its `y` and `shift` (the CSS vertical translate):
- * centred in the room beside the roster if it fits there, or else just below the roster.
+ * Where a callout goes so all of it is on screen and none of it covers the wrestling roster (#107).
+ * `roster` and `callout` are screen rectangles (the callout where it sits by default; no roster when
+ * none is shown), `view` the viewport size, and `measure(maxWidth, scale)` the callout's size when
+ * wrapped to `maxWidth` with its font scaled by `scale`. Returns null to leave it where it is;
+ * otherwise its centre `x`, top `y`, `maxWidth` and font `scale`: in the room beside the roster if it
+ * fits there, else below it, at full size if possible, smaller only if it fits nowhere at full size.
  */
-export function calloutPlacement(roster, callout, view, gap = 10) {
-  if (!roster) return null;
-  const clear = callout.right + gap <= roster.left || callout.left >= roster.right + gap
-    || callout.bottom + gap <= roster.top || callout.top >= roster.bottom + gap;
-  if (clear) return null;
-  const room = view.width - roster.right - 2 * gap;
-  if (callout.width <= room) return { x: roster.right + gap + room / 2, y: (callout.top + callout.bottom) / 2, shift: '-50%' };
-  return { x: view.width / 2, y: roster.bottom + gap, shift: '0px' };
-} // ring-outs landing this close together share one callout
+export function calloutPlacement(roster, callout, view, measure, gap = 10) {
+  const covers = roster && !(callout.right + gap <= roster.left || callout.left >= roster.right + gap
+    || callout.bottom + gap <= roster.top || callout.top >= roster.bottom + gap);
+  const onScreen = callout.left >= 0 && callout.top >= 0 && callout.right <= view.width && callout.bottom <= view.height;
+  if (!covers && onScreen) return null;
+  const screen = { left: gap, right: view.width - gap, top: gap, bottom: view.height - gap };
+  const areas = roster
+    ? [{ ...screen, left: Math.max(gap, roster.right + gap) }, { ...screen, top: Math.max(gap, roster.bottom + gap) }]
+    : [screen];
+  const middle = (callout.top + callout.bottom) / 2;
+  const fit = (a, scale, force = false) => {
+    const maxWidth = Math.floor(a.right - a.left);
+    if (maxWidth < 40 || a.bottom - a.top < 20) return null;
+    const size = measure(maxWidth, scale);
+    if (!force && (size.width > maxWidth + 0.5 || size.height > a.bottom - a.top + 0.5)) return null;
+    // As near its usual height as the room allows.
+    const y = Math.max(a.top, Math.min(middle - size.height / 2, a.bottom - size.height));
+    return { x: (a.left + a.right) / 2, y, maxWidth, scale };
+  };
+  for (let scale = 1; scale >= 0.4; scale *= 0.85) {
+    for (const a of areas) {
+      const place = fit(a, scale);
+      if (place) return place;
+    }
+  }
+  // Nothing fits even at the smallest size (a very long message): the roomiest area, at that size.
+  const size = (a) => (a.right - a.left) * (a.bottom - a.top);
+  const roomiest = areas.reduce((a, b) => (size(b) > size(a) ? b : a));
+  return fit(roomiest, 0.4, true) ?? fit(screen, 0.4, true);
+}
+const OUT_MERGE_MS = 1300; // ring-outs landing this close together share one callout
 /** "Roscoe is out!", "Roscoe and Ada are out!", "Roscoe, Ada and Lin are out!". */
 export const outText = (names) => (names.length === 1
   ? `${names[0]} is out!`
@@ -112,7 +135,11 @@ export class Hud {
     this.lastOrder = 0;
     this.lastLine = 0;
     this.resultsTimer = null;
-    window.addEventListener('resize', () => this.layout());
+    // A resize (or a phone turning) re-fits the board and moves any callout on screen into the new space.
+    window.addEventListener('resize', () => {
+      this.layout();
+      this.placeCallout();
+    });
     // On narrow or short screens the wrestling roster folds into a count that opens it (#107).
     this.ringToggle = $('ring-toggle');
     this.ringToggle?.addEventListener('click', () => {
@@ -245,29 +272,43 @@ export class Hud {
     if (this.ringToggle) this.ringToggle.textContent = `🤼 ${rows.length - out} of ${rows.length} in the ring`;
   }
 
-  /** Moves a ring-out callout beside or below the roster if it would cover it (#107). */
+  /**
+   * Keeps a ring-out callout wholly on screen and off the roster (#107): placed again whenever the
+   * message, the screen size or the roster changes.
+   */
   placeCallout() {
     const style = this.count.style;
-    for (const name of ['--callout-x', '--callout-y', '--callout-shift']) style.removeProperty(name);
+    const vars = ['--callout-x', '--callout-y', '--callout-shift', '--callout-max', '--callout-scale'];
+    for (const name of vars) style.removeProperty(name);
     if (!this.root.classList.contains('wrestling') || !this.count.classList.contains('callout')) return;
     const shown = [$('ring-roster'), this.ringToggle].filter((el) => el && el.offsetParent !== null && el.offsetHeight > 0);
-    if (!shown.length) return;
     const rects = shown.map((el) => el.getBoundingClientRect());
-    const roster = {
+    const roster = rects.length ? {
       left: Math.min(...rects.map((r) => r.left)), top: Math.min(...rects.map((r) => r.top)),
       right: Math.max(...rects.map((r) => r.right)), bottom: Math.max(...rects.map((r) => r.bottom)),
+    } : null;
+    const measure = (maxWidth, scale) => {
+      style.setProperty('--callout-max', `${maxWidth}px`);
+      style.setProperty('--callout-scale', String(scale));
+      return { width: this.count.offsetWidth, height: this.count.offsetHeight };
     };
-    const place = calloutPlacement(roster, this.count.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
+    const view = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+    const place = calloutPlacement(roster, this.count.getBoundingClientRect(), view, measure);
+    style.removeProperty('--callout-max');
+    style.removeProperty('--callout-scale');
     if (!place) return;
     style.setProperty('--callout-x', `${place.x}px`);
     style.setProperty('--callout-y', `${place.y}px`);
-    style.setProperty('--callout-shift', place.shift);
+    style.setProperty('--callout-shift', '0px');
+    style.setProperty('--callout-max', `${place.maxWidth}px`);
+    style.setProperty('--callout-scale', String(place.scale));
   }
 
   /** Crosses a wrestler off the list once they are thrown out. */
   wrestleOut(id) {
     $('ring-roster').querySelector(`li[data-id="${id}"]`)?.classList.add('out');
     this.countInRing();
+    this.placeCallout(); // the folded count's label can change width
   }
 
   /** A short message across the middle of the screen, e.g. "Roscoe is out!". */
