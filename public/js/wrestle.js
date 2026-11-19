@@ -365,6 +365,36 @@ export class WrestleMatch {
     return this.wrestlers.filter((w) => !w.out);
   }
 
+  /**
+   * Where the ring-outs a callout announces are on screen (#107): the body of everyone going over the
+   * ropes now (or about to) or landed in the last few seconds, as rectangles in CSS pixels of a
+   * `width` x `height` view, each with the wrestler's `id`. The HUD keeps the callout off them, so the
+   * landing stays in view.
+   */
+  landingRects(width, height) {
+    const box = new THREE.Box3();
+    const corner = new THREE.Vector3();
+    const rects = [];
+    for (const w of this.wrestlers) {
+      const going = this.actions.some((b) => b.type === 'elimination' && b.victim === w.id && this.t >= b.throwAt - 0.3);
+      if (!going && !(w.out && this.t - (w.outTime ?? -Infinity) < 4)) continue;
+      bodyBounds(w.rig, box, 8);
+      if (box.isEmpty()) continue;
+      const r = { id: w.id, left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+      for (let i = 0; i < 8; i++) {
+        corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(this.camera);
+        const x = ((corner.x + 1) / 2) * width;
+        const y = ((1 - corner.y) / 2) * height;
+        r.left = Math.min(r.left, x);
+        r.right = Math.max(r.right, x);
+        r.top = Math.min(r.top, y);
+        r.bottom = Math.max(r.bottom, y);
+      }
+      if (r.right > 0 && r.left < width && r.bottom > 0 && r.top < height) rects.push(r);
+    }
+    return rects;
+  }
+
   /** Nobody free to fight (everyone else is in a throw): circle, and now and then run the ropes. */
   circle(w, dt) {
     const slow = (this.finalTwo ? 0.65 : 1) * quick(w);
@@ -1254,6 +1284,7 @@ export class WrestleMatch {
         v.outAt = landing;
         this.crowd.ringOut(landing.x, landing.z, t);
         v.outSince = 0;
+        v.outTime = t; // the HUD keeps ring-out callouts off them for a few seconds
       }
       this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final, move });
       const since = t - b.landAt;

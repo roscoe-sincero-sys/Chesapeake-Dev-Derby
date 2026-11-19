@@ -18,6 +18,7 @@ const $ = (id) => document.getElementById(id);
 // Optional URL switches, handy for demos and testing:
 //   ?seed=123   replay the same race every time
 //   ?speed=4    starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
+//   ?test       expose the game and HUD as window.derbyTest (the browser tests use it)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
 const savedSettings = readLobbySettings();
@@ -46,6 +47,7 @@ const stored = (name) => state.raceNames.get(name) ?? name;
 const sfx = new Sfx();
 const hud = new Hud();
 let game = null;
+if (params.has('test')) window.derbyTest = { hud, get game() { return game; } };
 
 // ------------------------------------------------------------------ server
 
@@ -406,6 +408,8 @@ async function wrestle(modelStyle = 'classic') {
     },
   });
   hud.beginWrestle(lineup);
+  // Ring-out callouts stay off the landings they announce (#107).
+  hud.sceneBlocks = (width, height) => game?.wrestle?.landingRects(width, height) ?? [];
   if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
   $('quit').textContent = '✕ Quit match';
   $('quit').hidden = false;

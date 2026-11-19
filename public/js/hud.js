@@ -30,55 +30,72 @@ export function throwText(e) {
 
 
 /**
- * Where a callout goes so all of it is on screen and none of it covers the wrestling roster or the
- * toolbar (#107). `blocks` are the screen rectangles to keep clear (the roster and its count, the Mute
- * and Quit buttons; only those shown), `callout` the callout where it sits by default, `view` the
- * viewport size, and `measure(maxWidth, scale)` the callout's size when wrapped to `maxWidth` with its
- * font scaled by `scale`. Returns null to leave it where it is; otherwise its centre `x`, top `y`,
- * `maxWidth` and font `scale`. It goes in the room beside or below the controls, wherever it takes
- * the fewest lines (so two long names aren't broken up in a narrow strip), as near its usual height as
- * that room allows; at full size if it fits anywhere, smaller only if it doesn't.
+ * Where a callout goes so all of it is on screen, none of it covers the wrestling roster or the toolbar,
+ * and, wherever possible, none of it covers the landings it announces (#107). `blocks` are the controls
+ * to keep clear (the roster with its count, the Mute and Quit buttons; only those shown) and `scene` the
+ * thrown wrestlers' bodies on screen, all as screen rectangles; `callout` is the callout where it sits by
+ * default, `view` the viewport size, and `measure(maxWidth, scale)` the callout's size when wrapped to
+ * `maxWidth` with its font scaled by `scale`. Returns null to leave it where it is; otherwise its centre
+ * `x`, top `y`, `maxWidth` and font `scale`. It goes in the room beside, below or above the controls and
+ * bodies, weighing up a large font, a place high on the screen (over the crowd, not the ring) and a short
+ * banner (two long names in a few wide lines, not broken up down a strip); smaller if that keeps the
+ * landings in view, and over a landing only if there's no other way.
  */
-export function calloutPlacement(blocks, callout, view, measure, gap = 10) {
+export function calloutPlacement(blocks, callout, view, measure, { scene = [], gap = 10 } = {}) {
   const near = (r, b) => !(r.right + gap <= b.left || r.left >= b.right + gap || r.bottom + gap <= b.top || r.top >= b.bottom + gap);
   const onScreen = callout.left >= 0 && callout.top >= 0 && callout.right <= view.width && callout.bottom <= view.height;
-  if (onScreen && !blocks.some((b) => near(callout, b))) return null;
+  if (onScreen && ![...blocks, ...scene].some((b) => near(callout, b))) return null;
   const screen = { left: gap, right: view.width - gap, top: gap, bottom: view.height - gap };
-  // The room beside each control, below each, and the whole screen; each then trimmed clear of every
-  // control: below one in its upper half, above one in its lower half.
-  const areas = [
-    ...blocks.map((b) => ({ ...screen, left: b.right + gap })),
-    ...blocks.map((b) => ({ ...screen, top: b.bottom + gap })),
-    screen,
-  ].map((area) => {
-    const a = { ...area };
-    for (const b of blocks) {
-      if (b.right + gap <= a.left || b.left >= a.right + gap || b.bottom + gap <= a.top || b.top >= a.bottom + gap) continue;
-      if ((b.top + b.bottom) / 2 < (a.top + a.bottom) / 2) a.top = Math.max(a.top, b.bottom + gap);
-      else a.bottom = Math.min(a.bottom, b.top - gap);
-    }
-    return a;
-  });
   const middle = (callout.top + callout.bottom) / 2;
+  const sizes = new Map();
+  const sized = (maxWidth, scale) => {
+    const key = `${maxWidth}:${scale}`;
+    if (!sizes.has(key)) sizes.set(key, measure(maxWidth, scale));
+    return sizes.get(key);
+  };
   const fit = (a, scale, force = false) => {
     const maxWidth = Math.floor(a.right - a.left);
     if (maxWidth < 40 || a.bottom - a.top < 20) return null;
-    const size = measure(maxWidth, scale);
+    const size = sized(maxWidth, scale);
     if (!force && (size.width > maxWidth + 0.5 || size.height > a.bottom - a.top + 0.5)) return null;
     const y = Math.max(a.top, Math.min(middle - size.height / 2, a.bottom - size.height));
-    return { x: (a.left + a.right) / 2, y, maxWidth, scale, height: size.height };
+    return { x: (a.left + a.right) / 2, y, maxWidth, scale, bottom: y + size.height };
   };
-  for (let scale = 1; scale >= 0.4; scale *= 0.85) {
-    // Of the places it fits at this size, the one where it takes the fewest lines (the first, if equal).
-    const fits = areas.map((a) => fit(a, scale)).filter(Boolean);
-    if (fits.length) {
-      const { height, ...place } = fits.reduce((best, p) => (p.height < best.height - 1 ? p : best));
-      return place;
-    }
-  }
-  // Nothing fits even at the smallest size (a very long message): the roomiest area, at that size.
+  // The room beside, below and above each thing to keep clear, and the whole screen; each then trimmed
+  // clear of all of them, cutting each away from whichever side leaves the most room.
   const room = (a) => Math.max(0, a.right - a.left) * Math.max(0, a.bottom - a.top);
-  const { height, ...place } = fit(areas.reduce((a, b) => (room(b) > room(a) ? b : a)), 0.4, true) ?? fit(screen, 0.4, true);
+  const areas = (keep) => [
+    ...keep.flatMap((b) => [
+      { ...screen, left: b.right + gap }, { ...screen, right: b.left - gap },
+      { ...screen, top: b.bottom + gap }, { ...screen, bottom: b.top - gap },
+    ]),
+    screen,
+  ].map((area) => {
+    const a = { ...area };
+    for (const b of keep) {
+      if (b.right + gap <= a.left || b.left >= a.right + gap || b.bottom + gap <= a.top || b.top >= a.bottom + gap) continue;
+      const cuts = [
+        { ...a, top: Math.max(a.top, b.bottom + gap) }, { ...a, bottom: Math.min(a.bottom, b.top - gap) },
+        { ...a, left: Math.max(a.left, b.right + gap) }, { ...a, right: Math.min(a.right, b.left - gap) },
+      ];
+      Object.assign(a, cuts.reduce((x, y) => (room(y) > room(x) ? y : x)));
+    }
+    return a;
+  });
+  const scales = [];
+  for (let scale = 1; scale >= 0.4 - 1e-9; scale *= 0.85) scales.push(scale);
+  // Larger is better; so is higher up the screen and a shorter banner (fewer, wider lines).
+  const score = (p) => p.scale - 0.5 * (p.y / view.height) - 0.6 * ((p.bottom - p.y) / view.height);
+  const best = (keep, smallest) => {
+    // Each area at the largest size that fits in it; then the best of those (the first, if level).
+    const fits = areas(keep).map((a) => scales.filter((s) => s >= smallest - 1e-9).reduce((found, s) => found ?? fit(a, s), null)).filter(Boolean);
+    return fits.reduce((top, p) => (top === null || score(p) > score(top) + 1e-6 ? p : top), null);
+  };
+  // Clear of the landings, down to 60% size; failing that, clear of the controls alone, down to 40%;
+  // failing even that (a very long message), the roomiest place, at 40%.
+  const found = (scene.length && best([...blocks, ...scene], 0.6)) || best(blocks, 0.4)
+    || fit(areas(blocks).reduce((a, b) => (room(b) > room(a) ? b : a)), 0.4, true) || fit(screen, 0.4, true);
+  const { bottom, ...place } = found;
   return place;
 }
 const OUT_MERGE_MS = 1300; // ring-outs landing this close together share one callout
@@ -287,8 +304,9 @@ export class Hud {
   }
 
   /**
-   * Keeps a ring-out callout wholly on screen and off the roster and the toolbar (#107): placed again
-   * whenever the message, the screen size or the roster changes.
+   * Keeps a ring-out callout wholly on screen, off the roster and the toolbar, and off the landings it
+   * announces (#107; `sceneBlocks()`, set by the match, says where those are): placed again whenever the
+   * message, the screen size or the roster changes, or the camera brings a landing under it.
    */
   placeCallout() {
     const style = this.count.style;
@@ -311,7 +329,8 @@ export class Hud {
       return { width: this.count.offsetWidth, height: this.count.offsetHeight };
     };
     const view = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
-    const place = calloutPlacement(blocks, this.count.getBoundingClientRect(), view, measure);
+    const scene = this.landings(view, 1);
+    const place = calloutPlacement(blocks, this.count.getBoundingClientRect(), view, measure, { scene });
     style.removeProperty('--callout-max');
     style.removeProperty('--callout-scale');
     if (!place) return;
@@ -332,15 +351,43 @@ export class Hud {
   /** A short message across the middle of the screen, e.g. "Roscoe is out!". */
   callout(text, ms = 1600) {
     clearTimeout(this.countdownTimer);
+    clearInterval(this.calloutWatch);
     this.count.textContent = text;
     this.count.className = '';
     void this.count.offsetWidth;
     this.count.className = 'callout';
     this.placeCallout();
+    // The camera keeps moving while it's up: if a landing comes under it, move it again.
+    if (this.sceneBlocks) this.calloutWatch = setInterval(() => this.recheckCallout(), 200);
     this.countdownTimer = setTimeout(() => {
+      clearInterval(this.calloutWatch);
       this.count.textContent = '';
       this.count.className = '';
     }, ms);
+  }
+
+  /**
+   * Where the landings a callout announces are on screen, each with room round it (`share` of the full
+   * margin): the body slides, bounces and sits up, and the camera keeps moving.
+   */
+  landings(view, share) {
+    const pad = share * (12 + 0.02 * Math.min(view.width, view.height));
+    return (this.sceneBlocks?.(view.width, view.height) ?? []).map((r) => ({
+      left: r.left - pad, top: r.top - pad, right: r.right + pad, bottom: r.bottom + pad,
+    }));
+  }
+
+  /**
+   * Moves the callout again if a landing it announces has come close to it, within half the room it
+   * was given (but not otherwise: no jitter).
+   */
+  recheckCallout() {
+    if (!this.count.classList.contains('callout')) return;
+    const c = this.count.getBoundingClientRect();
+    const view = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+    if (this.landings(view, 0.5).some((r) => !(c.right <= r.left || c.left >= r.right || c.bottom <= r.top || c.top >= r.bottom))) {
+      this.placeCallout();
+    }
   }
 
   /**
@@ -441,6 +488,8 @@ export class Hud {
   /** Hides and resets everything. */
   end() {
     clearTimeout(this.countdownTimer);
+    clearInterval(this.calloutWatch);
+    this.sceneBlocks = null;
     clearTimeout(this.resultsTimer);
     this.root.hidden = true;
     this.root.classList.remove('results-open', 'wrestling', 'roster-open');

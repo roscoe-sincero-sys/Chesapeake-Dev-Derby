@@ -20,11 +20,12 @@ to release.
   off them and through the tackle, at any frame rate. When there's no clear run (for example, during two
   ring-outs at once), he uses the standard throw and the feed says he drove them over.
 - **Phone layout (#107):** on narrow or short screens the wrestler list folds into a count ("🤼 8 of 12 in
-  the ring") that opens the full list, and a ring-out message moves beside or below the list (and the
-  Mute and Quit buttons) rather than covering them, wherever it needs the fewest lines, so two long names
-  read as a wide banner rather than a narrow strip. Long messages wrap on every screen and always fit on
-  it, shrinking only if there's no room at full size, and are placed again when the list opens or closes
-  or the phone turns. A new browser test (`test/callout-browser.test.js`) checks this in headless Chrome.
+  the ring") that opens the full list. A ring-out message keeps clear of the list, the Mute and Quit
+  buttons and the landings it announces: it goes beside, above or below them, high on the screen as a
+  short, wide banner (two long names aren't broken up down a narrow strip), smaller rather than over a
+  landing. Long messages wrap on every screen and always fit on it, and are placed again when the list
+  opens or closes, the phone turns, or the camera brings a landing under the message. A new browser test
+  (`test/callout-browser.test.js`) checks this in headless Chrome, including in the live HD match.
 
 ## [1.5.0] - 2026-11-18
 

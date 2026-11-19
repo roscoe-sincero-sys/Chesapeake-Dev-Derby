@@ -159,8 +159,9 @@ on the floor. The last one left **leads today's standup**.
    throws someone out and there's room, he runs to the ropes on another side, comes off them and
    tackles them over; otherwise the feed says he drove them over, matching what you saw. On a phone or
    a short screen the list of wrestlers folds into a count ("🤼 8 of 12 in the ring") that you can tap
-   to open. Ring-out messages never cover it or the Mute and Quit buttons, and always fit on screen:
-   long ones wrap, and they move again when you open the list or turn the phone.
+   to open. Ring-out messages never cover it or the Mute and Quit buttons, keep clear of the landings
+   they announce, and always fit on screen: long ones wrap, and they move again when you open the list,
+   turn the phone, or the camera brings a landing underneath.
 3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
    the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.
@@ -282,6 +283,7 @@ Handy for demos and testing:
 | ----------- | --------------------------------------------------------- |
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
+| `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
 
 ## Tests
 
@@ -312,8 +314,10 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/callout-browser.test.js`** — ring-out messages with two 34-character names in headless Chrome,
   on a phone held upright and sideways, with the wrestler list folded and open, and turned while the
   message is up: all of it on screen, none of it cut off, clear of the list and the Mute and Quit
-  buttons, and a wide banner when the list is folded. Skipped when Chrome isn't
-  installed (or `CHROME_PATH` doesn't point to it) or Node is older than 22.
+  buttons, and a wide banner when the list is folded. Then the live seed-17 HD match at 1280 × 800 and
+  at 844 × 390 with the list open: every frame the first paired message is up, none of either thrown body
+  (measured from the 3D scene) is under it. The live match needs a GPU to run in real time. Skipped when
+  Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is older than 22.
 
 ## How it's put together
 

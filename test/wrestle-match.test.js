@@ -599,4 +599,36 @@ test('ring-out callouts stay on screen, beside or below the roster rather than c
   const deskBlocks = [roster, ...tools(desk)];
   const clear = calloutPlacement(deskBlocks, rect(290, 120, 700, 80), desk, text(40, 64));
   assert.ok(deskBlocks.every((b) => apart(clear, text(40, 64)(clear.maxWidth, 1), b)) && clear.scale === 1, JSON.stringify(clear));
+  // The two landings it announces, mid-screen to the right of the roster (seed 17's first pair at
+  // 1280 x 800): a compact banner high up beside the roster, clear of both bodies, rather than a
+  // full-size one across them.
+  const landings = [rect(780, 300, 150, 100), rect(890, 360, 210, 130)];
+  const deskPair = text(82, 64);
+  const high = calloutPlacement(deskBlocks, rect(16, 60, 1248, 220), desk, deskPair, { scene: landings });
+  const highSize = deskPair(high.maxWidth, high.scale);
+  assert.ok([...deskBlocks, ...landings].every((b) => apart(high, highSize, b)), `clear of the landings: ${JSON.stringify({ high, highSize })}`);
+  assert.ok(high.y + highSize.height <= 300 && high.scale >= 0.6, `high up, still large: ${JSON.stringify({ high, highSize })}`);
+  // With nowhere clear of them at a readable size, the controls still come first.
+  const everywhere = [rect(0, 0, 1280, 800)];
+  const forced = calloutPlacement(deskBlocks, rect(16, 60, 1248, 220), desk, deskPair, { scene: everywhere });
+  assert.ok(deskBlocks.every((b) => apart(forced, deskPair(forced.maxWidth, forced.scale), b)), JSON.stringify(forced));
+});
+
+test('landingRects: where the bodies going over the ropes and just landed are on screen', () => {
+  const match = new WrestleMatch(names(12), { rng: mulberry32(17), modelStyle: 'classic' });
+  match.resize(1280 / 800);
+  const b = match.plan.beats.find((x) => x.type === 'elimination');
+  run(match, 60, b.throwAt - 1);
+  assert.deepEqual(match.landingRects(1280, 800), [], 'nobody before the throw');
+  let seen = 0;
+  run(match, 60, b.landAt + 2, (m) => {
+    const r = m.landingRects(1280, 800).find((x) => x.id === b.victim);
+    if (m.t < b.throwAt) return;
+    assert.ok(r, `t=${m.t.toFixed(2)}: the one going over`);
+    assert.ok(r.right > r.left + 10 && r.bottom > r.top + 10, `t=${m.t.toFixed(2)}: a body-sized box ${JSON.stringify(r)}`);
+    seen++;
+  });
+  assert.ok(seen > 60, `followed for ${seen} updates`);
+  run(match, 60, match.wrestlers[b.victim].outTime + 4.1);
+  assert.ok(!match.landingRects(1280, 800).some((x) => x.id === b.victim), 'and not for long after landing');
 });
