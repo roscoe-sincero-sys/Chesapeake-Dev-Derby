@@ -1,11 +1,13 @@
 // "Let's Rumble" and "HD": the same 3D ring acting out the plan from wrestle-sim.js:
-// intro orbit with the bell, everyone in the ring brawling at once, ring-outs over the top rope,
-// a close call for the final two, and the winner's celebration, with the camera circling throughout.
+// intro orbit with the bell, everyone in the ring brawling at once (each fight with room of its own),
+// ring-outs over the top rope (sometimes two at once), a close call for the final two, and the winner's
+// celebration, with the camera circling the ring throughout.
 
 import * as THREE from 'three';
 import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI } from './util3d.js';
 import { planMatch, pairUp, PACE } from './wrestle-sim.js';
-import { buildWrestler, pose, lowestBodyPoint } from './wrestlers.js';
+import { buildWrestler, pose, capturePose, lowestBodyPoint } from './wrestlers.js';
+import { mulberry32 } from './sim.js';
 import { Particles } from './effects.js';
 import { Crowd } from './crowd.js';
 
@@ -43,6 +45,38 @@ const LIFTERS = new Set(['overhead', 'illusion']); // Bhima and the towering Gha
 const HIP_TOSS = new Set(['patient', 'composed']); // Karna and Shikhandi turn a charge into a sideways throw
 const PUSHERS = new Set(['bruiser', 'crowd']); // Kichaka and Dushasana drive opponents into the ropes
 const quick = (w) => (QUICK.has(w.kind.style) ? 1.3 : 1);
+// Each character's favourite brawling exchange (#97); they pick it about half the time.
+const SIGNATURE = {
+  overhead: 'slam', illusion: 'slam', centre: 'slam', // Bhima, Ghatotkacha, Jarasandha
+  counter: 'reversal', shapeshift: 'reversal', duck: 'reversal', patient: 'reversal', composed: 'reversal',
+  rebound: 'rebound', // Satyaki
+  bruiser: 'shove', crowd: 'shove', // Kichaka, Dushasana
+  showman: 'strikes', // Duryodhana
+};
+const CONTACT = new Set(['reversal', 'slam']); // moves where the pair hold on to each other
+const KNOCKDOWN = { lie: 0.9, up: 1.7 }; // seconds after going down: start getting up, back on their feet
+const ROOM = 4.4; // how far apart fights try to stay (#100)
+const BLEND = 0.22; // seconds for one move to ease into the next (#98)
+const SHOWMAN_TURN = 2.4; // Duryodhana's turn while playing to the crowd, radians per second (#99)
+// What every wrestler in the ring resets to before each update; moves set what they need.
+const UPRIGHT = { pitch: 0, roll: 0, ground: false, landed: false, hop: 0, pulse: 1, flicker: false, tagDrop: 0 };
+
+// The camera's orbits (#95): the intro settles into the live orbit round the ring, which eases into a
+// closer one for the final two and then into the victory shot. `aim` is how far it may turn from the
+// centre of the ring towards the action. Portrait screens are narrow, so they watch from further back.
+const CAMERA = {
+  intro: { radius: 20, height: 16, rate: 0.22 },
+  live: { radius: 16, height: 9, rate: 0.12, aim: 3.2 },
+  final: { radius: 12.5, height: 7, aim: 3.2 },
+  portrait: {
+    live: { radius: 18.5, height: 10, aim: 4.6 },
+    final: { radius: 16, height: 8.5, aim: 4.6 },
+  },
+  victory: { radius: 10, height: 5, aim: 2 },
+  toFinal: 3, // seconds to ease into the final-two orbit
+  toVictory: 2,
+  aimRate: 2.5,
+};
 
 export class WrestleMatch {
   /**
@@ -53,6 +87,9 @@ export class WrestleMatch {
     if (modelStyle !== 'classic' && modelStyle !== 'hd') throw new Error('Unknown wrestling model style.');
     this.modelStyle = modelStyle;
     this.plan = previewPlan ?? planMatch(names, rng);
+    // Free movement (who throws a forearm when, where someone circles to) has its own stream: seeded
+    // after the plan when the match is, so a seeded match replays the same way at a given update rate.
+    this.random = rng === Math.random ? Math.random : mulberry32(Math.floor(rng() * 2 ** 32));
     this.sfx = sfx;
     this.onEvent = onEvent;
     this.onWinner = onWinner;
@@ -69,7 +106,7 @@ export class WrestleMatch {
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.3, 200);
     this.camPos = new THREE.Vector3(0, 15, 19);
     this.camLook = new THREE.Vector3(0, MAT_Y, 0);
-    this.orbit = Math.random() * Math.PI * 2;
+    this.orbit = this.random() * Math.PI * 2;
     this.particles = new Particles(this.scene);
 
     this.buildArena();
@@ -90,14 +127,14 @@ export class WrestleMatch {
         target: null,
         timer: 0,
         speed: 1.6,
-        walk: Math.random() * 6,
+        walk: this.random() * 6,
         out: false,
         foe: null, // who they're fighting (wrestle-sim.js pairUp)
         fight: null, // the move the two of them are in, shared by both
         last: null, // who they last broke away from
         swing: 0,
         rebound: 0,
-        phase: Math.random() * 6,
+        phase: this.random() * 6,
       };
       state.heading = headingTo(state.x, state.z, 0, 0);
       rig.root.rotation.order = 'YXZ';
@@ -209,8 +246,12 @@ export class WrestleMatch {
   }
 
   resize(aspect) {
+    this.aspect = aspect;
     this.camera.aspect = aspect;
-    this.camera.fov = aspect < 1 ? 68 : 50;
+    // Portrait: as wide a view across as a 0.6 screen with a 68° lens gives, however narrow the screen,
+    // so both ropes and the floor beyond them stay in the picture (#95).
+    const across = Math.tan((34 * Math.PI) / 180) * Math.min(aspect, 0.6);
+    this.camera.fov = aspect < 1 ? Math.min(84, (2 * Math.atan(across / aspect) * 180) / Math.PI) : 50;
     this.camera.updateProjectionMatrix();
   }
 
@@ -229,6 +270,7 @@ export class WrestleMatch {
 
   update(dt) {
     this.t += dt;
+    this.dt = dt;
     if (this.tagsFading) this.tagFade = Math.max(0, this.tagFade - dt / 0.5);
     const t = this.t;
     if (t > 0.5 && !this.fired.has('bell')) {
@@ -236,14 +278,20 @@ export class WrestleMatch {
       this.emit('bell', { type: 'bell', lineup: this.lineup });
     }
 
-    const beat = this.plan.beats.find((b) => t >= b.start && t < b.end) ?? this.plan.beats[this.plan.beats.length - 1];
+    const beats = this.plan.beats;
+    const finalBeat = beats.find((b) => b.type === 'final');
+    const victory = beats[beats.length - 1];
+    this.finalTwo = t >= finalBeat.start;
+    // The scripted moments going on now: ring-outs (sometimes two at once, #96) and the close call.
+    this.actions = beats.filter((b) => (b.type === 'elimination' || b.type === 'closeCall') && t >= b.start && t < b.end);
+    // Everyone still in the ring starts the update upright; the moves below tip, lift or pulse them.
+    for (const w of this.wrestlers) if (!w.out) Object.assign(w, UPRIGHT);
     const active = new Set();
-    for (const b of this.plan.beats) {
-      if (b.type === 'elimination' && t >= b.start && t < b.end) this.playElimination(b, t, active);
-      if (b.type === 'closeCall' && t >= b.start && t < b.end) this.playCloseCall(b, t, active);
-      if (b.type === 'final' && t >= b.start) this.emit(`final`, { type: 'final', pair: b.pair.map((id) => this.wrestlers[id]) });
+    for (const b of this.actions) {
+      if (b.type === 'elimination') this.playElimination(b, t, active, dt);
+      else this.playCloseCall(b, t, active);
     }
-    const victory = this.plan.beats[this.plan.beats.length - 1];
+    if (this.finalTwo) this.emit('final', { type: 'final', pair: finalBeat.pair.map((id) => this.wrestlers[id]) });
     if (t >= victory.start) this.playVictory(victory, t, active, dt);
 
     for (const w of this.wrestlers) if (w.out && !active.has(w.id)) this.playOut(w, dt);
@@ -257,15 +305,31 @@ export class WrestleMatch {
     }
     for (const w of free) {
       const o = w.foe === null ? null : this.wrestlers[w.foe];
-      if (!o) this.circle(w, dt, beat);
-      else if (o.foe !== w.id) this.gangUp(w, o, dt, beat);
-      else if (w.id < o.id) this.brawl(w, o, dt, beat);
+      if (!o) this.circle(w, dt);
+      else if (o.foe !== w.id) this.gangUp(w, o, dt);
+      else if (w.id < o.id) this.brawl(w, o, dt);
     }
+    this.spaceFights(free, dt);
     this.separate();
-    for (const w of this.wrestlers) this.place(w);
+    for (const w of this.wrestlers) this.place(w, dt);
     this.crowd.update(t);
-    this.updateCamera(dt, beat);
+    this.updateCamera(dt);
     this.particles.update(dt);
+  }
+
+  /**
+   * Poses a wrestler for the move called `key`. When the key changes, the new pose eases in from the
+   * one they were in over `blend` seconds, so limbs never snap between moves (#98).
+   */
+  act(w, key, p, blend = BLEND) {
+    if (w.moveKey !== key) {
+      w.blendFrom = w.moveKey !== undefined && blend > 0 ? { from: capturePose(w.rig), at: this.t, dur: blend } : null;
+      w.moveKey = key;
+    }
+    const b = w.blendFrom;
+    const k = b ? (this.t - b.at) / b.dur : 1;
+    if (k >= 1) w.blendFrom = null;
+    pose(w.rig, p, k < 1 ? { from: b.from, k: ease(k) } : null);
   }
 
   // ------------------------------------------------------------ free movement
@@ -275,8 +339,8 @@ export class WrestleMatch {
   }
 
   /** Nobody free to fight (everyone else is in a throw): circle, and now and then run the ropes. */
-  circle(w, dt, beat) {
-    const slow = (beat.type === 'final' || beat.type === 'closeCall' ? 0.65 : 1) * quick(w);
+  circle(w, dt) {
+    const slow = (this.finalTwo ? 0.65 : 1) * quick(w);
     const ropeChance = w.kind.style === 'rebound' ? 0.45 : 0.22; // Satyaki lives on the ropes
     w.timer -= dt;
     const dx = (w.target?.x ?? w.x) - w.x;
@@ -286,47 +350,56 @@ export class WrestleMatch {
       if (w.target?.rope) {
         // Bounce off the ropes and run back across the ring.
         w.rebound = 0.3;
-        w.target = this.pickSpot(beat, 2.5);
+        w.target = this.pickSpot(2.5);
         w.speed = 4.2 * slow;
-      } else if (Math.random() < ropeChance) {
-        const [nx, nz] = SIDES[Math.floor(Math.random() * 4)];
-        const along = -3.5 + Math.random() * 7;
+      } else if (this.random() < ropeChance) {
+        const [nx, nz] = SIDES[Math.floor(this.random() * 4)];
+        const along = -3.5 + this.random() * 7;
         w.target = { x: nx * (HALF - 0.7) + (nz ? along : 0), z: nz * (HALF - 0.7) + (nx ? along : 0), rope: true };
-        if (this.nearAction(w.target, beat)) w.target = this.pickSpot(beat);
+        if (this.nearAction(w.target)) w.target = this.pickSpot();
         w.speed = 3.6 * slow;
       } else {
-        w.target = this.pickSpot(beat);
+        w.target = this.pickSpot();
         w.speed = 1.5 * slow;
       }
-      w.timer = 1.5 + Math.random() * 2;
-      return;
+      w.timer = 1.5 + this.random() * 2;
     }
-    const step = Math.min(dist, w.speed * dt);
-    w.x += (dx / dist) * step;
-    w.z += (dz / dist) * step;
+    const step = dist < 0.001 ? 0 : Math.min(dist, w.speed * dt);
+    if (step) {
+      w.x += (dx / dist) * step;
+      w.z += (dz / dist) * step;
+    }
     w.y = MAT_Y;
     w.walk += step * 3.2;
     // Face the action when moving slowly, the way you're running when fast.
     const near = this.nearest(w);
-    const face = w.speed > 2.5 || !near ? Math.atan2(-dx, -dz) : headingTo(w.x, w.z, near.x, near.z);
+    const face = (w.speed > 2.5 && step) || !near ? Math.atan2(-dx, -dz) : headingTo(w.x, w.z, near.x, near.z);
     w.heading = lerpAngle(w.heading, face, damp(6, dt));
     w.rebound = Math.max(0, w.rebound - dt);
-    pose(w.rig, { walk: w.walk, stride: Math.min(0.7, w.speed * 0.2), guard: w.speed > 2.5 ? 0.2 : 0.8, crouch: 0.25, lean: w.rebound ? -0.5 : 0.1 });
+    // Breaking into a run (or slowing down) changes the gait over a few tenths of a second, not at once.
+    const ease8 = damp(8, dt);
+    w.gaitStride = (w.gaitStride ?? 0.3) + (Math.min(0.7, w.speed * 0.2) - (w.gaitStride ?? 0.3)) * ease8;
+    w.gaitGuard = (w.gaitGuard ?? 0.8) + ((w.speed > 2.5 ? 0.2 : 0.8) - (w.gaitGuard ?? 0.8)) * ease8;
+    // Off the ropes: a quick lean back as they bounce.
+    const recoil = Math.sin((w.rebound / 0.3) * Math.PI);
+    this.act(w, 'circle', { walk: w.walk, stride: w.gaitStride, guard: w.gaitGuard, crouch: 0.25, lean: 0.1 - 0.6 * recoil });
   }
 
   /**
-   * Two wrestlers fighting each other: closing in, lock-ups, forearm strikes, shoves across the ring and
-   * circling, until they break apart and find someone new. Called once per pair, for both of them.
+   * Two wrestlers fighting each other, called once per pair for both of them. Besides closing in,
+   * lock-ups, forearm strikes, shoves and circling, there are longer exchanges with a wind-up, a
+   * reaction and a recovery (#97): a lock-up reversal, a rope rebound into a shoulder tackle, a body
+   * slam, and reeling back from a strike. Each character leans towards a signature move.
    */
-  brawl(a, b, dt, beat) {
+  brawl(a, b, dt) {
     let f = a.fight;
     if (!f || f !== b.fight) {
-      f = { move: 'close', t: 0, dur: 4, age: 0, life: 5 + Math.random() * 5, by: a };
+      f = { move: 'close', n: 0, t: 0, dur: 4, age: 0, life: 5 + this.random() * 5, by: a, m: {} };
       a.fight = b.fight = f;
     }
     f.t += dt;
     f.age += dt;
-    const pace = beat.type === 'final' ? 0.8 : 1;
+    const pace = this.finalTwo ? 0.8 : 1;
     const dx = b.x - a.x;
     const dz = b.z - a.z;
     const d = Math.hypot(dx, dz) || 0.001;
@@ -342,6 +415,10 @@ export class WrestleMatch {
       w.z += mz * s;
       w.walk += Math.abs(s) * 3.2;
     };
+    // Each stage of a move is its own key, so even a sudden change of stage eases in.
+    const act = (w, p, blend) => this.act(w, `${f.n}:${f.move}:${f.m.stage ?? ''}:${w === att ? 'att' : 'def'}`, p, blend);
+    const face = new Map(); // headings other than squaring up to each other
+    const m = f.m; // this move's own state
     const k = clamp01(f.t / f.dur);
     if (f.move === 'close') {
       // Size each other up and close in.
@@ -349,7 +426,7 @@ export class WrestleMatch {
         step(a, ux, uz, 1.8 * quick(a));
         step(b, -ux, -uz, 1.8 * quick(b));
       } else f.t = f.dur;
-      for (const w of [a, b]) pose(w.rig, { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+      for (const w of [a, b]) act(w, { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
     } else if (f.move === 'lockup') {
       // Collar-and-elbow tie-up, the pair swaying back and forth as each tries to drive the other.
       const sway = Math.cos(f.t * 3.2) * 0.7;
@@ -357,7 +434,7 @@ export class WrestleMatch {
       step(b, ux, uz, sway - (d > 1.1 ? 0.6 : 0));
       for (const w of [a, b]) {
         w.pulse = w.kind.style === 'shapeshift' ? 1 + 0.08 * Math.sin(f.t * 24) : 1; // Hidimbi changes form
-        pose(w.rig, { armsForward: 1, crouch: 0.35, lean: 0.3, walk: w.walk, stride: 0.12 });
+        act(w, { armsForward: 1, crouch: 0.35, lean: 0.3, walk: w.walk, stride: 0.12 });
       }
     } else if (f.move === 'strikes') {
       // Forearm shots, left and right; the defender rocks back with each one.
@@ -367,15 +444,29 @@ export class WrestleMatch {
       const recoil = p > 0.2 && p < 0.65 ? Math.sin(((p - 0.2) / 0.45) * Math.PI) : 0;
       step(def, ax, az, recoil * 1.4);
       step(att, ax, az, 0.5);
-      pose(att.rig, { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
-      pose(def.rig, { guard: 0.9, lean: -0.4 * recoil, crouch: 0.2, look: -0.25 * recoil, tilt: side * 0.2 * recoil });
+      act(att, { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
+      act(def, { guard: 0.9, lean: -0.4 * recoil, crouch: 0.2, look: -0.25 * recoil, tilt: side * 0.2 * recoil });
+    } else if (f.move === 'stagger') {
+      // The last shot landed: the defender reels back a few steps, shakes it off and covers up.
+      const s = Math.sin(k * Math.PI);
+      m.side ??= this.random() < 0.5 ? -1 : 1;
+      step(def, ax, az, 1.7 * (1 - k));
+      step(att, ax, az, 0.7 * (1 - k));
+      act(def, { guard: 0.3 + 0.6 * k, lean: -0.4 * s, look: -0.45 * s, tilt: m.side * 0.3 * s, twist: m.side * 0.25 * s, crouch: 0.15 + 0.15 * k, walk: def.walk, stride: 0.35 });
+      act(att, { guard: 0.7, crouch: 0.25, lean: 0.15, spread: 0.25 * s, walk: att.walk, stride: 0.25 });
     } else if (f.move === 'shove') {
       // Driving the defender back across the ring, maybe into the ropes.
       const drive = Math.sin(k * Math.PI) * 2.6 * (PUSHERS.has(att.kind.style) ? 1.25 : 1);
       step(att, ax, az, drive + (d > 1.15 ? 1.5 : 0));
       step(def, ax, az, drive);
-      pose(att.rig, { armsForward: 1.2, lean: 0.45, crouch: 0.3, walk: att.walk, stride: 0.45 });
-      pose(def.rig, { armsForward: 0.6, lean: -0.3, crouch: 0.2, walk: def.walk, stride: 0.4 });
+      act(att, { armsForward: 1.2, lean: 0.45, crouch: 0.3, walk: att.walk, stride: 0.45 });
+      act(def, { armsForward: 0.6, lean: -0.3, crouch: 0.2, walk: def.walk, stride: 0.4 });
+    } else if (f.move === 'reversal') {
+      this.reversal(f, att, def, k, act, face);
+    } else if (f.move === 'rebound') {
+      this.ropeRebound(f, att, def, dt, act, face);
+    } else if (f.move === 'slam') {
+      this.bodySlam(f, att, def, ax, az, k, act);
     } else {
       // Break, and circle each other looking for an opening.
       step(a, -uz, ux, 1.3);
@@ -384,21 +475,12 @@ export class WrestleMatch {
         step(a, -ux, -uz, 1.2);
         step(b, ux, uz, 1.2);
       }
-      for (const w of [a, b]) pose(w.rig, { walk: w.walk, stride: 0.35, guard: 0.8, crouch: 0.3 });
-    }
-    // Keep clear of a throw or close call going on elsewhere in the ring.
-    const c = this.actionCentre(beat);
-    if (c) {
-      const mx = (a.x + b.x) / 2 - c.x;
-      const mz = (a.z + b.z) / 2 - c.z;
-      const m = Math.hypot(mx, mz) || 0.001;
-      if (m < 3.6) for (const w of [a, b]) step(w, mx / m, mz / m, 2);
+      for (const w of [a, b]) act(w, { walk: w.walk, stride: 0.35, guard: 0.8, crouch: 0.3 });
     }
     a.y = b.y = MAT_Y;
-    a.heading = lerpAngle(a.heading, headingTo(a.x, a.z, b.x, b.z), damp(10, dt));
-    b.heading = lerpAngle(b.heading, headingTo(b.x, b.z, a.x, a.z), damp(10, dt));
+    a.heading = lerpAngle(a.heading, face.get(a) ?? headingTo(a.x, a.z, b.x, b.z), damp(10, dt));
+    b.heading = lerpAngle(b.heading, face.get(b) ?? headingTo(b.x, b.z, a.x, a.z), damp(10, dt));
     if (f.t < f.dur) return;
-    a.pulse = b.pulse = 1;
     if (f.age > f.life && f.move !== 'close') {
       // Break apart and go find someone else.
       a.last = b.id;
@@ -407,65 +489,335 @@ export class WrestleMatch {
     } else this.nextMove(f, a, b, d);
   }
 
-  /** The next exchange in a fight, and who leads it. Pushers (Kichaka, Dushasana) like to shove. */
+  /**
+   * Lock-up reversal: the attacker (Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi favour it) ducks
+   * under the tie-up, comes round behind and shoves the other one away, who stumbles, then turns to
+   * face them again.
+   */
+  reversal(f, att, def, k, act, face) {
+    const m = f.m;
+    if (!m.pivot) {
+      m.pivot = { x: def.x, z: def.z, angle: Math.atan2(att.z - def.z, att.x - def.x), heading: def.heading };
+      m.dir = this.random() < 0.5 ? -1 : 1;
+    }
+    const swing = ease((k - 0.22) / 0.33);
+    const shove = clamp01((k - 0.55) / 0.2);
+    const turn = ease((k - 0.75) / 0.25);
+    if (k < 0.55) {
+      // Round the back of them, keeping hold.
+      const angle = m.pivot.angle + m.dir * Math.PI * swing;
+      const r = 1.05 - 0.2 * Math.sin(swing * Math.PI);
+      const x = def.x + Math.cos(angle) * r;
+      const z = def.z + Math.sin(angle) * r;
+      att.walk += Math.hypot(x - att.x, z - att.z) * 3.2;
+      att.x = x;
+      att.z = z;
+    }
+    const dx = def.x - att.x;
+    const dz = def.z - att.z;
+    const d = Math.hypot(dx, dz) || 0.001;
+    const push = Math.sin(shove * Math.PI) * 3 * this.dt;
+    if (shove > 0 && shove < 1) {
+      def.x += (dx / d) * push;
+      def.z += (dz / d) * push;
+      att.x += (dx / d) * push * 0.5;
+      att.z += (dz / d) * push * 0.5;
+      def.walk += push * 3.2;
+    }
+    // The one reversed faces where they were facing until they turn round to find the attacker.
+    face.set(def, lerpAngle(m.pivot.heading, headingTo(def.x, def.z, att.x, att.z), turn));
+    m.stage = k < 0.22 ? 'tie' : k < 0.55 ? 'swing' : k < 0.75 ? 'shove' : 'turn';
+    att.pulse = att.kind.style === 'shapeshift' && k > 0.2 && k < 0.55 ? 1 + 0.1 * Math.sin(f.t * 24) : 1;
+    if (k < 0.22) {
+      act(att, { armsForward: 1, crouch: 0.35, lean: 0.3 });
+      act(def, { armsForward: 1, crouch: 0.35, lean: 0.3 });
+    } else if (k < 0.55) {
+      act(att, { armsForward: 0.6, crouch: 0.75, lean: 0.55, twist: -m.dir * 0.5, walk: att.walk, stride: 0.3 });
+      act(def, { armsForward: 0.7, crouch: 0.25, lean: 0.05, twist: m.dir * 0.45, look: -0.15 });
+    } else if (k < 0.75) {
+      act(att, { armsForward: 1.25, lean: 0.45, crouch: 0.3 }, 0.12);
+      act(def, { flail: 0.4, lean: 0.5, crouch: 0.15, walk: def.walk, stride: 0.55, armsForward: 0.4 }, 0.12);
+    } else {
+      act(att, { guard: 0.8, crouch: 0.25, lean: 0.1 });
+      act(def, { guard: 0.8, crouch: 0.3, walk: def.walk, stride: 0.3 });
+    }
+  }
+
+  /**
+   * Rope rebound (Satyaki's signature): the attacker runs back to the ropes, bounces off them and comes
+   * back with a shoulder tackle that knocks the other one down; they get up again.
+   */
+  ropeRebound(f, att, def, dt, act, face) {
+    const m = f.m;
+    if (!m.stage) {
+      m.stage = 'out';
+      m.st = 0;
+      m.rope = this.ropePoint(att, def);
+    }
+    m.st += dt;
+    const speed = 5 * quick(att) * (this.finalTwo ? 0.8 : 1);
+    const toward = (x, z, s) => {
+      const dx = x - att.x;
+      const dz = z - att.z;
+      const d = Math.hypot(dx, dz);
+      const step = Math.min(d, s * dt);
+      if (d > 0.001) {
+        att.x += (dx / d) * step;
+        att.z += (dz / d) * step;
+      }
+      att.walk += step * 2.2;
+      return d - step;
+    };
+    if (m.stage !== 'down') act(def, { guard: 0.9, crouch: 0.3, lean: -0.1 });
+    if (m.stage === 'out') {
+      // Back to the ropes, running.
+      face.set(att, headingTo(att.x, att.z, m.rope.x, m.rope.z));
+      act(att, { walk: att.walk, stride: 0.7, guard: 0.2, crouch: 0.2, lean: 0.2 });
+      if (toward(m.rope.x, m.rope.z, speed * Math.min(1, 0.4 + m.st * 1.5)) < 0.05) {
+        m.stage = 'bounce';
+        m.st = 0;
+      }
+    } else if (m.stage === 'bounce') {
+      // Off the ropes: leaning back into them, then springing off.
+      const s = Math.sin(clamp01(m.st / 0.3) * Math.PI);
+      face.set(att, headingTo(att.x, att.z, def.x, def.z));
+      act(att, { lean: -0.5 * s, spread: 0.5 * s, crouch: 0.25 }, 0.1);
+      if (m.st > 0.3) {
+        m.stage = 'back';
+        m.st = 0;
+      }
+    } else if (m.stage === 'back') {
+      act(att, { walk: att.walk, stride: 0.7, crouch: 0.3, lean: 0.35, armsForward: 0.5, spread: 0.3 });
+      if (toward(def.x, def.z, speed) < 0.85 || m.st > 2.5) {
+        m.stage = 'down';
+        m.st = 0;
+        m.from = { x: def.x - att.x, z: def.z - att.z };
+        this.sfx?.play('hit');
+      }
+    } else {
+      this.knockedDown(def, m.st, m.from, dt);
+      // Duryodhana raises his arms to the crowd over the one he knocked down.
+      act(att, { guard: 0.6, crouch: 0.2, armsUp: att.kind.style === 'showman' ? 0.8 * Math.sin(clamp01(m.st / 1.4) * Math.PI) : 0, spread: 0.3 });
+      if (m.st > KNOCKDOWN.up) f.t = f.dur;
+    }
+  }
+
+  /** Body slam (the lifters' signature): grab, hoist across the chest, drop flat on the mat, recover. */
+  bodySlam(f, att, def, ax, az, k, act) {
+    const m = f.m;
+    const s = k * f.dur;
+    m.from ??= { x: ax, z: az };
+    const ahead = (r) => ({ x: att.x + m.from.x * r, z: att.z + m.from.z * r });
+    m.stage = s < 0.5 ? 'grab' : s < 1.12 ? 'lift' : s < 1.35 ? 'slam' : 'down';
+    if (s < 0.5) {
+      // Get hold, low.
+      const p = ahead(1.05 - 0.2 * ease(s / 0.5));
+      def.x += (p.x - def.x) * damp(10, this.dt);
+      def.z += (p.z - def.z) * damp(10, this.dt);
+      act(att, { armsForward: 1, crouch: 0.5, lean: 0.4 });
+      act(def, { armsForward: 0.8, crouch: 0.3, lean: 0.2 });
+    } else if (s < 1.35) {
+      // Up across the chest, held there for a beat, then down.
+      const up = ease((s - 0.5) / 0.45) * (1 - ease((s - 1.12) / 0.23));
+      const p = ahead(0.85 - 0.35 * up + (s > 1.12 ? 0.6 * ease((s - 1.12) / 0.23) : 0));
+      def.x = p.x;
+      def.z = p.z;
+      def.y = MAT_Y + 1.15 * up;
+      def.pitch = ON_BACK * ease((s - 0.5) / 0.5);
+      def.ground = true; // never through the mat on the way down
+      def.tagDrop = -1.4 * ease((s - 0.5) / 0.5);
+      act(att, s < 1.12 ? { armsUp: 0.85 * up, armsForward: 1 - up, crouch: 0.45 * (1 - up) + 0.1 } : { armsForward: 1.2, crouch: 0.55, lean: 0.55 }, 0.12);
+      act(def, { flail: 0.7, spread: 0.4, walk: f.t * 8 }, 0.18);
+    } else {
+      if (!m.landed) {
+        m.landed = true;
+        this.sfx?.play('hit', 0);
+        this.particles.burst(new THREE.Vector3(def.x, MAT_Y + 0.15, def.z), { count: 8, colors: ['#c9c1ad', '#adb5bd'], speed: 2, up: 1, life: 0.45, size: 0.09, gravity: 6 });
+      }
+      this.knockedDown(def, s - 1.35 + 0.3, null, this.dt);
+      act(att, { guard: 0.7, crouch: 0.3, lean: 0.15, look: 0.2 });
+      if (s - 1.35 + 0.3 >= KNOCKDOWN.up) f.t = f.dur;
+    }
+  }
+
+  /** Flat on the back for a moment after a tackle or a slam, then back up to a crouch. */
+  knockedDown(w, since, from, dt) {
+    if (from) {
+      // The tackle carries them back a little as they go down.
+      const d = Math.hypot(from.x, from.z) || 1;
+      const slide = 1.6 * Math.exp(-since * 4) * dt;
+      w.x += (from.x / d) * slide;
+      w.z += (from.z / d) * slide;
+    }
+    const fall = ease(since / 0.3);
+    const rise = ease((since - KNOCKDOWN.lie) / (KNOCKDOWN.up - KNOCKDOWN.lie));
+    w.y = MAT_Y;
+    w.pitch = ON_BACK * fall * (1 - rise);
+    w.ground = true;
+    w.landed = since > 0.3; // resting on the mat: settle onto it
+    w.tagDrop = -1.4 * fall * (1 - rise);
+    this.act(w, `${w.fight?.n}:down`, { sit: Math.sin(rise * Math.PI) * 0.9, spread: 0.45 * (1 - rise), look: 0.3, crouch: 0.3 * rise, guard: 0.8 * rise, flail: since < 0.3 ? 0.4 : 0, walk: since * 8 }, 0.15);
+  }
+
+  /** Where the attacker runs to the ropes for a rebound: straight back, away from the other one. */
+  ropePoint(att, def) {
+    const dx = att.x - def.x;
+    const dz = att.z - def.z;
+    const d = Math.hypot(dx, dz) || 0.001;
+    const ux = dx / d;
+    const uz = dz / d;
+    const lim = HALF - 0.75;
+    let reach = 4;
+    if (Math.abs(ux) > 0.01) reach = Math.min(reach, ((ux > 0 ? lim : -lim) - att.x) / ux);
+    if (Math.abs(uz) > 0.01) reach = Math.min(reach, ((uz > 0 ? lim : -lim) - att.z) / uz);
+    return { x: att.x + ux * reach, z: att.z + uz * reach, reach };
+  }
+
+  /** The next exchange in a fight, and who leads it. Each character leans towards their signature. */
   nextMove(f, a, b, d) {
+    const prev = f.move;
+    const prevBy = f.by;
     f.t = 0;
-    f.by = Math.random() < 0.5 ? a : b;
+    f.n++;
+    f.m = {};
+    f.by = this.random() < 0.5 ? a : b;
     if (d > 1.4) {
       f.move = 'close';
       f.dur = 4; // ends as soon as they meet
       return;
     }
-    const r = Math.random();
-    if (PUSHERS.has(f.by.kind.style) && r < 0.4) f.move = 'shove';
-    else f.move = r < 0.3 ? 'lockup' : r < 0.6 ? 'strikes' : r < 0.8 ? 'shove' : 'circle';
-    f.dur = { lockup: 1.2 + Math.random() * 0.8, strikes: 1.25, shove: 1, circle: 0.8 + Math.random() * 0.6 }[f.move];
+    const r = this.random();
+    if (prev === 'strikes' && r < 0.4) {
+      // The last forearm landed: the one on the receiving end reels back.
+      f.by = prevBy;
+      f.move = 'stagger';
+    } else if (r < 0.45) {
+      f.move = SIGNATURE[f.by.kind.style] ?? 'strikes';
+    } else {
+      const g = this.random();
+      f.move = g < 0.2 ? 'lockup' : g < 0.38 ? 'strikes' : g < 0.52 ? 'shove' : g < 0.66 ? 'circle' : g < 0.78 ? 'reversal' : g < 0.89 ? 'slam' : 'rebound';
+    }
+    if (f.move === 'rebound') {
+      // A rope rebound needs a run-up, and no throw going on where they'd run.
+      const att = f.by;
+      const rope = this.ropePoint(att, att === a ? b : a);
+      if (rope.reach < 1.2 || this.nearAction(rope)) f.move = 'strikes';
+    }
+    f.dur = { lockup: 1.2 + this.random() * 0.8, strikes: 1.25, stagger: 0.8, shove: 1, circle: 0.8 + this.random() * 0.6, reversal: 2.3, rebound: 6, slam: 1.35 - 0.3 + KNOCKDOWN.up }[f.move];
   }
 
-  /** Two on one: the odd wrestler out joins the nearest fight and lays in forearm shots. */
-  gangUp(w, o, dt, beat) {
-    const dx = o.x - w.x;
-    const dz = o.z - w.z;
+  /**
+   * Two on one: the odd wrestler out joins the nearest fight from the side (so the three don't pile
+   * up in a line) and lays in forearm shots.
+   */
+  gangUp(w, o, dt) {
+    const p = o.foe === null ? null : this.wrestlers[o.foe];
+    let tx = o.x;
+    let tz = o.z;
+    let reach = 1.25;
+    if (p && !p.out) {
+      // A flank: beside the one they're attacking, off the line between the two already fighting.
+      const fx = p.x - o.x;
+      const fz = p.z - o.z;
+      const fd = Math.hypot(fx, fz) || 0.001;
+      const side = (w.x - o.x) * -fz + (w.z - o.z) * fx >= 0 ? 1 : -1;
+      tx = o.x + (-fz / fd) * side * 1.15 - (fx / fd) * 0.25;
+      tz = o.z + (fx / fd) * side * 1.15 - (fz / fd) * 0.25;
+      reach = 0.2;
+    }
+    const dx = tx - w.x;
+    const dz = tz - w.z;
     const d = Math.hypot(dx, dz) || 0.001;
     w.y = MAT_Y;
     w.heading = lerpAngle(w.heading, headingTo(w.x, w.z, o.x, o.z), damp(10, dt));
-    if (d > 1.35) {
-      const s = Math.min(d - 1.3, 2 * quick(w) * dt * (beat.type === 'final' ? 0.8 : 1));
+    if (d > reach + 0.15) {
+      const s = Math.min(d - reach, 2 * quick(w) * dt * (this.finalTwo ? 0.8 : 1));
       w.x += (dx / d) * s;
       w.z += (dz / d) * s;
       w.walk += s * 3.2;
       w.swing = 0;
-      pose(w.rig, { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+      this.act(w, 'gang:close', { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
       return;
     }
     w.swing += dt;
-    const p = (w.swing * 2) % 1;
+    const ph = (w.swing * 2) % 1;
     const side = Math.floor(w.swing * 2) % 2 ? 1 : -1;
-    const blow = p < 0.35 ? Math.sin((p / 0.35) * Math.PI) : 0;
-    pose(w.rig, { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
+    const blow = ph < 0.35 ? Math.sin((ph / 0.35) * Math.PI) : 0;
+    this.act(w, 'gang:hit', { armsForward: 0.3 + blow, twist: side * 0.6 * blow, lean: 0.2 + 0.25 * blow, crouch: 0.25, guard: 0.5 * (1 - blow) });
   }
 
-  pickSpot(beat, radius = 4.6) {
+  /**
+   * Room for every fight (#100): each pair (with anyone ganging up on them) keeps its own part of the
+   * mat, drifting away from neighbouring fights, from any throw or close call, and off the ropes.
+   * Both of a pair move together, so they stay in reach of each other.
+   */
+  spaceFights(free, dt) {
+    const groups = new Map();
+    for (const w of free) {
+      const o = w.foe === null ? null : this.wrestlers[w.foe];
+      if (o && o.foe === w.id && w.id < o.id) {
+        const g = { members: [w, o], x: (w.x + o.x) / 2, z: (w.z + o.z) / 2, px: 0, pz: 0 };
+        groups.set(w.id, g).set(o.id, g);
+      }
+    }
+    for (const w of free) {
+      const o = w.foe === null ? null : this.wrestlers[w.foe];
+      if (o && o.foe !== w.id) groups.get(o.id)?.members.push(w);
+    }
+    const list = [...new Set(groups.values())];
+    const away = (g, x, z, room, strength) => {
+      const dx = g.x - x;
+      const dz = g.z - z;
+      const d = Math.hypot(dx, dz);
+      if (d >= room) return;
+      const k = ((room - d) / room) * strength;
+      if (d < 0.01) {
+        g.px += k;
+        return;
+      }
+      g.px += (dx / d) * k;
+      g.pz += (dz / d) * k;
+    };
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        away(list[i], list[j].x, list[j].z, ROOM, 1);
+        away(list[j], list[i].x, list[i].z, ROOM, 1);
+      }
+    }
+    for (const g of list) {
+      for (const c of this.actionCentres()) away(g, c.x, c.z, 4, 1.6);
+      // Off the ropes: they are for throws (and Satyaki's rebounds).
+      const lim = HALF - 1.7;
+      if (Math.abs(g.x) > lim) g.px -= Math.sign(g.x) * (Math.abs(g.x) - lim) * 0.8;
+      if (Math.abs(g.z) > lim) g.pz -= Math.sign(g.z) * (Math.abs(g.z) - lim) * 0.8;
+      const k = Math.min(1, Math.hypot(g.px, g.pz));
+      const n = Math.hypot(g.px, g.pz) || 1;
+      const s = 2 * k * dt;
+      for (const w of g.members) {
+        w.x += (g.px / n) * s;
+        w.z += (g.pz / n) * s;
+      }
+    }
+  }
+
+  pickSpot(radius = 4.6) {
     for (let i = 0; i < 8; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.sqrt(Math.random()) * radius;
+      const a = this.random() * Math.PI * 2;
+      const r = Math.sqrt(this.random()) * radius;
       const p = { x: Math.cos(a) * r, z: Math.sin(a) * r };
-      if (!this.nearAction(p, beat)) return p;
+      if (!this.nearAction(p)) return p;
     }
     return { x: 0, z: 0 };
   }
 
-  /** Where in the ring a throw or close call is happening, if one is. */
-  actionCentre(beat) {
-    if (beat.type !== 'elimination' && beat.type !== 'closeCall') return null;
-    const [nx, nz] = SIDES[beat.side];
-    return { x: nx * (HALF - 1.5) + (nz ? beat.spot : 0), z: nz * (HALF - 1.5) + (nx ? beat.spot : 0) };
+  /** Where in the ring throws or a close call are happening right now (there can be two at once). */
+  actionCentres() {
+    return (this.actions ?? []).map((b) => this.sideFrame(b.side, b.spot).at(HALF - 1.5));
   }
 
   /** Keep free wrestlers out of the way of a throw or close call. */
-  nearAction(p, beat) {
-    const c = this.actionCentre(beat);
-    return c !== null && Math.hypot(p.x - c.x, p.z - c.z) < 3.2;
+  nearAction(p) {
+    return this.actionCentres().some((c) => Math.hypot(p.x - c.x, p.z - c.z) < 3.2);
   }
 
   nearest(w) {
@@ -492,7 +844,9 @@ export class WrestleMatch {
         const dx = b.x - a.x;
         const dz = b.z - a.z;
         const d = Math.hypot(dx, dz) || 0.001;
-        const min = a.foe === b.id || b.foe === a.id ? 1.05 : 1.45; // fighting: up close
+        // Fighting: up close; holding on (a reversal, a slam) closer still.
+        const together = a.fight && a.fight === b.fight;
+        const min = together && CONTACT.has(a.fight.move) ? 0.45 : a.foe === b.id || b.foe === a.id ? 1.05 : 1.45;
         if (d < min) {
           const push = (min - d) / 2;
           a.x -= (dx / d) * push;
@@ -509,12 +863,15 @@ export class WrestleMatch {
     }
   }
 
-  place(w) {
+  place(w, dt = 0) {
     const r = w.rig;
+    // Tipping over and getting up are smoothed, so a move that ends early never snaps the body upright.
+    w.shownPitch = w.shownPitch === undefined ? w.pitch ?? 0 : lerpAngle(w.shownPitch, w.pitch ?? 0, damp(16, dt));
+    w.shownRoll = w.shownRoll === undefined ? w.roll ?? 0 : lerpAngle(w.shownRoll, w.roll ?? 0, damp(16, dt));
     r.root.position.set(w.x, w.y, w.z);
     r.root.rotation.y = w.heading;
-    r.root.rotation.x = w.pitch ?? 0;
-    r.root.rotation.z = w.roll ?? 0;
+    r.root.rotation.x = w.shownPitch;
+    r.root.rotation.z = w.shownRoll;
     r.root.scale.setScalar(w.baseScale * (w.pulse ?? 1));
     r.root.visible = !w.flicker;
     // Thrown wrestlers (and those sitting at ringside) rest on the floor: measure the body's actual
@@ -546,7 +903,8 @@ export class WrestleMatch {
     const r = w.rig;
     const overRing = Math.abs(r.root.position.x) < HALF + 0.5 && Math.abs(r.root.position.z) < HALF + 0.5;
     const floor = overRing ? MAT_Y : 0;
-    const gap = floor - lowestBodyPoint(r);
+    // Knockdowns in the ring (often several at once) check a sample of the detailed body; throws exactly.
+    const gap = floor - lowestBodyPoint(r, r.skinnedRig && !w.out && w.mode === 'roam' ? 3 : 1);
     // In the air (thrown, before landing) only ever lift; once landed, settle onto the floor.
     return w.landed ? gap : Math.max(0, gap);
   }
@@ -569,7 +927,7 @@ export class WrestleMatch {
     return this.anchors.get(key);
   }
 
-  playElimination(b, t, active) {
+  playElimination(b, t, active, dt) {
     const v = this.wrestlers[b.victim];
     const h = this.wrestlers[b.thrower];
     active.add(v.id);
@@ -583,43 +941,52 @@ export class WrestleMatch {
     const overhead = LIFTERS.has(h.kind.style);
     const hipToss = HIP_TOSS.has(h.kind.style);
     const push = PUSHERS.has(h.kind.style) ? 0.45 : 0.25;
+    // Facing back into the ring, square to the ropes: the way the victim faces the thrower in the
+    // grapple, and goes over backwards.
+    const intoRing = (w) => headingTo(w.x, w.z, w.x - f.nx, w.z - f.nz);
+    const tipBack = overhead ? 0 : 0.3; // non-lifters' victims lean back over the rope as the throw starts
     // Hidimbi changes form mid-grapple: her outline pulses while she's locked up.
     const shapeshift = (w) => (w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1);
-    v.pulse = h.pulse = 1;
-    h.flicker = false;
 
     if (t < b.grappleAt) {
-      // Meet at the ropes.
-      const k = ease((t - b.start) / PACE.approach);
-      const av = this.anchor(b, v);
-      const ah = this.anchor(b, h);
-      v.x = av.x + (pv.x - av.x) * k;
-      v.z = av.z + (pv.z - av.z) * k;
-      h.x = ah.x + (ph.x - ah.x) * k;
-      h.z = ah.z + (ph.z - ah.z) * k;
-      v.y = h.y = MAT_Y;
-      v.heading = lerpAngle(av.heading, headingTo(v.x, v.z, h.x, h.z), k);
-      h.heading = lerpAngle(ah.heading, headingTo(h.x, h.z, v.x, v.z), k);
-      v.walk += 0.08;
-      h.walk += 0.08;
-      pose(v.rig, { walk: v.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
-      pose(h.rig, { walk: h.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+      // Meet at the ropes. Strides are paced by distance covered (#99), shorten as they arrive, and
+      // the hands come up to take hold just as they meet (#98).
+      const raw = (t - b.start) / PACE.approach;
+      const k = ease(raw);
+      const reach = ease((raw - 0.6) / 0.4);
+      for (const [w, from, to] of [[v, this.anchor(b, v), pv], [h, this.anchor(b, h), ph]]) {
+        const x = from.x + (to.x - from.x) * k;
+        const z = from.z + (to.z - from.z) * k;
+        w.walk += Math.hypot(x - w.x, z - w.z) * 3.2;
+        w.x = x;
+        w.z = z;
+        w.y = MAT_Y;
+      }
+      v.heading = lerpAngle(this.anchor(b, v).heading, headingTo(v.x, v.z, h.x, h.z), k);
+      h.heading = lerpAngle(this.anchor(b, h).heading, headingTo(h.x, h.z, v.x, v.z), k);
+      const stride = 0.4 * (1 - reach);
+      this.act(v, 'approach', { walk: v.walk, stride, guard: 0.8 * (1 - reach), armsForward: reach, crouch: 0.25 + 0.05 * reach, lean: 0.15 * reach });
+      this.act(h, 'approach', { walk: h.walk, stride, guard: 0.8 * (1 - reach), armsForward: reach, crouch: 0.25 + 0.1 * reach, lean: 0.3 * reach });
     } else if (t < b.throwAt) {
-      // Grapple, edging the victim back to the ropes.
+      // Grapple, edging the victim back to the ropes; it settles before the throw.
       const k = (t - b.grappleAt) / PACE.grapple;
-      const shake = Math.sin(t * 22) * 0.04;
+      const settle = ease((k - 0.75) / 0.25);
+      const shake = Math.sin(t * 22) * 0.04 * (1 - settle);
       v.x = pv.x + f.nx * push * k + shake;
       v.z = pv.z + f.nz * push * k;
+      v.y = h.y = MAT_Y;
       v.pulse = shapeshift(v);
       h.pulse = shapeshift(h);
       // Ghatotkacha's illusion: he flickers like a mirage just before the throw.
       h.flicker = h.kind.style === 'illusion' && t > b.throwAt - 0.45 && Math.floor(t * 18) % 2 === 0;
       h.x = ph.x + f.nx * 0.35 * k;
       h.z = ph.z + f.nz * 0.35 * k;
-      v.heading = headingTo(v.x, v.z, h.x, h.z);
+      v.heading = lerpAngle(headingTo(v.x, v.z, h.x, h.z), intoRing(v), settle);
       h.heading = headingTo(h.x, h.z, v.x, v.z);
-      pose(v.rig, { armsForward: 1, crouch: 0.3, lean: 0.15 - k * 0.3 });
-      pose(h.rig, { armsForward: 1, crouch: 0.35, lean: 0.3 });
+      v.pitch = tipBack * settle;
+      this.act(v, 'grapple', { armsForward: 1, crouch: 0.3, lean: 0.15 - k * 0.3 });
+      // Lifters sink their weight to load the lift; everyone else drives in.
+      this.act(h, 'grapple', { armsForward: 1, crouch: 0.35 + (overhead ? 0.15 * settle : 0), lean: 0.3 });
       this.emit(`grapple:${b.start}`, { type: 'grapple', victim: v, thrower: h });
     } else if (t < b.landAt) {
       // The throw: over the top rope and down to the floor.
@@ -634,14 +1001,15 @@ export class WrestleMatch {
       let z;
       let y;
       let flip;
+      h.y = MAT_Y;
       if (overhead && k < 0.35) {
-        // Bhima's two-handed overhead toss: up first...
+        // Bhima's two-handed overhead toss: up first, the hands going from the grip to overhead...
         const q = ease(k / 0.35);
         x = start.x - f.nx * 0.6 * q;
         z = start.z - f.nz * 0.6 * q;
         y = MAT_Y + 1.9 * q;
         flip = 0.4 * q; // leaning back, held overhead
-        pose(h.rig, { armsUp: q, crouch: 0.2 * (1 - q) });
+        this.act(h, 'throw', { armsForward: 1 - q, armsUp: q, crouch: 0.5 - 0.3 * q, lean: 0.3 * (1 - q) });
       } else {
         // ...then out over the ropes (everyone else shoves straight through).
         const q = overhead ? (k - 0.35) / 0.65 : k;
@@ -650,22 +1018,26 @@ export class WrestleMatch {
         z = from.z + (landing.z - from.z) * q;
         y = from.y + (0.25 - from.y) * q + (overhead ? 1.6 : 2.9) * 4 * q * (1 - q);
         // Over backwards: from leaning back to flat on the back as they reach the floor.
-        const from0 = overhead ? 0.4 : 0.3;
+        const from0 = overhead ? 0.4 : tipBack;
         flip = from0 + (ON_BACK - from0) * ease(q);
         // Karna and Shikhandi send them through one full cartwheel, still landing on the back.
         v.roll = hipToss ? ease(q) * Math.PI * 2 : 0;
-        pose(h.rig, overhead ? { armsUp: 1 - q * 0.4, spread: q * 0.3 } : hipToss ? { armsForward: 1, twist: 0.8 * q, crouch: 0.3 } : { armsForward: 1.2, lean: 0.45 * (1 - q) });
+        this.act(h, overhead ? 'throw' : 'throw:release', overhead
+          ? { armsUp: 1 - q * 0.4, spread: q * 0.3, crouch: 0.2 * (1 - q) }
+          : hipToss ? { armsForward: 1, twist: 0.8 * q, crouch: 0.35 - 0.05 * q, lean: 0.3 * (1 - q) }
+            : { armsForward: 1 + 0.2 * Math.min(1, q * 4), lean: 0.3 + 0.15 * Math.min(1, q * 4) - 0.45 * q, crouch: 0.35 * (1 - q) });
       }
       v.x = x;
       v.z = z;
       v.y = y;
       v.pitch = flip;
-      v.heading = headingTo(v.x, v.z, 0, 0); // facing the ring: their back goes over the ropes first
+      v.heading = intoRing(v); // facing the ring: their back goes over the ropes first
       v.tagDrop = -1.4;
       v.ground = true; // never let any part of the body pass through the ring or the floor
       v.landed = false;
       v.hop = 0;
-      pose(v.rig, { flail: 1, spread: 0.6, walk: t * 8 });
+      // The hands let go of the grip as they go over, then flail.
+      this.act(v, 'thrown', { flail: 1, spread: 0.6, walk: t * 8 }, 0.2);
     } else {
       // Landed outside: flat on the back, then sitting up, while the camera holds.
       if (!this.fired.has(`out:${b.start}`)) {
@@ -680,8 +1052,6 @@ export class WrestleMatch {
       this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final });
       const since = t - b.landAt;
       v.roll = 0;
-      v.pulse = h.pulse = 1;
-      h.flicker = false;
       // The impact carries them a little further out as they bounce.
       const slide = 0.7 * (1 - Math.exp(-since * 5));
       v.x = landing.x + f.nx * slide;
@@ -699,21 +1069,22 @@ export class WrestleMatch {
       v.hop = hop;
       v.ground = true;
       v.landed = true; // resting on the floor: settle onto it, never hover
-      v.heading = headingTo(v.x, v.z, 0, 0);
+      // Square to the ropes as they land, turning to face the ring centre as they sit up.
+      v.heading = lerpAngle(intoRing(v), headingTo(v.x, v.z, 0, 0), sitUp);
       // Flat on the back (the bounce rocks them a little), then sitting up facing the ring.
       v.pitch = (ON_BACK - hop * 0.5) * (1 - sitUp);
       v.tagDrop = -1.4 * (1 - sitUp) - 0.9 * sitUp;
-      pose(v.rig, { sit: sitUp, spread: 0.4 * (1 - sitUp) + hop * 0.8, flail: hop > 0.05 ? 0.3 : 0, walk: t * 6, look: 0.3 });
-      // The thrower: Duryodhana plays to the crowd; everyone else squares up again.
+      this.act(v, 'landed', { sit: sitUp, spread: 0.4 * (1 - sitUp) + hop * 0.8, flail: hop > 0.05 ? 0.3 : 0, walk: t * 6, look: 0.3 }, 0.15);
+      // The thrower: Duryodhana plays to the crowd (turning at a steady rate, #99); everyone else squares up again.
       h.y = MAT_Y;
       if (h.kind.style === 'showman') {
-        h.heading += 0.04;
-        pose(h.rig, { armsUp: 1, spread: 0.5, walk: t * 6, stride: 0.1 });
+        h.heading += SHOWMAN_TURN * dt;
+        this.act(h, 'showman', { armsUp: 1, spread: 0.5, walk: t * 6, stride: 0.1 });
         if (!this.fired.has(`showman:${b.start}`)) this.crowd.showman(t);
         this.emit(`showman:${b.start}`, { type: 'showman', wrestler: h });
       } else {
-        h.heading = lerpAngle(h.heading, headingTo(h.x, h.z, landing.x, landing.z), 0.1);
-        pose(h.rig, { guard: 0.8, crouch: 0.2, look: -0.2 });
+        h.heading = lerpAngle(h.heading, headingTo(h.x, h.z, landing.x, landing.z), damp(6, dt));
+        this.act(h, 'squareUp', { guard: 0.8, crouch: 0.2, look: -0.2 });
       }
       if (t > b.end - 0.05) {
         h.mode = 'roam';
@@ -745,10 +1116,10 @@ export class WrestleMatch {
       w.z = aw.z + (pw.z - aw.z) * k;
       o.x = ao.x + (po.x - ao.x) * k;
       o.z = ao.z + (po.z - ao.z) * k;
-      w.heading = headingTo(w.x, w.z, o.x, o.z);
-      o.heading = headingTo(o.x, o.z, w.x, w.z);
-      pose(w.rig, { walk: t * 7, stride: 0.35, guard: 0.6, lean: -0.2 });
-      pose(o.rig, { armsForward: 1, walk: t * 7, stride: 0.35, lean: 0.35 });
+      w.heading = lerpAngle(aw.heading, headingTo(w.x, w.z, o.x, o.z), ease(since / 0.4));
+      o.heading = lerpAngle(ao.heading, headingTo(o.x, o.z, w.x, w.z), ease(since / 0.4));
+      this.act(w, 'cc:back', { walk: t * 7, stride: 0.35 * (1 - ease((since - 0.6) / 0.3)), guard: 0.6, lean: -0.2 });
+      this.act(o, 'cc:drive', { armsForward: 1, walk: t * 7, stride: 0.35 * (1 - ease((since - 0.6) / 0.3)), lean: 0.35 });
     } else if (since < 1.9) {
       // Teetering over the top rope.
       const k = (since - 0.9) / 1.0;
@@ -759,19 +1130,18 @@ export class WrestleMatch {
       w.heading = headingTo(w.x, w.z, o.x, o.z);
       o.heading = headingTo(o.x, o.z, w.x, w.z);
       w.pulse = w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1;
-      pose(w.rig, { lean: -0.95 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5), flail: 1, walk: t * 9, crouch: 0.15 });
-      pose(o.rig, { armsForward: 1.1, lean: 0.4 });
+      this.act(w, 'cc:teeter', { lean: -0.95 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5), flail: 1, walk: t * 9, crouch: 0.15 });
+      this.act(o, 'cc:drive', { armsForward: 1.1, lean: 0.4 });
     } else {
       // Back from the brink: both return towards the centre (Abhimanyu ducks out low and sideways).
       const k = ease((since - 1.9) / (PACE.closeCall - 1.9));
-      w.pulse = 1;
       const duck = w.kind.style === 'duck';
       w.x = pw.x - f.nx * 2.2 * k + (duck ? f.ux * 1.6 * k : 0);
       w.z = pw.z - f.nz * 2.2 * k + (duck ? f.uz * 1.6 * k : 0);
       o.x = po.x - f.nx * 1.6 * k;
       o.z = po.z - f.nz * 1.6 * k;
-      pose(w.rig, { guard: 0.8, crouch: duck ? 0.35 * (1 - k) + 0.25 : 0.25, walk: t * 6, stride: 0.3, lean: duck ? 0.4 * (1 - k) : -0.3 * (1 - k) });
-      pose(o.rig, { guard: 0.8, crouch: 0.25, walk: t * 6, stride: 0.3 });
+      this.act(w, 'cc:recover', { guard: 0.8, crouch: duck ? 0.35 * (1 - k) + 0.25 : 0.25, walk: t * 6, stride: 0.3, lean: duck ? 0.4 * (1 - k) : -0.3 * (1 - k) }, 0.3);
+      this.act(o, 'cc:recover', { guard: 0.8, crouch: 0.25, walk: t * 6, stride: 0.3 }, 0.3);
       if (t > b.end - 0.05) {
         w.mode = o.mode = 'roam';
         w.target = o.target = null;
@@ -798,11 +1168,11 @@ export class WrestleMatch {
     w.y = MAT_Y + Math.abs(Math.sin(since * 5)) * 0.35 * k;
     // Turn to the camera (and the meeting) while celebrating.
     w.heading = lerpAngle(w.heading, headingTo(w.x, w.z, this.camPos.x, this.camPos.z) + Math.sin(since * 2) * 0.25, damp(4, dt));
-    pose(w.rig, { armsUp: k, spread: 0.35, walk: since * 5, stride: 0.15 * (1 - k) });
+    this.act(w, 'victory', { armsUp: k, spread: 0.35, walk: since * 5, stride: 0.15 * (1 - k) }, 0.3);
     this.confetti = (this.confetti ?? 0) - dt;
     if (this.confetti <= 0 && since < 8) {
       this.confetti = 0.25;
-      this.particles.burst(new THREE.Vector3((Math.random() - 0.5) * 8, 9 + Math.random() * 2, (Math.random() - 0.5) * 8), { count: 22, colors: CONFETTI, speed: 5, up: 2, life: 3.2, size: 0.16, gravity: 5, flat: true, spread: 3 });
+      this.particles.burst(new THREE.Vector3((this.random() - 0.5) * 8, 9 + this.random() * 2, (this.random() - 0.5) * 8), { count: 22, colors: CONFETTI, speed: 5, up: 2, life: 3.2, size: 0.16, gravity: 5, flat: true, spread: 3 });
     }
   }
 
@@ -812,62 +1182,84 @@ export class WrestleMatch {
     w.pitch = 0;
     w.tagDrop = -0.9;
     w.heading = lerpAngle(w.heading, headingTo(w.x, w.z, 0, 0), damp(2, dt));
-    pose(w.rig, { sit: 1, look: 0.3, armsForward: 0.3 });
+    // Once settled the pose never changes (only the heading does), so it isn't rebuilt every update.
+    if (w.moveKey !== 'out' || w.blendFrom) this.act(w, 'out', { sit: 1, look: 0.3, armsForward: 0.3 }, 0.5);
   }
 
   // ------------------------------------------------------------ camera
 
-  updateCamera(dt, beat) {
+  /**
+   * The camera circles the ring's centre for the whole match (#95), at a steady speed, distance and
+   * height, like the victory orbit. It only turns, a bounded amount, towards the action (one throw,
+   * or two at once, or the close call) and never pushes in for a ring-out. For the final two it eases,
+   * over a few seconds, into a closer orbit, and from there into the victory shot.
+   */
+  updateCamera(dt) {
     const t = this.t;
-    const b = beat;
-    // The camera circles the ring the whole match, the way it circles the winner at the end (#91).
-    let rate = 0.12;
-    let radius = 16;
-    let height = 9;
-    const look = new THREE.Vector3(0, MAT_Y + 0.8, 0);
-    if (b.type === 'intro') {
-      // A high, angled view of the ring that settles as the bell rings.
-      const k = ease(t / PACE.intro);
-      rate = 0.22;
-      radius = 20 - 4 * k;
-      height = 16 - 7 * k;
-    } else if (b.type === 'final' || b.type === 'closeCall' || (b.type === 'elimination' && b.final)) {
-      // Final two: circle the pair, the way the camera circles the winner.
-      const pair = this.inRing();
-      rate = 0.1;
-      radius = 11;
-      height = 6.5;
-      if (pair.length) look.set(pair.reduce((s, w) => s + w.x, 0) / pair.length, MAT_Y + 1, pair.reduce((s, w) => s + w.z, 0) / pair.length);
-    } else if (b.type === 'victory') {
-      const w = this.wrestlers[b.winner];
-      rate = 0.12;
-      radius = 10;
-      height = 5;
-      look.set(w.x, MAT_Y + 1.5, w.z);
-    }
-    // Ring-outs and the close call: keep circling, but turn to watch that side of the ring and the
-    // landing, and drift a little towards it so the throw stays in view from anywhere on the circle.
-    if (b.type === 'elimination' || b.type === 'closeCall') {
+    const beats = this.plan.beats;
+    const finalBeat = beats.find((b) => b.type === 'final');
+    const victory = beats[beats.length - 1];
+    const lerp = (a, b, k) => a + (b - a) * k;
+    const { live, final } = this.aspect < 1 ? CAMERA.portrait : CAMERA;
+    const intro = ease(t / PACE.intro);
+    const tight = ease((t - finalBeat.start) / CAMERA.toFinal);
+    const win = ease((t - victory.start) / CAMERA.toVictory);
+    const shot = (key) => lerp(lerp(lerp(CAMERA.intro[key] ?? live[key], live[key], intro), final[key], tight), CAMERA.victory[key], win);
+    const radius = shot('radius');
+    const height = shot('height');
+    // Where to aim: the action, weighted as it builds and fades, pulled back to at most `aim` from
+    // the centre of the ring so the rest of the ring stays in the picture.
+    let fx = 0;
+    let fz = 0;
+    let weight = 0;
+    let low = 0;
+    const toward = (x, z, k) => {
+      fx += x * k;
+      fz += z * k;
+      weight += k;
+    };
+    for (const b of this.actions ?? []) {
       const f = this.sideFrame(b.side, b.spot);
-      const c = f.at(b.type === 'elimination' ? HALF + 0.8 : HALF - 0.8);
-      const weight = b.type === 'elimination'
-        ? ease((t - b.start) / (PACE.approach * 0.8)) * (1 - ease((t - (b.end - PACE.reset - 0.3)) / 0.7))
-        : ease((t - b.start) / 0.8) * (1 - ease((t - (b.end - 0.5)) / 0.5));
-      look.lerp(new THREE.Vector3(c.x, 1.6, c.z), 0.8 * weight);
-      radius -= 3 * weight;
+      if (b.type === 'elimination') {
+        const k = ease((t - b.start) / (PACE.approach * 0.8)) * (1 - ease((t - (b.end - PACE.reset - 0.3)) / 0.7));
+        const c = f.at(HALF + 0.8); // between the rope and the landing
+        toward(c.x, c.z, k);
+        low = Math.max(low, k * ease((t - b.grappleAt) / PACE.grapple));
+      } else {
+        const c = f.at(HALF - 0.8);
+        toward(c.x, c.z, ease((t - b.start) / 0.8) * (1 - ease((t - (b.end - 0.5)) / 0.5)));
+      }
     }
-    this.orbit += rate * dt;
-    const close = b.type === 'victory' || b.type === 'final' || b.type === 'closeCall' || (b.type === 'elimination' && b.final);
-    const centre = close ? look : look.clone().multiplyScalar(0.35); // the whole ring: stay round its middle
-    const targetPos = new THREE.Vector3(centre.x + Math.cos(this.orbit) * radius, height, centre.z + Math.sin(this.orbit) * radius);
-    const targetLook = look;
+    if (tight > 0 && t < victory.start) {
+      const pair = this.inRing();
+      if (pair.length) toward(pair.reduce((s, w) => s + w.x, 0) / pair.length, pair.reduce((s, w) => s + w.z, 0) / pair.length, tight * 0.6);
+    }
+    if (win > 0) {
+      const w = this.wrestlers[victory.winner];
+      fx *= 1 - win;
+      fz *= 1 - win;
+      weight *= 1 - win;
+      toward(w.x, w.z, win);
+    }
+    const look = new THREE.Vector3(0, lerp(lerp(MAT_Y + 0.8, 0.9, low), MAT_Y + 1.5, win), 0);
+    if (weight > 0) {
+      const strength = Math.min(1, weight);
+      look.x = (fx / weight) * strength;
+      look.z = (fz / weight) * strength;
+      const aim = shot('aim');
+      const off = Math.hypot(look.x, look.z);
+      if (off > aim) {
+        look.x *= aim / off;
+        look.z *= aim / off;
+      }
+    }
+    this.orbit += lerp(CAMERA.intro.rate, CAMERA.live.rate, intro) * dt;
+    this.camPos.set(Math.cos(this.orbit) * radius, height, Math.sin(this.orbit) * radius);
     if (!this.camReady) {
-      this.camPos.copy(targetPos);
-      this.camLook.copy(targetLook);
+      this.camLook.copy(look);
       this.camReady = true;
     }
-    this.camPos.lerp(targetPos, damp(3, dt));
-    this.camLook.lerp(targetLook, damp(4, dt));
+    this.camLook.lerp(look, damp(CAMERA.aimRate, dt));
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
   }

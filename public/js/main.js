@@ -399,7 +399,7 @@ async function wrestle(modelStyle = 'classic') {
       if (e.type === 'bell') hud.note('🔔 Ding ding! Last one in the ring leads today’s standup.', true);
       else if (e.type === 'out') {
         hud.wrestleOut(e.victim.id);
-        hud.callout(`${e.victim.name} is out!`);
+        hud.outCallout(e.victim.name);
         hud.note(THROW_TEXT[e.thrower.kind.style]?.(e.thrower, e.victim) ?? `${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`);
       } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
       else if (e.type === 'closeCall') hud.note(closeCallText(e.wrestler, e.other)); else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);

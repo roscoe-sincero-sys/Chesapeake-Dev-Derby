@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { mat, box, ball, cyl, cone, torus, at, group, makeSprite, nameTagTexture } from './util3d.js';
-import { createWrestlerRig, poseWrestlerModel, modelLowestFoot } from './wrestler-models.js';
+import { createWrestlerRig, poseWrestlerModel, captureWrestlerModel, modelLowestFoot } from './wrestler-models.js';
 export { prepareWrestlerModels } from './wrestler-models.js';
 
 const GOLD = '#d4a017';
@@ -354,13 +354,30 @@ function legReach(leg) {
   return ankle - centre + half;
 }
 
+// The classic rig's joints, as [object, rotation axis] pairs, for capturing and blending poses.
+const classicJoints = (w) => [
+  ...w.legs.flatMap((l) => [[l.thigh, 'x'], [l.thigh, 'z'], [l.shin, 'x']]),
+  ...w.arms.flatMap((a) => [[a.upper, 'x'], [a.upper, 'z'], [a.fore, 'x']]),
+  [w.torso, 'x'], [w.torso, 'y'], [w.torso, 'z'], [w.head, 'x'],
+];
+
+/**
+ * The rig's current pose, to blend from when a wrestler moves from one move into the next (#98): a
+ * new pose then eases in from this one instead of snapping (pose's `blend` argument).
+ */
+export function capturePose(w) {
+  if (w.skinnedRig) return captureWrestlerModel(w);
+  return classicJoints(w).map(([o, axis]) => o.rotation[axis]);
+}
+
 /**
  * Poses the rig. Anything not given relaxes to neutral.
  * pose: { walk (phase), stride, armsUp, armsForward, guard, lean, twist, tilt, crouch, flail, spread, wide, sit, look }
  * The hips are then set so the lower foot rests exactly on the floor (no feet through the ring).
+ * `blend` { from: capturePose(), k: 0..1 } shows a mix: k of this pose and the rest of the captured one.
  */
-export function pose(w, p = {}) {
-  if (w.skinnedRig) return poseWrestlerModel(w, p);
+export function pose(w, p = {}, blend = null) {
+  if (w.skinnedRig) return poseWrestlerModel(w, p, blend);
   const t = p.walk ?? 0;
   const stride = p.stride ?? 0;
   const swing = Math.sin(t) * stride;
@@ -397,16 +414,25 @@ export function pose(w, p = {}) {
     arm.upper.rotation.z = side * (0.12 + guard * 0.25 + flail * 0.9 + (p.spread ?? 0) * 1.2);
     arm.fore.rotation.x = guard * 1.3 + fwd * 0.35 + up * 0.2;
   });
+  if (blend && blend.k < 1) {
+    classicJoints(w).forEach(([o, axis], i) => {
+      o.rotation[axis] = blend.from[i] + (o.rotation[axis] - blend.from[i]) * blend.k;
+    });
+    const mixed = Math.max(legReach(w.legs[0]), legReach(w.legs[1]));
+    w.hips.position.y = sit > 0 ? Math.max(mixed, 0.34) : mixed;
+  }
 }
 
 /**
  * The lowest point of the body in world space: everything except the gear carried on the back (maces,
  * bows, quivers, shields, swords), which is marked `userData.gear`. A wrestler lying on their back rests
  * on their body, not propped up on a mace or a bow. Exact, from the vertices; call after posing.
+ * `every` > 1 checks only every that-many-th vertex: cheaper, and within a centimetre or so on the
+ * detailed models (used for knockdowns in the ring, where several can be down at once).
  */
 const _v = new THREE.Vector3();
 const supportVertices = new WeakMap();
-export function lowestBodyPoint(rig) {
+export function lowestBodyPoint(rig, every = 1) {
   rig.root.updateMatrixWorld(true);
   if (rig.skinnedRig) rig.body.skeleton.update();
   let lowest = Infinity;
@@ -419,8 +445,8 @@ export function lowestBodyPoint(rig) {
         indices = o.geometry.index ? [...new Set(o.geometry.index.array)] : Array.from({ length: pos.count }, (_, i) => i);
         supportVertices.set(o.geometry, indices);
       }
-      for (const i of indices) {
-        const y = o.getVertexPosition(i, _v).applyMatrix4(o.matrixWorld).y;
+      for (let n = 0; n < indices.length; n += every) {
+        const y = o.getVertexPosition(indices[n], _v).applyMatrix4(o.matrixWorld).y;
         if (y < lowest) lowest = y;
       }
     }

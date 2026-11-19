@@ -104,6 +104,7 @@ async function start(count) {
     const buildStart = performance.now();
     match = new WrestleMatch(plan.wrestlers.map((w) => w.name), {
       previewPlan: plan,
+      rng: mulberry32(seed + 1), // free movement too, so a seed replays the same match
       onEvent(event) {
         if (event.type === 'out') run.eliminations++;
       },

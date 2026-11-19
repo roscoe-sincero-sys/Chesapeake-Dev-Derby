@@ -52,6 +52,11 @@ export function prepareWrestlerModels() {
   return pending;
 }
 
+/** Supplies already-decoded assets (Node tests run the HD match without a browser loader). */
+export function installWrestlerAssets(source) {
+  assets = source;
+}
+
 /** The optional source parameter also allows tests to use the real rig without browser image APIs. */
 export function createWrestlerRig(kind, belt = '#ffffff', source = assets) {
   const look = WRESTLER_LOOKS[kind.id];
@@ -449,6 +454,7 @@ const az = new THREE.Vector3(0, 0, 1);
 const delta = new THREE.Quaternion();
 const extra = new THREE.Quaternion();
 const temp = new THREE.Vector3();
+const target = new THREE.Quaternion();
 
 /** Apply a bind-space rotation through the parent rest orientation. */
 function rotate(w, name, x = 0, y = 0, z = 0) {
@@ -459,7 +465,12 @@ function rotate(w, name, x = 0, y = 0, z = 0) {
   bone.quaternion.copy(rest.parent).invert().multiply(delta).multiply(rest.parent).multiply(rest.q).normalize();
 }
 
-export function poseWrestlerModel(w, p = {}) {
+/** Every bone's current rotation, to blend from (see pose in wrestlers.js). */
+export function captureWrestlerModel(w) {
+  return Object.keys(w.rests).map((name) => w.bones[name].quaternion.clone());
+}
+
+export function poseWrestlerModel(w, p = {}, blend = null) {
   const t = p.walk ?? 0, stride = p.stride ?? 0;
   const swing = Math.sin(t) * stride;
   const crouch = p.crouch ?? 0, sit = p.sit ?? 0;
@@ -488,6 +499,14 @@ export function poseWrestlerModel(w, p = {}) {
   }
   rotate(w, 'spine_01', (p.lean ?? 0) + crouch * 0.25, p.twist ?? 0, -(p.tilt ?? 0));
   rotate(w, 'Head', -(p.look ?? 0));
+  if (blend && blend.k < 1) {
+    // Ease in from the captured pose, bone by bone, so a new move never snaps the limbs (#98).
+    Object.keys(w.rests).forEach((name, i) => {
+      const q = w.bones[name].quaternion;
+      target.copy(q);
+      q.copy(blend.from[i]).slerp(target, blend.k);
+    });
+  }
   w.scene.position.y = 0;
   w.root.updateMatrixWorld(true);
   w.body.skeleton.update();

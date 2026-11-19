@@ -7,6 +7,32 @@ to release.
 
 ## [Unreleased]
 
+### Changed
+- **Wrestling camera (#95):** circles the middle of the ring at a steady distance, height and speed for the
+  whole match, turning only a bounded amount towards a throw instead of pushing in and pulling back for
+  each ring-out. It eases into a closer orbit for the final two over three seconds, and from there into the
+  victory shot. Portrait screens watch from a little further back, with a view as wide as on a 0.6 screen.
+- **Ring-outs (#96):** come at uneven intervals, and while at least four are in the ring two sometimes go
+  over the ropes together, on neighbouring sides, landing within a second of each other. Their callouts
+  combine ("Roscoe and Ada are out!"); each still crosses its own name off the list. The winner is still
+  drawn uniformly, and the final two still get their close call and a single last throw. Matches are a
+  little shorter on average: a twelve-wrestler match takes about 45 to 75 seconds.
+- **More wrestling moves (#97):** a lock-up reversal, a rope rebound into a shoulder tackle, a body slam,
+  and reeling back from a forearm shot, each with a wind-up, a reaction and a recovery. Each character
+  favours a signature move, so neighbouring fights look different.
+- **Room to fight (#100):** fights keep their own part of the mat, away from each other, from throws and
+  from the ropes, and a wrestler joining a fight two on one comes in from the side.
+
+### Fixed
+- **HD limbs no longer snap between moves (#98):** each new move eases in from the last pose, the hands come
+  up to take hold as the pair meet, and the victim tips back over the rope instead of jumping into the throw.
+- **Frame-rate independent wrestling (#99):** the approach's strides follow the distance walked, and
+  Duryodhana's celebration turns at a steady 2.4 radians per second, at any update rate.
+- The match's free movement uses its own seeded stream, so a seeded match (and the performance test's
+  seed) replays the same way.
+- Wrestlers sitting at ringside are no longer re-posed every update once settled, which more than pays for
+  the new moves (twelve HD wrestlers: 3.9 ms per update, against 4.4 ms in 1.4.0, measured in Node).
+
 ## [1.4.0] - 2026-11-17
 
 ### Changed
