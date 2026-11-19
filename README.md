@@ -316,8 +316,12 @@ Uses Node's built-in test runner — no extra packages. Covers:
   message is up: all of it on screen, none of it cut off, clear of the list and the Mute and Quit
   buttons, and a wide banner when the list is folded. Then the live seed-17 HD match at 1280 × 800 and
   at 844 × 390 with the list open: every frame the first paired message is up, none of either thrown body
-  (measured from the 3D scene) is under it. The live match needs a GPU to run in real time. Skipped when
-  Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is older than 22.
+  (measured from the 3D scene) is under it. The match runs on a stepped clock, 60 frames for each second
+  of match time however long they take to draw, so it plays the same with or without a GPU (a GPU only
+  makes it quicker). Skipped when Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is
+  older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
+  a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
+  checks that all of them ran.
 
 ## How it's put together
 
@@ -494,7 +498,9 @@ pick** and **Let's Wrestle Instead** without installing anything.
 
 **How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
 `npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
-repository's **Deployments → github-pages**. Pull requests run the tests and the build without deploying.
+repository's **Deployments → github-pages**. A separate **Browser tests** job runs
+`test/callout-browser.test.js` in headless Chrome on Node 22, and the deploy waits for it too. Pull
+requests run the tests, the browser tests and the build without deploying.
 The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
 
 To build and look at the demo yourself:

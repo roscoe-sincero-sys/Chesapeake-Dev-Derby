@@ -25,7 +25,9 @@ to release.
   short, wide banner (two long names aren't broken up down a narrow strip), smaller rather than over a
   landing. Long messages wrap on every screen and always fit on it, and are placed again when the list
   opens or closes, the phone turns, or the camera brings a landing under the message. A new browser test
-  (`test/callout-browser.test.js`) checks this in headless Chrome, including in the live HD match.
+  (`test/callout-browser.test.js`) checks this in headless Chrome, including in the live HD match, and
+  runs in its own **Browser tests** job on GitHub Actions (Node 22 and Chrome), where it must run rather
+  than skip. The deploy to GitHub Pages waits for it.
 
 ## [1.5.0] - 2026-11-18
 
