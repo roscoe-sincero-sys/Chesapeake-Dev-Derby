@@ -1148,9 +1148,9 @@ export class WrestleMatch {
     const overhead = LIFTERS.has(h.kind.style);
     const hipToss = HIP_TOSS.has(h.kind.style);
     const push = PUSHERS.has(h.kind.style) ? 0.45 : 0.25;
-    // Facing back into the ring, square to the ropes: the way the victim faces the thrower in the
-    // grapple, and goes over backwards.
-    const intoRing = (w) => headingTo(w.x, w.z, w.x - f.nx, w.z - f.nz);
+    // The grapple is square to the ropes. The victim faces in and goes over backwards.
+    const inwardHeading = headingTo(f.nx, f.nz, 0, 0);
+    const outwardHeading = headingTo(0, 0, f.nx, f.nz);
     // Satyaki: a run to the ropes, a bounce off them and a running tackle, when there's room (#106).
     const run = this.reboundRun(b, h, f, push);
     const move = run ? 'rebound' : overhead ? 'overhead' : hipToss ? 'hipToss' : 'shove';
@@ -1159,23 +1159,25 @@ export class WrestleMatch {
     const shapeshift = (w) => (w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1);
 
     if (run && t < b.throwAt) {
-      this.runUp(b, t, v, h, f, run, intoRing);
+      this.runUp(b, t, v, h, f, run, inwardHeading);
     } else if (t < b.grappleAt) {
       // Meet at the ropes. Strides are paced by distance covered (#99), shorten as they arrive, and
       // the hands come up to take hold just as they meet (#98).
       const raw = (t - b.start) / PACE.approach;
       const k = ease(raw);
       const reach = ease((raw - 0.6) / 0.4);
-      for (const [w, from, to] of [[v, this.anchor(b, v), pv], [h, this.anchor(b, h), ph]]) {
+      // Blend to the fixed grapple headings. A moving target can cross the 180° seam as the
+      // wrestlers approach, abruptly reversing a shortest-angle blend (#109).
+      for (const [w, to, facing] of [[v, pv, inwardHeading], [h, ph, outwardHeading]]) {
+        const from = this.anchor(b, w);
         const x = from.x + (to.x - from.x) * k;
         const z = from.z + (to.z - from.z) * k;
         w.walk += Math.hypot(x - w.x, z - w.z) * 3.2;
         w.x = x;
         w.z = z;
         w.y = MAT_Y;
+        w.heading = lerpAngle(from.heading, facing, k);
       }
-      v.heading = lerpAngle(this.anchor(b, v).heading, headingTo(v.x, v.z, h.x, h.z), k);
-      h.heading = lerpAngle(this.anchor(b, h).heading, headingTo(h.x, h.z, v.x, v.z), k);
       const stride = 0.4 * (1 - reach);
       this.act(v, 'approach', { walk: v.walk, stride, guard: 0.8 * (1 - reach), armsForward: reach, crouch: 0.25 + 0.05 * reach, lean: 0.15 * reach });
       this.act(h, 'approach', { walk: h.walk, stride, guard: 0.8 * (1 - reach), armsForward: reach, crouch: 0.25 + 0.1 * reach, lean: 0.3 * reach });
@@ -1193,8 +1195,8 @@ export class WrestleMatch {
       h.flicker = h.kind.style === 'illusion' && t > b.throwAt - 0.45 && Math.floor(t * 18) % 2 === 0;
       h.x = ph.x + f.nx * 0.35 * k;
       h.z = ph.z + f.nz * 0.35 * k;
-      v.heading = lerpAngle(headingTo(v.x, v.z, h.x, h.z), intoRing(v), settle);
-      h.heading = headingTo(h.x, h.z, v.x, v.z);
+      v.heading = inwardHeading;
+      h.heading = outwardHeading;
       v.pitch = tipBack * settle;
       v.exact = true;
       v.ropeHold = f; // backed up against the ropes, but not into them
@@ -1217,6 +1219,7 @@ export class WrestleMatch {
       let y;
       let flip;
       h.y = MAT_Y;
+      if (!run) h.heading = outwardHeading;
       if (overhead && k < 0.35) {
         // Bhima's two-handed overhead toss: up first, the hands going from the grip to overhead...
         const q = ease(k / 0.35);
@@ -1241,7 +1244,7 @@ export class WrestleMatch {
         // over the ropes, so the trailing legs clear the top rope (#105). It starts and ends exactly
         // where the grapple left them and where the landing picks them up.
         const middle = (pitch, roll, root) => new THREE.Vector3(0, v.rig.height * 0.45, 0)
-          .applyEuler(new THREE.Euler(pitch, intoRing(f.at(0)), roll, 'YXZ')).add(root);
+          .applyEuler(new THREE.Euler(pitch, inwardHeading, roll, 'YXZ')).add(root);
         const c0 = middle(from0, 0, new THREE.Vector3(from.x, from.y, from.z));
         const c1 = middle(ON_BACK, 0, new THREE.Vector3(landing.x, 0.25, landing.z));
         const centre = c0.clone().lerp(c1, q);
@@ -1256,7 +1259,7 @@ export class WrestleMatch {
           h.x = run.contact.x + f.nx * 0.55 * go;
           h.z = run.contact.z + f.nz * 0.55 * go;
           // He keeps the line of his charge through the contact, squaring to the ropes as he follows through.
-          h.heading = lerpAngle(run.charge, headingTo(0, 0, f.nx, f.nz), ease(q / RUN.tackle));
+          h.heading = lerpAngle(run.charge, outwardHeading, ease(q / RUN.tackle));
           this.act(h, 'run:tackle', { lean: 0.65 - 0.45 * q, armsForward: 0.7, crouch: 0.35 - 0.15 * q, spread: 0.2 }, 0.1);
         } else this.act(h, overhead ? 'throw' : 'throw:release', overhead
           ? { armsUp: 1 - q * 0.4, spread: q * 0.3, crouch: 0.2 * (1 - q) }
@@ -1269,7 +1272,7 @@ export class WrestleMatch {
       v.pitch = flip;
       v.exact = true; // shown exactly as flown: the body turns about its middle
       v.ropeGuard = f; // and nothing goes through the top rope
-      v.heading = intoRing(v); // facing the ring: their back goes over the ropes first
+      v.heading = inwardHeading;
       v.tagDrop = -1.4;
       v.ground = true; // never let any part of the body pass through the ring or the floor
       v.landed = false;
@@ -1311,7 +1314,7 @@ export class WrestleMatch {
       v.ropeGuard = null; // well clear of the ropes now
       v.landed = true; // resting on the floor: settle onto it, never hover
       // Square to the ropes as they land, turning to face the ring centre as they sit up.
-      v.heading = lerpAngle(intoRing(v), headingTo(v.x, v.z, 0, 0), sitUp);
+      v.heading = lerpAngle(inwardHeading, headingTo(v.x, v.z, 0, 0), sitUp);
       // Flat on the back (the bounce rocks them a little), then sitting up facing the ring.
       v.pitch = (ON_BACK - hop * 0.5) * (1 - sitUp);
       v.tagDrop = -1.4 * (1 - sitUp) - 0.9 * sitUp;
@@ -1388,7 +1391,7 @@ export class WrestleMatch {
   }
 
   /** The rope rebound up to the tackle: the victim backs onto the ropes, Satyaki runs, bounces, charges. */
-  runUp(b, t, v, h, f, run, intoRing) {
+  runUp(b, t, v, h, f, run, inwardHeading) {
     const since = t - b.start;
     const step = (w, x, z) => {
       w.walk += Math.hypot(x - w.x, z - w.z) * 3.2;
@@ -1408,7 +1411,7 @@ export class WrestleMatch {
     const toward = headingTo(v.x, v.z, h.x, h.z);
     run.toward = run.toward === undefined ? av.heading + turnBy(av.heading, toward) : run.toward + turnBy(run.toward, toward);
     const facing = av.heading + (run.toward - av.heading) * k;
-    if (brace > 0 && run.braceTo === undefined) run.braceTo = facing + turnBy(facing, intoRing(v));
+    if (brace > 0 && run.braceTo === undefined) run.braceTo = facing + turnBy(facing, inwardHeading);
     v.heading = brace > 0 ? facing + (run.braceTo - facing) * brace : facing;
     if (since < PACE.approach) this.act(v, 'run:back', { walk: v.walk, stride: 0.35 * (1 - k), guard: 0.6, crouch: 0.2, lean: -0.15 });
     else this.act(v, 'run:dazed', { guard: 0.4 + 0.5 * brace, crouch: 0.2 + 0.1 * brace, look: -0.3 * (1 - brace), tilt: 0.15 * Math.sin(t * 3) * (1 - brace), lean: -0.1 });
