@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { skip, openBrowser, startServer } from './browser.js';
 
-test('paired ring-out callouts with long names stay on screen, off the roster and the toolbar, through a rotation', { skip, timeout: 60000 }, async (t) => {
+// It starts Chrome first on a cold CI runner, which can take most of a minute on its own.
+test('paired ring-out callouts with long names stay on screen, off the roster and the toolbar, through a rotation', { skip, timeout: 120000 }, async (t) => {
   const base = await startServer(t, ['Ada', 'Grace']);
   const send = await openBrowser(t);
   const evaluate = async (expression) => {

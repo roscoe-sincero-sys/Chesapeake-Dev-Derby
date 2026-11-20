@@ -42,7 +42,8 @@ jobs:
   # build job (Node 20) skips them. Here they must run: DERBY_BROWSER_TESTS=required fails them instead
   # of skipping, and the last step checks that every one of them ran and passed. The runner has no GPU:
   # Chrome draws with software WebGL, and the live match runs on the test's stepped clock (60 frames a
-  # second of match time, however slowly they draw).
+  # second of match time, however slowly they draw). The files run one at a time: two Chromes at once on
+  # the runner's few cores slow both past their time limits.
   browser:
     name: Browser tests
     runs-on: ubuntu-latest
@@ -59,6 +60,7 @@ jobs:
           DERBY_BROWSER_TESTS: required
         run: >-
           node --test
+          --test-concurrency=1
           --test-reporter=spec --test-reporter-destination=stdout
           --test-reporter=tap --test-reporter-destination=browser.tap
           test/callout-browser.test.js
