@@ -3,16 +3,14 @@
 
 import { Game } from './game.js';
 import { Hud } from './hud.js';
-import { WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
-import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName, selectAbsentees } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { apiFetch, DEMO } from './api.js';
 import { endSession, resumeSession } from './session.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences } from './lobby-settings.js';
-import { normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './race-lengths.js';
-import { MODES, findMode, fitsPlayers, modeOptions } from './modes.js';
+import { normalizeSpeed, DEFAULT_SPEED } from './race-lengths.js';
+import { MODES, findMode, fitsPlayers, modeOptions, playersText, capacityText } from './modes.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -30,6 +28,8 @@ if (MODES.some((mode) => mode.id === params.get('mode'))) savedSettings.mode = p
 let attendanceRestored = savedSettings.absent.size > 0;
 let settingsSaved = true;
 let initialFocusDone = false;
+let teamOpenDecided = false;
+let lastReadiness = '';
 
 const state = {
   names: [],
@@ -41,36 +41,9 @@ const state = {
   mode: savedSettings.mode, // the selected mode's id, retained within this browser tab
   options: savedSettings.options, // each mode's option values: { race: { speed }, rumble: { models } }
   phase: 'lobby', // lobby | loading | race | results | exiting
+  loaded: false, // the team list has arrived from the server
   pendingWinner: null,
 };
-
-/**
- * The lobby's launch buttons, until mode cards replace them (#117): each starts a mode with some of its
- * options preset. Buttons with a `tip` use aria-disabled rather than disabled when the headcount doesn't
- * fit, so they stay focusable and the tooltip explaining the player limit can still be read.
- */
-const LAUNCHERS = [
-  { id: 'run', mode: 'race', options: {} },
-  { id: 'wrestle', mode: 'rumble', options: { models: 'classic' }, tip: 'Original character models.' },
-  { id: 'wrestle-hd', mode: 'rumble', options: { models: 'hd' }, tip: 'Detailed character models.' },
-];
-
-/** The launch button for the selected mode and options (Enter, and focus on opening the lobby). */
-function selectedLauncher() {
-  const options = state.options[state.mode] ?? {};
-  return LAUNCHERS.find((launcher) => launcher.mode === state.mode
-    && Object.entries(launcher.options).every(([id, value]) => options[id] === value)) ?? LAUNCHERS[0];
-}
-
-function launcherBlocked(launcher) {
-  const button = $(launcher.id);
-  return button.disabled || button.getAttribute('aria-disabled') === 'true';
-}
-
-function setLauncherBlocked(launcher, blocked) {
-  if (launcher.tip) $(launcher.id).setAttribute('aria-disabled', String(blocked));
-  else $(launcher.id).disabled = blocked;
-}
 
 /** The on-screen form of a stored name. */
 const show = (name) => state.shown.get(nameKey(name)) ?? name;
@@ -106,6 +79,7 @@ async function loadState() {
   try {
     const data = await api('/api/state');
     state.names = data.names;
+    state.loaded = true;
     state.shown = displayNames(state.names);
     state.absent = retainRosterAbsences(state.absent, state.names);
     saveLobbySettings();
@@ -137,10 +111,9 @@ async function loadState() {
     retry.onclick = loadState;
     status.append(retry);
     $('check-all').disabled = $('check-none').disabled = true;
-    $('recent-section').hidden = true;
+    $('sitting-out').hidden = true;
     $('reset-winners').hidden = true;
-    for (const launcher of LAUNCHERS) setLauncherBlocked(launcher, true);
-    $('pick').disabled = true;
+    $('start').disabled = $('pick').disabled = true;
   }
 }
 
@@ -157,8 +130,8 @@ async function saveWinner(name, mode) {
     });
     state.winners = data.winners;
     state.pendingWinner = null;
-    // A wrestling win isn't a race: the three-pick rule applies however someone won.
-    hud.saveStatus(`Saved. ${show(name)} sits out the next three ${mode === 'wrestle' ? 'picks' : 'races'}.`, 'ok');
+    // The three-pick rule applies however someone won; only a race win is counted in races.
+    hud.saveStatus(`Saved. ${show(name)} sits out the next three ${mode === 'race' ? 'races' : 'picks'}.`, 'ok');
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -196,7 +169,7 @@ function renderLobby() {
         li.classList.toggle('absent', !box.checked);
         attendanceRestored = false;
         saveLobbySettings();
-        updateRunButton();
+        updateReadiness();
       });
     } else {
       // One of the last three winners: shown, but cannot be entered.
@@ -207,42 +180,53 @@ function renderLobby() {
       const badge = document.createElement('span');
       badge.className = 'badge';
       const wait = 4 - ago;
-      badge.textContent = `Sits out ${wait} more race${wait === 1 ? '' : 's'}`;
+      badge.textContent = `Sits out ${wait} more pick${wait === 1 ? '' : 's'}`;
       const text = document.createElement('span');
       text.className = 'who';
       text.append(name, badge);
       label.append(text);
-      label.title = `${show(entry.name)} won recently — eligible again in ${wait} race${wait === 1 ? '' : 's'}.`;
+      label.title = `${show(entry.name)} won recently — eligible again in ${wait} pick${wait === 1 ? '' : 's'}.`;
     }
     li.append(label);
     list.append(li);
   }
 
+  // The last three winners, newest first: "Sitting out: Barbara (Nov 18), Ken (Nov 14)". Their roster
+  // tiles are marked too.
   const recent = $('recent');
   recent.replaceChildren();
-  if (!state.winners.length) {
-    const li = document.createElement('li');
-    li.className = 'none';
-    li.textContent = 'No races yet — everyone is eligible.';
-    recent.append(li);
-  }
-  [...state.winners].reverse().forEach((winner) => {
-    const li = document.createElement('li');
-    li.textContent = `🏆 ${show(winner.name)}`;
+  if (!state.winners.length) recent.textContent = 'No winners yet — everyone is eligible.';
+  else recent.append('Sitting out: ');
+  [...state.winners].reverse().forEach((winner, i) => {
+    const name = document.createElement('b');
+    name.textContent = show(winner.name);
     const when = formatDate(winner.date);
-    if (when) {
-      const span = document.createElement('span');
-      span.className = 'when';
-      span.textContent = when;
-      li.append(span);
-    }
-    recent.append(li);
+    recent.append(...(i ? [', '] : []), name, ...(when ? [` (${when})`] : []));
   });
 
   $('check-all').disabled = $('check-none').disabled = !state.names.length;
-  $('recent-section').hidden = !state.names.length;
+  $('sitting-out').hidden = !state.names.length;
   $('reset-winners').hidden = !state.winners.length;
-  updateRunButton();
+  // On phones the team list starts folded, unless there aren't enough people ready to play.
+  if (!teamOpenDecided) {
+    teamOpenDecided = true;
+    setTeamOpen(selectRacers(state.roster, state.absent).length < 2);
+  }
+  updateReadiness();
+}
+
+/** Folds or unfolds the team list (only phones show the fold). */
+function setTeamOpen(open) {
+  $('roster-section').classList.toggle('collapsed', !open);
+  $('team-toggle').setAttribute('aria-expanded', String(open));
+}
+
+/** Opens the team list and puts focus on it, so attendance can be fixed to suit the game. */
+function reviewTeam() {
+  setTeamOpen(true);
+  const target = $('roster').querySelector('input:not([disabled])') ?? $('check-all');
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: 'nearest' });
 }
 
 /** Asks for confirmation, then clears the recent-winner list so everyone is eligible again. */
@@ -250,7 +234,7 @@ function confirmResetWinners() {
   const dialog = $('reset-dialog');
   if (typeof dialog.showModal !== 'function') {
     // Very old browsers without <dialog>: fall back to the built-in confirm box.
-    if (window.confirm('Reset the last three winners? Everyone will be able to race again.')) resetWinners();
+    if (window.confirm('Reset the last three winners? Everyone will be able to play again.')) resetWinners();
     return;
   }
   dialog.returnValue = '';
@@ -271,7 +255,7 @@ async function resetWinners() {
     state.winners = data.winners;
     state.roster = buildRoster(state.names, state.winners);
     renderLobby();
-    status.textContent = 'List reset. Everyone can race again.';
+    status.textContent = 'List reset. Everyone can play again.';
     $('check-all').focus({ preventScroll: true });
   } catch (err) {
     status.className = 'hint error-text';
@@ -279,21 +263,33 @@ async function resetWinners() {
   }
 }
 
+/** The first control in the lobby that can take focus and is on screen. */
+function firstUsableControl() {
+  const candidates = $('lobby').querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), summary');
+  return [...candidates].find((el) => el.getClientRects().length);
+}
+
 /**
- * When the lobby first opens, put keyboard focus on the selected mode's start button (Start race unless
- * this tab last played something else), so Enter starts it. If the headcount doesn't fit that mode, use
- * the first usable control in the lobby panel instead.
+ * Focus for a keyboard user setting up a game: Start if the selected game can start (so Enter starts it),
+ * otherwise the selected mode's card.
+ */
+function focusSetup() {
+  const start = $('start');
+  const target = !start.disabled ? start : document.querySelector('input[name="mode"]:checked') ?? firstUsableControl();
+  // Start is always on screen (in the sticky action bar on phones); a card may need scrolling to.
+  target?.focus({ preventScroll: target === start });
+}
+
+/**
+ * When the lobby first opens, put keyboard focus on Start, so Enter starts the selected game. If the
+ * headcount doesn't fit it, on the selected mode's card instead.
  * Only on first load, and never if the user has already moved focus somewhere.
  */
 function focusLobbyOnce() {
   if (initialFocusDone) return;
   initialFocusDone = true;
   if (document.activeElement && document.activeElement !== document.body) return;
-  const launcher = selectedLauncher();
-  const target = !launcherBlocked(launcher)
-    ? $(launcher.id)
-    : $('lobby').querySelector('button:not([disabled]):not([hidden]):not([aria-disabled="true"]), a[href], input:not([disabled]), summary');
-  target?.focus({ preventScroll: true });
+  focusSetup();
 }
 
 function saveLobbySettings() {
@@ -309,23 +305,197 @@ function updateAttendanceStatus() {
   $('attendance-status').hidden = !parts.length;
 }
 
-function updateRunButton() {
+/**
+ * Everything that depends on who's ready and which game is selected: the count, each card's player range
+ * (in red, with the headcount, when it doesn't fit), Start's label and state, and the readiness line.
+ */
+function updateReadiness() {
   updateAttendanceStatus();
   const ready = selectRacers(state.roster, state.absent).length;
-  $('racer-count').textContent = `${ready} racing`;
+  const mode = findMode(state.mode);
+  const fits = fitsPlayers(mode, ready);
+  $('racer-count').textContent = `${ready} playing`;
   $('pick').disabled = ready < 2;
-  // While a mode loads (HD models), no other launch can start.
-  const loading = state.phase === 'loading';
-  for (const launcher of LAUNCHERS) {
-    const mode = findMode(launcher.mode);
-    const fits = fitsPlayers(mode, ready);
-    setLauncherBlocked(launcher, !fits || loading);
-    if (launcher.tip) {
-      const { min, max } = mode.players;
-      $(`${launcher.id}-tip`).textContent = `${launcher.tip} You need ${min} to ${max} wrestlers. ${fits ? `${ready} ready to wrestle.` : `${ready} ${ready === 1 ? 'is' : 'are'} checked.`}`;
-    }
+
+  for (const card of $('mode-cards').children) {
+    const cardMode = findMode(card.dataset.mode);
+    const cardFits = !state.loaded || fitsPlayers(cardMode, ready);
+    card.classList.toggle('misfit', !cardFits);
+    card.querySelector('.mode-players').textContent = cardFits ? playersText(cardMode) : `${playersText(cardMode)} · ${ready} checked`;
   }
-  $('run-hint').textContent = ready < 2 ? 'Select at least two racers.' : findMode('race').ready(ready);
+
+  const start = $('start');
+  start.textContent = `▶ Start ${mode.verb}`;
+  start.disabled = !fits;
+  // While a game loads (HD models) Start keeps focus, but nothing else can launch.
+  if (state.phase === 'loading') start.setAttribute('aria-disabled', 'true');
+  else start.removeAttribute('aria-disabled');
+
+  // The readiness line is a live region: only rewrite it when what it says changes.
+  const eligible = state.roster.filter((entry) => entry.eligible).length;
+  const fix = !state.loaded ? '' : !state.names.length || (!fits && ready < mode.players.min && eligible < mode.players.min) ? 'edit' : fits ? '' : 'review';
+  const text = !state.loaded ? '' : !state.names.length ? 'The team list is empty.' : fits ? mode.ready(ready) : capacityText(mode, ready);
+  if (`${text}|${fix}` === lastReadiness) return;
+  lastReadiness = `${text}|${fix}`;
+  const line = $('readiness');
+  line.classList.toggle('blocked', state.loaded && !fits);
+  line.replaceChildren(text);
+  if (fix === 'review') {
+    const review = document.createElement('button');
+    review.type = 'button';
+    review.className = 'link';
+    review.textContent = 'Review team list';
+    review.addEventListener('click', reviewTeam);
+    line.append(' ', review);
+  } else if (fix === 'edit') {
+    const edit = document.createElement('a');
+    edit.className = 'link';
+    edit.href = 'roster.html';
+    edit.textContent = 'Edit team list';
+    line.append(' ', edit);
+  }
+}
+
+// ------------------------------------------------------------------ mode cards and options
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/** Selects a mode (it doesn't start it): shows its options and updates Start. Focus stays put. */
+function selectMode(id) {
+  state.mode = findMode(id).id;
+  saveLobbySettings();
+  for (const panel of $('mode-options').children) panel.classList.toggle('inactive', panel.dataset.mode !== state.mode);
+  updateReadiness();
+}
+
+function setOption(mode, id, value) {
+  state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], [id]: value });
+  saveLobbySettings();
+  updateAttendanceStatus();
+}
+
+/** The controls a mode's options can use (see modes.js). Each returns the element for one option. */
+const OPTION_CONTROLS = {
+  /** A stepped slider with a read-out and a scale (the race length). */
+  range(mode, option) {
+    const id = `opt-${mode.id}-${option.id}`;
+    const wrap = el('div', 'option range-option');
+    const head = el('div', 'option-head');
+    const label = el('label', 'option-label', option.label);
+    label.htmlFor = id;
+    const output = el('output', 'option-value');
+    output.htmlFor = id;
+    head.append(label, output);
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = id;
+    input.min = 0;
+    input.max = option.steps.length - 1;
+    input.step = 1;
+    input.value = Math.max(0, option.steps.findIndex((step) => step.value === state.options[mode.id][option.id]));
+    const scale = el('div', 'range-scale');
+    scale.setAttribute('aria-hidden', 'true');
+    for (const step of option.steps) scale.append(el('span', null, step.label));
+    const show = () => {
+      const index = Number(input.value);
+      const step = option.steps[index];
+      const text = `${step.text ?? step.label}${step.value === option.default ? ' (default)' : ''}`;
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+      input.style.setProperty('--fill', `${(index / (option.steps.length - 1)) * 100}%`);
+    };
+    input.addEventListener('input', () => {
+      setOption(mode, option.id, option.steps[Number(input.value)].value);
+      show();
+    });
+    show();
+    wrap.append(head, input, scale);
+    return wrap;
+  },
+
+  /** A pill toggle made of native radios (Classic | HD). */
+  segmented(mode, option) {
+    const name = `opt-${mode.id}-${option.id}`;
+    const wrap = el('div', 'option segmented-option');
+    const label = el('span', 'option-label', option.label);
+    label.id = `${name}-label`;
+    const group = el('div', 'segments');
+    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('aria-labelledby', label.id);
+    for (const choice of option.choices) {
+      const segment = el('label', 'segment');
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = name;
+      radio.value = choice.value;
+      radio.checked = state.options[mode.id][option.id] === choice.value;
+      radio.addEventListener('change', () => setOption(mode, option.id, choice.value));
+      segment.append(radio, el('span', null, choice.label));
+      group.append(segment);
+    }
+    wrap.append(label, group);
+    return wrap;
+  },
+
+  /** A secondary link (Preview wrestlers ›). */
+  link(mode, option) {
+    const link = el('a', 'link option-link', option.label);
+    link.href = option.href;
+    const arrow = el('span', null, ' ›');
+    arrow.setAttribute('aria-hidden', 'true');
+    link.append(arrow);
+    return link;
+  },
+};
+
+/** One mode's options panel: heading, tagline, its controls, and How to play. */
+function renderOptions(mode) {
+  const panel = el('section', 'mode-config');
+  panel.dataset.mode = mode.id;
+  panel.classList.toggle('inactive', mode.id !== state.mode);
+  const heading = el('h3', 'area-title', `${mode.verb[0].toUpperCase()}${mode.verb.slice(1)} options`);
+  heading.id = `options-${mode.id}-title`;
+  panel.setAttribute('aria-labelledby', heading.id);
+  const intro = el('div');
+  intro.append(heading, el('p', 'mode-tagline', mode.tagline));
+  panel.append(intro);
+  for (const option of mode.options) panel.append(OPTION_CONTROLS[option.type](mode, option));
+  const template = document.getElementById(`guide-${mode.guide}`);
+  if (template) {
+    const guide = el('details', 'how-to-play');
+    const content = template.content.cloneNode(true);
+    mode.fillGuide?.(content);
+    guide.append(el('summary', null, 'How to play'), content);
+    panel.append(guide);
+  }
+  return panel;
+}
+
+/** The mode cards and every mode's options panel, built once from the registry (modes.js). */
+function renderModes() {
+  for (const mode of MODES) {
+    const card = el('label', 'mode-card');
+    card.dataset.mode = mode.id;
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'mode';
+    radio.value = mode.id;
+    radio.checked = mode.id === state.mode;
+    // Choosing a card only selects it; Start launches.
+    radio.addEventListener('change', () => selectMode(mode.id));
+    const icon = el('span', 'mode-icon', mode.icon);
+    const check = el('span', 'mode-check', '✓');
+    icon.setAttribute('aria-hidden', 'true');
+    check.setAttribute('aria-hidden', 'true');
+    card.append(radio, icon, el('span', 'mode-name', mode.name), el('span', 'mode-players', playersText(mode)), check);
+    $('mode-cards').append(card);
+    $('mode-options').append(renderOptions(mode));
+  }
 }
 
 function setAll(present) {
@@ -342,16 +512,13 @@ function setAll(present) {
 // ------------------------------------------------------------------ starting a mode
 
 /**
- * Starts `mode` with these option values (merged into its saved ones, which become this tab's choice).
- * Click and Enter share this guard: only from the lobby, and only if the headcount fits the mode now.
+ * Starts `mode` with its selected options. Click and Enter share this guard: only from the lobby (not
+ * while another game is loading), and only if the headcount fits the mode now.
  */
-async function start(mode, options = {}) {
+async function start(mode) {
   if (state.phase !== 'lobby') return;
   const storedNames = selectRacers(state.roster, state.absent);
   if (!fitsPlayers(mode, storedNames.length)) return;
-  state.mode = mode.id;
-  state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], ...options });
-  saveLobbySettings();
   state.raceNames = new Map(storedNames.map((name) => [show(name), name]));
   sfx.unlock();
   await mode.start({
@@ -363,7 +530,7 @@ async function start(mode, options = {}) {
     get phase() { return state.phase; },
     setPhase: (phase) => {
       state.phase = phase;
-      updateRunButton();
+      updateReadiness();
     },
     setStatus: (text) => { $('status').textContent = text; },
     hideLobby: () => { $('lobby').hidden = true; },
@@ -376,8 +543,8 @@ async function start(mode, options = {}) {
   }, state.options[mode.id]);
 }
 
-function launch(launcher) {
-  if (!launcherBlocked(launcher)) start(findMode(launcher.mode), launcher.options);
+function startSelected() {
+  if (!$('start').disabled) start(findMode(state.mode));
 }
 
 function pick() {
@@ -387,7 +554,7 @@ function pick() {
   if (!winner) return;
   state.phase = 'results';
   $('lobby').hidden = true;
-  hud.showWinner(show(winner), null, null, 0, 'Random pick - race skipped.');
+  hud.showWinner(show(winner), null, null, 0, 'Random pick — no game played.');
   saveWinner(winner, 'skip');
 }
 
@@ -399,9 +566,13 @@ function backToLobby() {
   $('lobby').hidden = false;
   state.phase = 'lobby';
   state.pendingWinner = null;
-  loadState();
-  // Back on the button that started the game just played.
-  $(selectedLauncher().id).focus({ preventScroll: true });
+  // Focus goes back to the setup (Start, ready to go again), and once the team list has reloaded, to the
+  // selected card if Start can no longer be used (the winner now sits out).
+  updateReadiness();
+  focusSetup();
+  loadState().then(() => {
+    if (!$('lobby').contains(document.activeElement) || document.activeElement.disabled) focusSetup();
+  });
 }
 
 /**
@@ -472,37 +643,17 @@ function init() {
     $('scene').hidden = true;
   }
 
-  $('guide-racers').textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
   showVersion();
   if (DEMO) {
     // The public demo: say so, and that everything stays in this browser.
     $('demo-badge').hidden = false;
     $('demo-note').hidden = false;
   }
-  $('guide-wrestlers').textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
+  renderModes();
+  updateReadiness();
 
-  const slider = $('race-speed');
-  // The slider steps through the offered race lengths (longest on the left), not raw speeds.
-  slider.min = 0;
-  slider.max = RACE_LENGTHS.length - 1;
-  slider.step = 1;
-  const showSpeed = () => {
-    const step = Number(slider.value);
-    const speed = stepToSpeed(step);
-    state.options.race.speed = speed;
-    const { seconds } = RACE_LENGTHS[step];
-    const length = `About ${seconds} seconds${speed === DEFAULT_SPEED ? ' (default)' : ''}`;
-    $('speed-value').textContent = length;
-    slider.setAttribute('aria-valuetext', length);
-    slider.style.setProperty('--fill', `${(step / (RACE_LENGTHS.length - 1)) * 100}%`);
-    saveLobbySettings();
-    updateAttendanceStatus();
-  };
-  slider.value = speedToStep(state.options.race.speed);
-  slider.addEventListener('input', showSpeed);
-  showSpeed();
-
-  for (const launcher of LAUNCHERS) $(launcher.id).addEventListener('click', () => launch(launcher));
+  $('start').addEventListener('click', startSelected);
+  $('team-toggle').addEventListener('click', () => setTeamOpen($('roster-section').classList.contains('collapsed')));
   $('pick').addEventListener('click', pick);
   $('exit-app').addEventListener('click', exitApp);
   $('check-all').addEventListener('click', () => setAll(true));
@@ -531,8 +682,8 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && state.phase === 'lobby' && !e.target.closest('button, summary, a, input, textarea, select')) {
       e.preventDefault();
-      // Starts the selected mode (the one this tab last played), if the headcount fits it.
-      launch(selectedLauncher());
+      // Starts the selected game, if the headcount fits it.
+      startSelected();
     } else if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
       mute.click();
     }

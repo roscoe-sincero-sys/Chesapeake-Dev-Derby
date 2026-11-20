@@ -8,6 +8,21 @@ to release.
 ## [Unreleased]
 
 ### Changed
+- **A new lobby (#117, phase 3):** three questions in order, then one button. **Who's here** (the team
+  list), **Pick a game** (a card per game: 🏁 Derby Race, 2+ players; 🤼 Let’s Rumble, 2–12) and that
+  game's options, then **▶ Start race** / **▶ Start rumble** and **Just pick someone**.
+  - Each game's settings belong to it: the race's **Race length** slider, and Rumble's
+    **Models: Classic | HD** toggle (replacing the separate HD button) and **Preview wrestlers** link.
+    **How to play** in each game's options replaces the one Field guide.
+  - Player limits are shown as text, not in tooltips: a card that doesn't fit the headcount says so in red
+    ("2–12 players · 14 checked"), and the line beside Start says what to change, with a **Review team
+    list** link. Choosing a card never starts a game; Start does.
+  - On wide screens (1000 px and up) the team list and the game sit side by side, so everything shows
+    without scrolling on a 1366 × 768 laptop. Below that they stack. On phones the team list folds into a
+    **Who's here · 12 playing** row, and Just pick and Start stay at the bottom in one row.
+  - The last three winners are one **Sitting out** line under the team list, with **Full history** and
+    **Reset**. Wording no longer assumes a race: "12 playing", "Sits out 2 more picks", and the header
+    says "Pick who leads the team meeting."
 - **Game modes in one place (#117, phases 1 and 2):** the race and Rumble are now described by a mode
   registry (`public/js/modes.js`): name, player range, options and how each starts. The lobby's buttons
   start them through it and look the same as before. This prepares the lobby redesign and makes a new

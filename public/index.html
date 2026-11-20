@@ -18,13 +18,13 @@
       <button id="quit" type="button" hidden>✕ Quit race</button>
     </div>
 
-    <!-- Lobby: who is racing today -->
+    <!-- Lobby: who is here, which game, then Start -->
     <main id="lobby" class="panel">
       <header class="lobby-head">
         <div class="flag-chip" aria-hidden="true"></div>
         <div class="lobby-title">
           <h1>Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span id="demo-badge" class="demo-badge" title="A browser-only demo: names and results are saved only in this browser." hidden>Demo</span></h1>
-          <p class="tagline">First across the line leads the team meeting.</p>
+          <p class="tagline">Pick who leads the team meeting.</p>
           <p id="demo-note" class="demo-note" hidden>Demo: names and results are saved only in this browser. Nothing is sent anywhere.</p>
         </div>
         <span class="exit-wrap">
@@ -35,122 +35,112 @@
 
       <div id="status" role="status"></div>
 
-      <section id="roster-section">
-        <div class="section-head">
-          <h2>Team list</h2>
-          <span id="racer-count" class="count"></span>
-          <nav class="roster-actions" aria-label="Roster controls">
-            <button id="check-all" type="button" class="link" disabled>Select all</button>
-            <button id="check-none" type="button" class="link" disabled>Clear all</button>
-            <a class="link" href="roster.html">Edit team list</a>
-          </nav>
-        </div>
-        <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.
-          <span id="attendance-status" role="status" hidden></span></p>
-        <ul id="roster"></ul>
-      </section>
-
-      <section id="recent-section" hidden>
-        <div class="section-head">
-          <h2>Last three winners</h2>
-          <nav class="roster-actions" aria-label="Winner list controls">
-            <a class="link" href="history.html">Full history</a>
-            <button id="reset-winners" type="button" class="link" hidden>Reset list</button>
-          </nav>
-        </div>
-        <ol id="recent"></ol>
-        <p id="reset-status" class="hint" role="status" hidden></p>
-      </section>
-
-      <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
-        <form method="dialog">
-          <h2 id="reset-title">Reset the last three winners?</h2>
-          <p id="reset-body">This clears the list, so everyone can race again, including recent winners. It can't be undone. The full history is kept.</p>
-          <div class="dialog-actions">
-            <button value="cancel" type="submit" autofocus>Cancel</button>
-            <button value="reset" type="submit" class="danger">Reset list</button>
+      <div class="lobby-body">
+        <!-- Who's here: attendance, shared by every game. On phones it folds into a summary row. -->
+        <section id="roster-section" class="lobby-area" aria-labelledby="team-heading">
+          <div class="area-head">
+            <h2 id="team-heading" class="area-title">
+              <button id="team-toggle" type="button" class="team-toggle" aria-expanded="true" aria-controls="team-body">Who’s here</button>
+              <span class="team-title">Who’s here</span>
+            </h2>
+            <span id="racer-count" class="count"></span>
           </div>
-        </form>
-      </dialog>
-
-      <section class="speed-control" aria-labelledby="speed-label">
-        <div class="section-head">
-          <label id="speed-label" for="race-speed">Race length</label>
-          <output id="speed-value" for="race-speed">About 60 seconds (default)</output>
-        </div>
-        <input id="race-speed" type="range" min="0" max="4" step="1" value="1" list="race-speed-marks" />
-        <datalist id="race-speed-marks">
-          <option value="0" label="120 seconds"></option>
-          <option value="1" label="60 seconds (default)"></option>
-          <option value="2" label="30 seconds"></option>
-          <option value="3" label="15 seconds"></option>
-          <option value="4" label="10 seconds"></option>
-        </datalist>
-        <div class="length-scale" aria-hidden="true"><span>120s</span><span>60s</span><span>30s</span><span>15s</span><span>10s</span></div>
-      </section>
-
-      <details id="guide">
-        <summary>Field guide: obstacles &amp; items</summary>
-        <div class="guide-grid">
-          <div>
-            <h3>Obstacles</h3>
-            <ul>
-              <li><b>404 pit</b> — fall in, respawn after a moment</li>
-              <li><b>Broken link</b> — trip and spin out</li>
-              <li><b>Merge conflict</b> — stop to resolve it</li>
-              <li><b>Infinite scroll</b> — a conveyor dragging you back</li>
-              <li><b>Slow load zone</b> — crawl at 99% loaded</li>
-              <li><b>Redirect loop</b> — go round in circles</li>
-              <li><b>Null pointer</b> — a sweeping cursor turns you <code>null</code></li>
-              <li><b>Unhandled exception</b> — a mine that throws everyone nearby</li>
-              <li><b>SSL Expired</b> — a "not private" warning page stops you</li>
-              <li><b>DO NOT MODIFY URLS</b> — a barricade that drops you into an error pit for a few seconds</li>
-              <li><b>800-Column Table</b> — juts in from the edge; the first racer near it sets off BULK LOAD IN PROGRESS and it spreads across half the track. Clip it and lose your items. Truncated after 10 seconds</li>
-            </ul>
+          <div id="team-body">
+            <nav class="roster-actions" aria-label="Team list controls">
+              <button id="check-all" type="button" class="link" disabled>Select all</button>
+              <button id="check-none" type="button" class="link" disabled>Clear all</button>
+              <a class="link" href="roster.html">Edit team list</a>
+            </nav>
+            <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.
+              <span id="attendance-status" role="status" hidden></span></p>
+            <ul id="roster"></ul>
           </div>
-          <div>
-            <h3>Items (from <code>{?}</code> crates)</h3>
-            <ul>
-              <li>☕ <b>Coffee</b> — speed boost</li>
-              <li>💨 <b>Bay Breeze</b> — big tailwind for those behind</li>
-              <li>🛡️ <b>Firewall</b> — blocks the next hit</li>
-              <li>🐛 <b>Bug</b> — thrown at the racer ahead</li>
-              <li>💥 <b>Force Push</b> — flattens the leader</li>
-              <li>🔐 <b>Renewed Certificate</b> — immune to SSL Expired while it lasts</li>
-              <li>↩️ <b>?returnUrl=</b> — takes you through one DO NOT MODIFY URLS barricade</li>
-              <li>🌫️ <b>You Are Not Being Clear</b> — thrown at a rival; they spin out trying to clarify. "It's your fault."</li>
-              <li>📋 <b>Eight-Minute Audit</b> — locks a rival's controls for 8 seconds. "Access limited pending audit."</li>
-              <li>🎰 <b>Production Roulette</b> — reverses a rival's steering. "Oops. That was pr0dI."</li>
-              <li>🎭 <b>Security Theater</b> — locks a rival to 12–15 mph. "Vahi says you're going too fast."</li>
-              <li>📊 <b>200GB Table</b> — thrown at the racer ahead; it flattens them for a moment. "You're wasting disk space."</li>
-            </ul>
-            <h3>Racers</h3>
-            <p class="guide-racers" id="guide-racers"></p>
-            <h3>Let’s Rumble</h3>
-            <p>A battle royal for 2 to 12 teammates in a wrestling ring, as Mahabharata wrestlers: <span id="guide-wrestlers"></span>. Choose <b>Let’s Rumble</b> for the original models, or <b>HD</b> for the detailed models. Everyone starts in the ring; go over the top rope and you're out. The last one in the ring leads today’s standup.</p>
-          </div>
-        </div>
-      </details>
+          <p id="sitting-out" class="sitting-out" hidden>
+            <span id="recent"></span>
+            <span class="sitting-links">
+              <a class="link" href="history.html">Full history</a>
+              <button id="reset-winners" type="button" class="link" aria-label="Reset the last three winners" hidden>Reset</button>
+            </span>
+          </p>
+          <p id="reset-status" class="hint" role="status" hidden></p>
+        </section>
+
+        <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
+          <form method="dialog">
+            <h2 id="reset-title">Reset the last three winners?</h2>
+            <p id="reset-body">This clears the list, so everyone can play again, including recent winners. It can't be undone. The full history is kept.</p>
+            <div class="dialog-actions">
+              <button value="cancel" type="submit" autofocus>Cancel</button>
+              <button value="reset" type="submit" class="danger">Reset list</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Pick a game: one card per mode, then the selected mode's options. Built from js/modes.js. -->
+        <section id="game-section" class="lobby-area">
+          <fieldset class="mode-picker">
+            <legend class="area-title">Pick a game</legend>
+            <div id="mode-cards" class="mode-cards"></div>
+          </fieldset>
+          <div id="mode-options" class="mode-options"></div>
+        </section>
+      </div>
 
       <footer class="lobby-foot">
-        <button id="run" type="button" class="primary" disabled>Start race</button>
-        <button id="pick" type="button" class="secondary" disabled>Skip race, just pick</button>
-        <span class="rumble-buttons" role="group" aria-label="Rumble model style">
-          <span class="wrestle-wrap">
-            <button id="wrestle" type="button" class="secondary wrestle" aria-disabled="true" aria-describedby="wrestle-tip">🤼 Or Let’s Rumble</button>
-            <span id="wrestle-tip" class="tip" role="tooltip">Original character models. You need 2 to 12 wrestlers.</span>
-          </span>
-          <span class="wrestle-wrap">
-            <button id="wrestle-hd" type="button" class="secondary wrestle rumble-hd" aria-label="Let’s Rumble HD — detailed models" aria-disabled="true" aria-describedby="wrestle-hd-tip">HD</button>
-            <span id="wrestle-hd-tip" class="tip" role="tooltip">Detailed character models. You need 2 to 12 wrestlers.</span>
-          </span>
-        </span>
-        <div class="lobby-summary">
-          <span id="run-hint" class="hint"></span>
-          <a class="link wrestler-preview" href="character-prototype.html">Preview wrestlers</a>
+        <p id="readiness" class="readiness" role="status"></p>
+        <div class="lobby-actions">
+          <button id="pick" type="button" class="secondary" disabled>Just pick<span class="pick-long"> someone</span></button>
+          <button id="start" type="button" class="primary" aria-describedby="readiness" disabled>▶ Start race</button>
         </div>
       </footer>
     </main>
+
+    <!-- How to play, one per mode (js/modes.js `guide`): cloned into that mode's options. -->
+    <template id="guide-race">
+      <div class="guide-grid">
+        <div>
+          <h4>Obstacles</h4>
+          <ul>
+            <li><b>404 pit</b> — fall in, respawn after a moment</li>
+            <li><b>Broken link</b> — trip and spin out</li>
+            <li><b>Merge conflict</b> — stop to resolve it</li>
+            <li><b>Infinite scroll</b> — a conveyor dragging you back</li>
+            <li><b>Slow load zone</b> — crawl at 99% loaded</li>
+            <li><b>Redirect loop</b> — go round in circles</li>
+            <li><b>Null pointer</b> — a sweeping cursor turns you <code>null</code></li>
+            <li><b>Unhandled exception</b> — a mine that throws everyone nearby</li>
+            <li><b>SSL Expired</b> — a "not private" warning page stops you</li>
+            <li><b>DO NOT MODIFY URLS</b> — a barricade that drops you into an error pit for a few seconds</li>
+            <li><b>800-Column Table</b> — juts in from the edge; the first racer near it sets off BULK LOAD IN PROGRESS and it spreads across half the track. Clip it and lose your items. Truncated after 10 seconds</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Items (from <code>{?}</code> crates)</h4>
+          <ul>
+            <li>☕ <b>Coffee</b> — speed boost</li>
+            <li>💨 <b>Bay Breeze</b> — big tailwind for those behind</li>
+            <li>🛡️ <b>Firewall</b> — blocks the next hit</li>
+            <li>🐛 <b>Bug</b> — thrown at the racer ahead</li>
+            <li>💥 <b>Force Push</b> — flattens the leader</li>
+            <li>🔐 <b>Renewed Certificate</b> — immune to SSL Expired while it lasts</li>
+            <li>↩️ <b>?returnUrl=</b> — takes you through one DO NOT MODIFY URLS barricade</li>
+            <li>🌫️ <b>You Are Not Being Clear</b> — thrown at a rival; they spin out trying to clarify. "It's your fault."</li>
+            <li>📋 <b>Eight-Minute Audit</b> — locks a rival's controls for 8 seconds. "Access limited pending audit."</li>
+            <li>🎰 <b>Production Roulette</b> — reverses a rival's steering. "Oops. That was pr0dI."</li>
+            <li>🎭 <b>Security Theater</b> — locks a rival to 12–15 mph. "Vahi says you're going too fast."</li>
+            <li>📊 <b>200GB Table</b> — thrown at the racer ahead; it flattens them for a moment. "You're wasting disk space."</li>
+          </ul>
+          <h4>Racers</h4>
+          <p class="guide-list" data-list="racers"></p>
+        </div>
+      </div>
+    </template>
+    <template id="guide-rumble">
+      <p>A battle royal in a wrestling ring, as Mahabharata wrestlers. Everyone starts in the ring; go over the top rope and you're out. The last one in the ring leads today’s standup.</p>
+      <p><b>Classic</b> uses the original character models, <b>HD</b> the detailed ones.</p>
+      <h4>Wrestlers</h4>
+      <p class="guide-list" data-list="wrestlers"></p>
+    </template>
 
     <!-- After Exit -->
     <main id="closed" class="panel closed" hidden>

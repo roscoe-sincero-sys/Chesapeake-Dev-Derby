@@ -271,7 +271,7 @@ async function startMatch(t, width, height, { mobile = false } = {}) {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: STEPPED_CLOCK });
-  await send('Page.navigate', { url: `${base}/?seed=17&test` });
+  await send('Page.navigate', { url: `${base}/?seed=17&test&mode=rumble` });
   const until = async (expression, ms, what) => {
     for (const end = Date.now() + ms; Date.now() < end;) {
       if (await evaluate(expression).catch(() => false)) return;
@@ -279,8 +279,11 @@ async function startMatch(t, width, height, { mobile = false } = {}) {
     }
     assert.fail(`timed out waiting for ${what}`);
   };
-  await until(`document.getElementById('wrestle-hd')?.getAttribute('aria-disabled') === 'false' && !!window.derbyTest?.game`, 60000, 'the HD match button');
-  await evaluate("document.getElementById('wrestle-hd').click()");
+  // Rumble is selected by the URL; choose HD models, then Start.
+  await until(`document.getElementById('start')?.disabled === false && !!window.derbyTest?.game`, 60000, 'the Start rumble button');
+  await evaluate(`document.querySelector('input[name="opt-rumble-models"][value="hd"]').click()`);
+  assert.equal(await evaluate(`document.getElementById('start').textContent`), '▶ Start rumble');
+  await evaluate("document.getElementById('start').click()");
   await until('!!window.derbyTest.game.wrestle', 120000, 'the HD match');
   return { send, evaluate };
 }

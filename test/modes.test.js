@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MODES, DEFAULT_MODE, findMode, fitsPlayers, optionValue, modeOptions, allModeOptions } from '../public/js/modes.js';
+import { MODES, DEFAULT_MODE, findMode, fitsPlayers, optionValue, modeOptions, allModeOptions, playersText, capacityText } from '../public/js/modes.js';
 import { WIN_MODES, checkWinner } from '../public/js/data-rules.js';
 import { MODE, MODE_COUNT } from '../public/js/page-common.js';
 import { MIN_WRESTLERS, MAX_WRESTLERS } from '../public/js/wrestle-sim.js';
@@ -70,4 +70,27 @@ test('the server error for an unknown mode lists every accepted mode', () => {
     return true;
   });
   assert.equal(checkWinner(['Ada'], 'ada', 'wrestle'), 'Ada');
+});
+
+test('cards and the readiness line state each mode’s player limits as text', () => {
+  const race = findMode('race');
+  const rumble = findMode('rumble');
+  assert.equal(playersText(race), '2+ players');
+  assert.equal(playersText(rumble), `${MIN_WRESTLERS}–${MAX_WRESTLERS} players`);
+  assert.equal(capacityText(race, 5), '');
+  assert.equal(capacityText(race, 1), 'Derby Race needs at least 2 players. 1 is checked.');
+  assert.equal(capacityText(rumble, 0), 'Let’s Rumble needs at least 2 players. 0 are checked.');
+  assert.equal(capacityText(rumble, 12), '');
+  assert.equal(capacityText(rumble, 14), 'Let’s Rumble supports 2–12 players. 14 are checked — uncheck 2.');
+});
+
+test('every range step has a read-out, and every mode has a How to play template', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  for (const mode of MODES) {
+    assert.match(html, new RegExp(`<template id="guide-${mode.guide}">`), `${mode.id} How to play`);
+    for (const option of mode.options.filter((o) => o.type === 'range')) {
+      for (const step of option.steps) assert.ok(step.label && step.text, `${mode.id}.${option.id} step ${step.value}`);
+    }
+  }
 });
