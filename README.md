@@ -414,7 +414,8 @@ The online demo uses the same pages.
   - every control can be reached with **Tab** and used with **Enter** or **Space**;
   - mode cards and the **Classic | HD** toggle are radio groups: one **Tab** stop each, and the arrow keys
     change the selection without starting anything;
-  - in the lobby, **Enter** (outside a control) starts the selected game;
+  - in the lobby, **Enter** starts the selected game, from a game card, one of its options, or anywhere
+    that isn't a button, link, checkbox or text field;
   - **M** turns sound on or off;
   - **Escape** closes the reset dialog.
 - **Focus:**

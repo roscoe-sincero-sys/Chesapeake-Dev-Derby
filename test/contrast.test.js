@@ -41,6 +41,8 @@ const SURFACES = [
   ['#status.warn', ['var(--text)']],
   ['#status button', ['var(--text)']],
   ['#roster label', ['var(--text)', 'var(--muted)']],
+  ['.team-toggle', ['var(--text)', 'var(--muted)', 'var(--gold)']],
+  ['.team-toggle:hover', ['var(--text)', 'var(--muted)', 'var(--gold)']],
   ['#roster label:hover', ['var(--text)', 'var(--muted)']],
   ['#roster label:has(input:checked)', ['var(--text)']],
   ['#roster li.ineligible label', ['var(--muted)', '#ffa8a8']],

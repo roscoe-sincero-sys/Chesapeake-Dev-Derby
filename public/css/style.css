@@ -730,9 +730,6 @@ button:focus-visible {
     --pad-x: 16px;
     --pad-b: 14px;
   }
-  .lobby-head {
-    padding-right: 48px;
-  }
   /* On a small screen the winner card needs the room. */
   #hud.results-open #leaderboard,
   #hud.results-open #progress {
@@ -956,7 +953,8 @@ button.exit { padding: 8px 14px; }
 @media (max-width: 720px) {
   /* Narrow screens: Exit gets its own line under the title, so the name keeps its room. */
   .lobby-head { flex-wrap: wrap; }
-  .lobby-title { flex: 1 1 0; min-width: 0; }
+  /* Only the title keeps clear of the Mute button; Exit lines up with the lobby's right edge. */
+  .lobby-title { flex: 1 1 0; min-width: 0; padding-right: 44px; }
   .exit-wrap { order: 3; flex-basis: 100%; justify-content: flex-end; margin-top: -6px; }
 }
 
@@ -980,10 +978,30 @@ button.exit { padding: 8px 14px; }
 #team-body .roster-actions { margin: 0; flex-wrap: wrap; }
 #team-body .hint { margin: 4px 0 10px; }
 
-/* On wide screens the heading is plain text; on phones it's a button that folds the team list. */
-.team-toggle { display: none; }
-.team-toggle::after { content: '▸'; margin-left: 8px; font-size: 14px; letter-spacing: 0; }
+/* On wide screens the heading is plain text; on phones it's a full-width row that folds the team list:
+   "WHO'S HERE 12 playing · 2 absent ▸". */
+.team-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+}
+.team-toggle:hover { background: #2a2e39; }
+.team-toggle::after { content: '▸'; margin-left: auto; font-size: 16px; letter-spacing: 0; color: var(--muted); }
 .team-toggle[aria-expanded="true"]::after { content: '▾'; }
+.team-summary { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+/* Edit team list leaves the lobby: set it apart from Select all / Clear all. */
+#team-body .roster-actions a.link { margin-left: auto; }
 
 /* Mode cards: native radios (one tab stop, arrow keys), drawn as cards. */
 .mode-picker { margin: 0; padding: 0; border: none; min-width: 0; }
@@ -1089,6 +1107,8 @@ button.exit { padding: 8px 14px; }
   #lobby { width: min(1040px, calc(100vw - 32px)); }
   .lobby-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
   #roster-section { padding-right: 24px; }
+  /* Three columns beside the game, so 15 names take five rows. */
+  #roster { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
   #game-section { border-top: none; padding-top: 0; border-left: 1px solid var(--panel-border); padding-left: 24px; }
 }
 
@@ -1110,19 +1130,9 @@ button.exit { padding: 8px 14px; }
   }
   .lobby-actions button { flex: 1 1 0; min-width: 0; max-width: 260px; white-space: normal; padding: 8px 10px; }
   .lobby-actions button.primary { flex-grow: 1.5; min-width: 0; font-size: 16px; padding-inline: 12px; }
-  .team-toggle {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 4px 0 0;
-    background: none;
-    border: none;
-    color: var(--text);
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-  }
-  .team-title { display: none; }
+  .team-toggle { display: flex; }
+  #team-heading { flex: 1; min-width: 0; }
+  .team-title, #racer-count { display: none; }
   .area-head { margin-bottom: 0; }
   #roster-section.collapsed #team-body { display: none; }
 }
