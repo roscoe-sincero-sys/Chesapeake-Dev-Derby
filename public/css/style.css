@@ -1051,9 +1051,12 @@ button.exit { padding: 8px 14px; }
   /* Quieter than the cards above it, so Pick a game reads first. */
   background: #161c2a;
   color: var(--text);
-  transition: opacity 0.12s, visibility 0.12s;
+  /* The selected game's options are visible (and can take focus) at once, and fade in. */
+  transition: opacity 0.12s;
 }
-.mode-config.inactive { visibility: hidden; opacity: 0; }
+/* The others are hidden straight away, not faded out: a fade runs only as fast as the page draws frames,
+   and until it ended, the hidden game's controls would still be in the Tab order. */
+.mode-config.inactive { visibility: hidden; opacity: 0; transition: none; }
 .mode-tagline { margin: 6px 0 0; font-size: 14px; }
 .option-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
 .option-label { font-weight: 650; }

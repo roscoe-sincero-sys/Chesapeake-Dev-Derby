@@ -329,6 +329,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
   browser (a new tab keeps the game, with everyone present), the five slider lengths, snapping older or
   typed-in speeds to the nearest length, upgrading settings saved in the tab by earlier versions, falling
   back to the race and to default options for unknown or invalid values, and blocked storage.
+- **`test/markup.test.js`** — every button on every page has text or a label, so checkers like WAVE find
+  no empty button, even on one that stays hidden until needed (the wrestler list's button in a match).
 - **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled

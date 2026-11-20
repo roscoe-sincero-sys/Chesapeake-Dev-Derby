@@ -72,7 +72,7 @@ async function openLobby(t, { extra, names = NAMES, width = 1366, height = 768, 
   const send = await openBrowser(t);
   const page = pageHelpers(send);
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
-  // Without motion, the options' crossfade is instant, so what shows can be read straight after a change.
+  // Without motion there's no fade-in either, so what shows can be measured straight after a change.
   if (reducedMotion) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `(${installModes})(${extra})` });
@@ -95,7 +95,12 @@ async function openLobby(t, { extra, names = NAMES, width = 1366, height = 768, 
     const y = r[1] + r[3] / 2;
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
   };
-  return { send, ...page, load, key, tap };
+  /** Leaves the lobby for another page of the app (one that saves no lobby settings). */
+  const leave = async (path) => {
+    await send('Page.navigate', { url: `${base}/${path}` });
+    await page.until(`document.readyState === 'complete' && location.pathname.endsWith('${path}')`, 30000, path);
+  };
+  return { send, ...page, load, key, tap, leave };
 }
 
 /** What the lobby shows for the selected mode. */
@@ -118,7 +123,7 @@ const LOBBY = `(() => {
 })()`;
 
 test('a third mode joins the lobby as one more card, with its own options, limits and Start', { skip, timeout: 120000 }, async (t) => {
-  const { evaluate, until, load, key } = await openLobby(t, { extra: 1 });
+  const { evaluate, until, load, key, leave } = await openLobby(t, { extra: 1 });
   const tab = () => key('Tab', 'Tab', 9);
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
@@ -127,6 +132,9 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.deepEqual(lobby.cards[2], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
+  // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('button')]
+    .filter((b) => !b.textContent.trim() && !b.getAttribute('aria-label') && !b.getAttribute('aria-labelledby')).map((b) => b.outerHTML)`), []);
 
   // Tab reaches every card in turn, not only the selected one; Enter on a card only selects it.
   await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').focus()`);
@@ -168,7 +176,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').focus()`);
   for (const value of ['docks', 'bridge', 'lighthouse']) {
     await tab();
-    assert.equal(await evaluate('document.activeElement.dataset.value'), value);
+    assert.equal(await evaluate('document.activeElement.dataset.value'), value, `Tab reached ${await evaluate('document.activeElement.outerHTML.slice(0, 90)')}`);
   }
   await key(' ', 'Space', 32, ' ');
   assert.deepEqual(await evaluate(map), ['lighthouse']);
@@ -204,6 +212,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   await until(`!document.getElementById('lobby').hidden`, 10000, 'the lobby after Quit');
 
   // A new tab, for the next meeting: everyone is present again, but the game and its options are kept.
+  // (Cleared from another page: the lobby, still reloading the team list after Quit, saves attendance.)
+  await leave('history.html');
   await evaluate('sessionStorage.clear()');
   await load();
   lobby = await evaluate(LOBBY);

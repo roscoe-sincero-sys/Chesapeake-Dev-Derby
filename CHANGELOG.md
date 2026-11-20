@@ -16,6 +16,12 @@ to release.
 - README: screenshots of the lobby on a laptop and a phone, and **Adding a game**.
 
 ### Fixed
+- **WAVE "empty button":** the wrestler list's button (shown during a Rumble on small screens) was empty
+  in the page until a match filled it. It now reads "🤼 Wrestlers in the ring" until the match gives the
+  count, and `test/markup.test.js` checks every button on every page has a name.
+- **Lobby keyboard (#117):** choosing a game hides the previous game's options straight away (the new
+  ones still fade in). The fade-out ran only as fast as the page drew frames, and on a busy page Tab could
+  reach a hidden game's controls until it ended.
 - **Lobby keyboard (#117):** **Tab** now reaches every game card. The cards (and the Classic | HD choices)
   were one radio group, so Tab stopped only on the selected card and another game could be chosen only with
   the arrow keys. Each is now a button that reads as pressed when selected; **Space** or **Enter** selects
