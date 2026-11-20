@@ -1128,7 +1128,8 @@ button.exit { padding: 8px 14px; }
     background: var(--panel);
     border-top: 1px solid var(--panel-border);
   }
-  .lobby-actions button { flex: 1 1 0; min-width: 0; max-width: 260px; white-space: normal; padding: 8px 10px; }
+  /* Tall enough for a label on two lines, so a long "Start ‹verb›" that wraps doesn't resize or move Start. */
+  .lobby-actions button { flex: 1 1 0; min-width: 0; max-width: 260px; min-height: 56px; white-space: normal; padding: 8px 10px; line-height: 1.2; }
   .lobby-actions button.primary { flex-grow: 1.5; min-width: 0; font-size: 16px; padding-inline: 12px; }
   .team-toggle { display: flex; }
   #team-heading { flex: 1; min-width: 0; }
