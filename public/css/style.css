@@ -1024,7 +1024,7 @@ button.exit { padding: 8px 14px; }
 
 /* The selected mode's options. Every panel shares one grid cell, so the area is as tall as the tallest
    panel and Start doesn't move when the mode changes; the others are hidden with visibility. */
-.mode-options { display: grid; margin-top: 12px; }
+.mode-options { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
 .mode-config {
   grid-area: 1 / 1;
   display: flex;
@@ -1046,11 +1046,14 @@ button.exit { padding: 8px 14px; }
 
 /* Segmented toggle (Classic | HD): a native radio group drawn as pills. */
 .segmented-option { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+/* Wraps when there are more choices than fit (a round shape, not a pill, keeps wrapped rows tidy). */
 .segments {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 3px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: 23px;
   background: #101420;
   border: 1px solid #67758d;
 }

@@ -19,9 +19,11 @@ const $ = (id) => document.getElementById(id);
 //   ?seed=123     replay the same race every time
 //   ?speed=4      starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
 //   ?mode=rumble  starting game mode: race or rumble (an unknown mode is ignored)
-//   ?test         expose the game and HUD as window.derbyTest (the browser tests use it)
+//   ?test         expose the game and HUD as window.derbyTest (the browser tests use it), and add any
+//                 stand-in modes the tests put in window.derbyTestModes (see test/lobby-browser.test.js)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
+if (params.has('test') && Array.isArray(window.derbyTestModes)) MODES.push(...window.derbyTestModes);
 const savedSettings = readLobbySettings();
 if (params.has('speed')) savedSettings.options.race.speed = normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED);
 if (MODES.some((mode) => mode.id === params.get('mode'))) savedSettings.mode = params.get('mode');
@@ -36,7 +38,7 @@ const state = {
   winners: [],
   roster: [],
   shown: new Map(), // nameKey -> on-screen name (email addresses shortened when unambiguous)
-  raceNames: new Map(), // on-screen name -> stored name, for the race in progress
+  raceNames: new Map(), // on-screen name -> stored name, for the game in progress
   absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
   mode: savedSettings.mode, // the selected mode's id, retained within this browser tab
   options: savedSettings.options, // each mode's option values: { race: { speed }, rumble: { models } }
@@ -47,7 +49,7 @@ const state = {
 
 /** The on-screen form of a stored name. */
 const show = (name) => state.shown.get(nameKey(name)) ?? name;
-/** The stored name behind a name shown in the race. */
+/** The stored name behind a name shown in the game. */
 const stored = (name) => state.raceNames.get(name) ?? name;
 
 const sfx = new Sfx();
@@ -88,7 +90,7 @@ async function loadState() {
     status.className = '';
     status.replaceChildren();
     const notes = [...data.warnings];
-    if (!game) notes.unshift('3D is not available in this browser, so the race will be run off-screen and the winner shown straight away.');
+    if (!game) notes.unshift('3D is not available in this browser, so games are decided off-screen and the winner shown straight away.');
     if (!state.names.length) notes.unshift('The team list is empty. Use Edit team list to add names.');
     if (notes.length) {
       status.className = 'warn';
@@ -256,7 +258,9 @@ async function resetWinners() {
     state.roster = buildRoster(state.names, state.winners);
     renderLobby();
     status.textContent = 'List reset. Everyone can play again.';
-    $('check-all').focus({ preventScroll: true });
+    // Reset has gone (there are no winners now): focus the team list, or Start where it's folded away.
+    if ($('check-all').getClientRects().length) $('check-all').focus({ preventScroll: true });
+    else focusSetup();
   } catch (err) {
     status.className = 'hint error-text';
     status.textContent = `Could not reset the list: ${err.message}`;

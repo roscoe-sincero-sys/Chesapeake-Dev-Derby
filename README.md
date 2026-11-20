@@ -63,6 +63,9 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    the game on the right; on a narrower one they stack. On a phone the team list folds into a
    **Who's here · 12 playing** row: tap it to open the list (it starts open when fewer than two people are
    ready). Everyone is listed with a checkbox. A ticked box means that person is playing.
+
+   <img src="docs/lobby-wide.png" alt="The lobby on a laptop: Who's here with the team list on the left; Pick a game with the Derby Race card selected and its Race length slider on the right; Just pick someone and Start race at the bottom." width="640">
+   <img src="docs/lobby-phone.png" alt="The lobby on a phone: the team list folded into a Who's here row, the Let's Rumble card selected with its Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
    - The list is in **alphabetical order**. A name that is an email address is shown without the
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
@@ -304,7 +307,7 @@ Handy for demos and testing:
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?mode=rumble` | Initial game: `race` or `rumble`. An unknown name is ignored. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
-| `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
+| `?test`     | Expose the game and HUD as `window.derbyTest`, and add stand-in modes from `window.derbyTestModes`, for the browser tests |
 
 ## Tests
 
@@ -347,7 +350,22 @@ Uses Node's built-in test runner — no extra packages. Covers:
   older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
   a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
   checks that all of them ran. A last live match on a 320 × 568 phone taps the list's button to open and
-  close it, and checks every tap on it reaches it rather than Mute or Quit.
+  close it, and checks every tap on it reaches it rather than Mute or Quit. The HD match is started the way
+  a person would: the Rumble card, **HD**, then **Start rumble**.
+- **`test/lobby-browser.test.js`** — the lobby takes more games without changing its markup or CSS. Before
+  the page's scripts run, the test adds stand-in modes through `?test`, with a stub start that records
+  what it was given:
+  - **a third mode** (Arena, 2–4 players, a three-way toggle and a slider, its own How to play): it appears
+    as one more card; the arrow keys select it without starting it; six checked are refused in text
+    beside a disabled Start and Enter does nothing; **Review team list** goes to the list; once it fits,
+    **Enter** starts it with its options; Quit returns focus to Start; and a reload keeps the mode, its
+    options and attendance;
+  - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568: no sideways
+    scrolling, cards and buttons at least 44 px, names wrapped rather than cut off, only the selected
+    mode's options showing, and Start in exactly the same place for every mode.
+
+  `test/browser.js` holds what both browser tests share: starting Chrome and the app on a temporary data
+  folder.
 
 ## How it's put together
 
@@ -400,6 +418,22 @@ other machines; see [Local server security](#local-server-security).
 The simulation (`sim.js`) works in simple track coordinates — distance along the course and sideways
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
 the models to match, so the outcome is the same on a fast or slow machine.
+
+### Adding a game
+
+The lobby is built from the list of games in `public/js/modes.js`. Each entry gives a game's icon, name,
+player range, options, the line shown beside Start when it's ready, and a `start(ctx, options)` function.
+The lobby draws the cards, options and Start button from that list, so adding a game (a third-person
+arena, say) doesn't touch the lobby's markup or CSS:
+
+1. Write the game module, split like `wrestle.js` (3D) and `wrestle-sim.js` (rules, no graphics).
+2. Add one entry to `MODES` in `modes.js`. Options can be a `range` (a stepped slider), a `segmented`
+   toggle, or a `link`.
+3. Add its `winMode` to `WIN_MODES` (`data-rules.js`), and a label to `MODE` and wording to `MODE_COUNT`
+   (`page-common.js`) for the history pages. `test/modes.test.js` fails if any of these is missing.
+4. Add `<template id="guide-‹its guide›">` to `index.html` with its How to play.
+
+`test/lobby-browser.test.js` checks this with a stand-in third game, and with six games.
 
 ## Accessibility
 
@@ -481,7 +515,8 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    `color` in the **Styles** pane; the colour picker shows the contrast ratio and whether it passes AA.
 5. **Keyboard:** put the mouse aside.
    1. Press **Tab** through the lobby: every control should get a visible outline.
-   2. Start a race with **Enter**, and toggle sound with **M**.
+   2. Move between the game cards with the arrow keys (nothing starts), then start the selected game
+      with **Enter**; after **Quit**, focus is back on Start. Toggle sound with **M**.
    3. Open **Reset list** and close it with **Escape**.
 6. **Screen reader:**
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
@@ -532,7 +567,8 @@ A public, browser-only demo runs on GitHub Pages at
 **How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
 `npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
 repository's **Deployments → github-pages**. A separate **Browser tests** job runs
-`test/callout-browser.test.js` in headless Chrome on Node 22, and the deploy waits for it too. Pull
+`test/callout-browser.test.js` and `test/lobby-browser.test.js` in headless Chrome on Node 22, and the
+deploy waits for it too. Pull
 requests run the tests, the browser tests and the build without deploying.
 The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
 

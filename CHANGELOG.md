@@ -7,7 +7,22 @@ to release.
 
 ## [Unreleased]
 
+### Added
+- **Lobby browser tests (#117, phase 4):** `test/lobby-browser.test.js` adds a stand-in third game, and
+  six games with a very long name, and checks the lobby takes them with no change to its markup or CSS:
+  selection by keyboard, each game's options, player limits in text, Enter and the shared Start, focus,
+  saved settings, and the layout from a laptop down to a 320 px phone. CI's **Browser tests** job runs it.
+- README: screenshots of the lobby on a laptop and a phone, and **Adding a game**.
+
+### Fixed
+- **Lobby:** a toggle with more choices than fit now wraps, instead of widening every game's options past
+  a small phone's screen. After **Reset** on a phone, focus moves to Start rather than into the folded team
+  list.
+- Remaining race-only wording: the no-3D notice ("games are decided off-screen") and the team editor
+  ("Changes apply to the next pick").
+
 ### Changed
+- The model notes, base character notes and security reviews moved into `docs/`.
 - **A new lobby (#117, phase 3):** three questions in order, then one button. **Who's here** (the team
   list), **Pick a game** (a card per game: 🏁 Derby Race, 2+ players; 🤼 Let’s Rumble, 2–12) and that
   game's options, then **▶ Start race** / **▶ Start rumble** and **Just pick someone**.
