@@ -1,5 +1,6 @@
 # Publishes the browser-only demo to GitHub Pages, so it appears under the repo's Deployments
-# (environment "github-pages"). Pull requests only run the tests and the build; main also deploys.
+# (environment "github-pages"). Pull requests only run the tests (including the browser tests) and the
+# build; main also deploys, once both have passed.
 name: Demo on GitHub Pages
 
 on:
@@ -37,9 +38,40 @@ jobs:
         with:
           path: _site
 
+  # The browser tests (test/callout-browser.test.js) need Node 22+ and Chrome, so `npm test` in the
+  # build job (Node 20) skips them. Here they must run: DERBY_BROWSER_TESTS=required fails them instead
+  # of skipping, and the last step checks that every one of them ran and passed. The runner has no GPU:
+  # Chrome draws with software WebGL, and the live match runs on the test's stepped clock (60 frames a
+  # second of match time, however slowly they draw).
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Browser tests in headless Chrome
+        env:
+          DERBY_BROWSER_TESTS: required
+        run: >-
+          node --test
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=tap --test-reporter-destination=browser.tap
+          test/callout-browser.test.js
+      - name: Check that every browser test ran
+        run: |
+          tests=$(sed -n 's/^# tests //p' browser.tap)
+          pass=$(sed -n 's/^# pass //p' browser.tap)
+          echo "$pass of $tests browser tests passed"
+          [ "$tests" -ge 3 ] && [ "$pass" = "$tests" ]
+
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, browser]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

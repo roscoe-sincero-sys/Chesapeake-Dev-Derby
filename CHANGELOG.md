@@ -7,6 +7,29 @@ to release.
 
 ## [Unreleased]
 
+### Fixed
+- **Body slams (#104):** the lifted wrestler now lies across the lifter's chest, resting on both hands
+  (back on one, legs on the other) through the lift and hold, for every pair of sizes, before being driven
+  down flat on the mat from exactly where they were held. Before, they floated beside the raised hands.
+  A wrestler ganging up on someone waits while their target is being slammed.
+- **Over the top rope, not through it (#105):** thrown bodies turn about their middle and fly an arc that
+  peaks early, over the ropes, so trailing legs, capes and braids clear the top rope, with a check on the
+  body itself as a last resort. Grappled wrestlers back up against the ropes without going into them.
+- **Satyaki's ring-outs (#106):** with room for it, he now runs to the ropes on another side, bounces off
+  them and tackles his opponent over the top rope, as the feed says. He turns smoothly into the ropes,
+  off them and through the tackle, at any frame rate, and his opponent turns smoothly to face him. When there's no clear run (for example, during two
+  ring-outs at once), he uses the standard throw and the feed says he drove them over.
+- **Phone layout (#107):** on narrow or short screens the wrestler list folds into a count ("🤼 8 of 12 in
+  the ring") that opens the full list; on a phone too narrow for it beside Mute and Quit (320 px), it
+  moves below them. A ring-out message keeps clear of the list, the Mute and Quit
+  buttons and the landings it announces: it goes beside, above or below them, high on the screen as a
+  short, wide banner (two long names aren't broken up down a narrow strip), smaller rather than over a
+  landing. Long messages wrap on every screen and always fit on it, and are placed again when the list
+  opens or closes, the phone turns, or the camera brings a landing under the message. A new browser test
+  (`test/callout-browser.test.js`) checks this in headless Chrome, including in the live HD match, and
+  runs in its own **Browser tests** job on GitHub Actions (Node 22 and Chrome), where it must run rather
+  than skip. The deploy to GitHub Pages waits for it.
+
 ## [1.5.0] - 2026-11-18
 
 ### Changed

@@ -1,7 +1,7 @@
 // App entry point: loads the roster, runs the lobby, starts races and saves the winner.
 
 import { Game, runHeadless } from './game.js';
-import { Hud, who } from './hud.js';
+import { Hud, who, throwText } from './hud.js';
 import { prepareWrestlerModels } from './wrestlers.js';
 import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
@@ -18,6 +18,7 @@ const $ = (id) => document.getElementById(id);
 // Optional URL switches, handy for demos and testing:
 //   ?seed=123   replay the same race every time
 //   ?speed=4    starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
+//   ?test       expose the game and HUD as window.derbyTest (the browser tests use it)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
 const savedSettings = readLobbySettings();
@@ -46,6 +47,7 @@ const stored = (name) => state.raceNames.get(name) ?? name;
 const sfx = new Sfx();
 const hud = new Hud();
 let game = null;
+if (params.has('test')) window.derbyTest = { hud, get game() { return game; } };
 
 // ------------------------------------------------------------------ server
 
@@ -331,17 +333,6 @@ function run() {
 
 // ------------------------------------------------------------------ wrestling
 
-/** Feed lines for a ring-out, in the thrower's style. */
-const THROW_TEXT = {
-  overhead: (h, v) => `${who(h)} (Bhima) lifted ${who(v)} overhead and tossed them out`,
-  bruiser: (h, v) => `${who(h)} (Kichaka) muscled ${who(v)} over the top rope`,
-  patient: (h, v) => `${who(h)} (Karna) turned ${who(v)}'s charge into a throw over the ropes`,
-  composed: (h, v) => `${who(h)} (Shikhandi) caught ${who(v)} off balance and over the ropes`,
-  illusion: (h, v) => `${who(h)} (Ghatotkacha) feinted with an illusion, then threw ${who(v)} out`,
-  crowd: (h, v) => `${who(h)} (Dushasana) crowded ${who(v)} into the ropes and over`,
-  rebound: (h, v) => `${who(h)} (Satyaki) came off the ropes and took ${who(v)} over the top`,
-};
-
 /** How the close call ends, by who's on the ropes (or who is pulling them back). */
 function closeCallText(w, other) {
   const saved = {
@@ -400,7 +391,7 @@ async function wrestle(modelStyle = 'classic') {
       else if (e.type === 'out') {
         hud.wrestleOut(e.victim.id);
         hud.outCallout(e.victim.name);
-        hud.note(THROW_TEXT[e.thrower.kind.style]?.(e.thrower, e.victim) ?? `${who(e.thrower)} (${e.thrower.kind.label}) threw ${who(e.victim)} over the top rope`);
+        hud.note(throwText(e));
       } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
       else if (e.type === 'closeCall') hud.note(closeCallText(e.wrestler, e.other)); else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
     },
@@ -417,6 +408,8 @@ async function wrestle(modelStyle = 'classic') {
     },
   });
   hud.beginWrestle(lineup);
+  // Ring-out callouts stay off the landings they announce (#107).
+  hud.sceneBlocks = (width, height) => game?.wrestle?.landingRects(width, height) ?? [];
   if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
   $('quit').textContent = '✕ Quit match';
   $('quit').hidden = false;

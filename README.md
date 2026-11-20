@@ -146,7 +146,7 @@ on the floor. The last one left **leads today's standup**.
 1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
 2. **Ring-outs.** Everyone in the ring is fighting at once: each wrestler squares off with someone,
    trading lock-ups, forearm shots and shoves, reeling back from a hard shot, reversing a tie-up, running
-   the ropes for a shoulder tackle or hitting a body slam, and breaks away now and then to find someone
+   the ropes for a shoulder tackle or hoisting someone across the chest for a body slam, and breaks away now and then to find someone
    new (an odd one out joins a fight two on one, from the side). Each character has a favourite: Bhima,
    Ghatotkacha and Jarasandha slam, Satyaki rebounds off the ropes, Kichaka and Dushasana shove, and
    Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi reverse. Fights keep their own part of the mat.
@@ -155,7 +155,13 @@ on the floor. The last one left **leads today's standup**.
    distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
    little to watch that side, and gradually widens the shot if needed, so the rope, the landing and the whole body
    stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
-   crossed off the list.
+   crossed off the list. Thrown wrestlers go cleanly over the top rope, never through it. When Satyaki
+   throws someone out and there's room, he runs to the ropes on another side, comes off them and
+   tackles them over; otherwise the feed says he drove them over, matching what you saw. On a phone or
+   a short screen the list of wrestlers folds into a count ("🤼 8 of 12 in the ring") that you can tap
+   to open. Ring-out messages never cover it or the Mute and Quit buttons, keep clear of the landings
+   they announce, and always fit on screen: long ones wrap, and they move again when you open the list,
+   turn the phone, or the camera brings a landing underneath.
 3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
    the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
    winner history as **wrestle**, and sits out the next three picks like any other winner.
@@ -277,6 +283,7 @@ Handy for demos and testing:
 | ----------- | --------------------------------------------------------- |
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
+| `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
 
 ## Tests
 
@@ -302,7 +309,21 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/wrestle-match.test.js`** — the 3D match run headless (`test/headless.js` stubs canvas drawing and
   loads the HD bodies without a browser): the camera's orbit and framing in wide and portrait views, HD
   limbs that never snap between moves, the same pacing at 30, 60 and 120 updates per second, room between
-  fights, and every brawling move in use.
+  fights, and every brawling move in use; thrown bodies clearing the top rope, body slams held in the hands
+  and dropped from there, and Satyaki's rope rebound with him and his victim turning smoothly.
+- **`test/callout-browser.test.js`** — ring-out messages with two 34-character names in headless Chrome,
+  on a phone held upright and sideways, with the wrestler list folded and open, and turned while the
+  message is up: all of it on screen, none of it cut off, clear of the list and the Mute and Quit
+  buttons, and a wide banner when the list is folded; on a 320 px phone the list's button moves below Mute
+  and Quit. Then the live seed-17 HD match at 1280 × 800 and
+  at 844 × 390 with the list open: every frame the first paired message is up, none of either thrown body
+  (measured from the 3D scene) is under it. The match runs on a stepped clock, 60 frames for each second
+  of match time however long they take to draw, so it plays the same with or without a GPU (a GPU only
+  makes it quicker). Nothing checks pixels, so until a message is up it draws one frame in ten. Skipped when Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is
+  older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
+  a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
+  checks that all of them ran. A last live match on a 320 × 568 phone taps the list's button to open and
+  close it, and checks every tap on it reaches it rather than Mute or Quit.
 
 ## How it's put together
 
@@ -479,7 +500,9 @@ pick** and **Let's Wrestle Instead** without installing anything.
 
 **How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
 `npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
-repository's **Deployments → github-pages**. Pull requests run the tests and the build without deploying.
+repository's **Deployments → github-pages**. A separate **Browser tests** job runs
+`test/callout-browser.test.js` in headless Chrome on Node 22, and the deploy waits for it too. Pull
+requests run the tests, the browser tests and the build without deploying.
 The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
 
 To build and look at the demo yourself:

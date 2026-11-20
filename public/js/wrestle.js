@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { mat, box, cyl, plane, at, canvasTexture, drawMarylandFlag, MD, FONT_UI } from './util3d.js';
 import { planMatch, pairUp, PACE } from './wrestle-sim.js';
-import { buildWrestler, pose, capturePose, lowestBodyPoint, bodyBounds } from './wrestlers.js';
+import { buildWrestler, pose, capturePose, lowestBodyPoint, bodyBounds, eachVertex } from './wrestlers.js';
 import { mulberry32 } from './sim.js';
 import { Particles } from './effects.js';
 import { Crowd } from './crowd.js';
@@ -21,7 +21,9 @@ const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
 const ease = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k));
 const clamp01 = (k) => Math.max(0, Math.min(1, k));
 const headingTo = (fromX, fromZ, toX, toZ) => Math.atan2(-(toX - fromX), -(toZ - fromZ));
-const lerpAngle = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+/** The turn from heading `a` to `b`, the short way round (-PI to PI). */
+const turnBy = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+const lerpAngle = (a, b, k) => a + turnBy(a, b) * k;
 
 // A thrown wrestler lands flat on the back (pitch +π/2: face up), then bounces twice.
 const ON_BACK = Math.PI / 2;
@@ -54,13 +56,24 @@ const SIGNATURE = {
   showman: 'strikes', // Duryodhana
 };
 const CONTACT = new Set(['reversal', 'slam']); // moves where the pair hold on to each other
+// The body slam's stages, in seconds from its start: grab, lift, hold, drop, then down on the mat.
+const SLAM = { lift: 0.5, hold: 0.95, drop: 1.12, down: 1.35 };
 const KNOCKDOWN = { lie: 0.9, up: 1.7 }; // seconds after going down: start getting up, back on their feet
+// Satyaki's rope rebound in a ring-out (#106): his running speed, and the time off the ropes.
+// Satyaki's rope rebound (#106). He turns to run for the ropes over `start` seconds, then from the run
+// out to the charge back over `turn` seconds: starting `early` before he reaches the ropes (side first
+// into them), through the bounce and on into the charge; and over the first `tackle` of the throw he
+// squares up to the ropes. His facing is set by time, so it never jumps, at any update rate.
+const RUN = { speed: 5.2, bounce: 0.3, start: 0.65, early: 0.25, turn: 0.75, tackle: 0.45 };
 const ROPE_CONTACT = 0.5; // a wrestler's root this far inside the rope line has their back on the ropes
 const ROOM = 4.4; // how far apart fights try to stay (#100)
 const BLEND = 0.22; // seconds for one move to ease into the next (#98)
 const SHOWMAN_TURN = 2.4; // Duryodhana's turn while playing to the crowd, radians per second (#99)
 // What every wrestler in the ring resets to before each update; moves set what they need.
-const UPRIGHT = { pitch: 0, roll: 0, ground: false, landed: false, hop: 0, pulse: 1, flicker: false, tagDrop: 0 };
+const UPRIGHT = { pitch: 0, roll: 0, ground: false, landed: false, hop: 0, pulse: 1, flicker: false, tagDrop: 0, exact: false, ropeGuard: null, ropeHold: null };
+// The middle of a thrown body rises this much above the straight line from grapple to landing (#105).
+const FLIGHT = { peak: 3.2, hipToss: 4.2, overhead: 1.3 };
+const ROPE_TOP = MAT_Y + 1.55; // height of the top rope (ROPES[2]); its radius is 0.05
 
 // The camera's orbits (#95): the intro settles into the live orbit round the ring, which eases into a
 // closer one for the final two and then into the victory shot. `aim` is how far it may turn from the
@@ -323,6 +336,11 @@ export class WrestleMatch {
     this.spaceFights(free, dt);
     this.separate();
     for (const w of this.wrestlers) this.place(w, dt);
+    // Body slams: rest the lifted wrestler on the lifter's hands, now both are posed and placed.
+    for (const w of free) {
+      const f = w.fight;
+      if (f?.move === 'slam' && f.by === w && w.foe !== null) this.gripSlam(w, this.wrestlers[w.foe], f.m);
+    }
     this.crowd.update(t);
     this.updateCamera(dt);
     this.particles.update(dt);
@@ -347,6 +365,36 @@ export class WrestleMatch {
 
   inRing() {
     return this.wrestlers.filter((w) => !w.out);
+  }
+
+  /**
+   * Where the ring-outs a callout announces are on screen (#107): the body of everyone going over the
+   * ropes now (or about to) or landed in the last few seconds, as rectangles in CSS pixels of a
+   * `width` x `height` view, each with the wrestler's `id`. The HUD keeps the callout off them, so the
+   * landing stays in view.
+   */
+  landingRects(width, height) {
+    const box = new THREE.Box3();
+    const corner = new THREE.Vector3();
+    const rects = [];
+    for (const w of this.wrestlers) {
+      const going = this.actions.some((b) => b.type === 'elimination' && b.victim === w.id && this.t >= b.throwAt - 0.3);
+      if (!going && !(w.out && this.t - (w.outTime ?? -Infinity) < 4)) continue;
+      bodyBounds(w.rig, box, 8);
+      if (box.isEmpty()) continue;
+      const r = { id: w.id, left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+      for (let i = 0; i < 8; i++) {
+        corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(this.camera);
+        const x = ((corner.x + 1) / 2) * width;
+        const y = ((1 - corner.y) / 2) * height;
+        r.left = Math.min(r.left, x);
+        r.right = Math.max(r.right, x);
+        r.top = Math.min(r.top, y);
+        r.bottom = Math.max(r.bottom, y);
+      }
+      if (r.right > 0 && r.left < width && r.bottom > 0 && r.top < height) rects.push(r);
+    }
+    return rects;
   }
 
   /** Nobody free to fight (everyone else is in a throw): circle, and now and then run the ropes. */
@@ -479,7 +527,7 @@ export class WrestleMatch {
     } else if (f.move === 'rebound') {
       this.ropeRebound(f, att, def, dt, act, face);
     } else if (f.move === 'slam') {
-      this.bodySlam(f, att, def, ax, az, k, act);
+      this.bodySlam(f, att, def, ax, az, k, act, face);
     } else {
       // Break, and circle each other looking for an opening.
       step(a, -uz, ux, 1.3);
@@ -614,42 +662,120 @@ export class WrestleMatch {
     }
   }
 
-  /** Body slam (the lifters' signature): grab, hoist across the chest, drop flat on the mat, recover. */
-  bodySlam(f, att, def, ax, az, k, act) {
+  /**
+   * Body slam (the lifters' signature): grab low, hoist them up to lie across the chest, hold, then drive
+   * them down flat on the mat and recover. While they're up, `gripSlam()` (after posing) rests them on
+   * the lifter's hands: upper back on one, thigh on the other (#104).
+   */
+  bodySlam(f, att, def, ax, az, k, act, face) {
     const m = f.m;
     const s = k * f.dur;
     m.from ??= { x: ax, z: az };
+    m.dir ??= this.random() < 0.5 ? -1 : 1; // which hand takes the upper back
     const ahead = (r) => ({ x: att.x + m.from.x * r, z: att.z + m.from.z * r });
-    m.stage = s < 0.5 ? 'grab' : s < 1.12 ? 'lift' : s < 1.35 ? 'slam' : 'down';
-    if (s < 0.5) {
-      // Get hold, low.
-      const p = ahead(1.05 - 0.2 * ease(s / 0.5));
+    m.stage = s < SLAM.lift ? 'grab' : s < SLAM.hold ? 'lift' : s < SLAM.drop ? 'hold' : s < SLAM.down ? 'slam' : 'down';
+    // Lying across the lifter's chest: head towards one hand, legs towards the other (along the hands
+    // as gripSlam last measured them, once it has).
+    const across = m.across ?? att.heading + m.dir * (Math.PI / 2);
+    // The lifter holds still, square to where they took hold, from the lift to the slam.
+    if (m.stage !== 'grab' && m.stage !== 'down') face.set(att, (m.stance ??= att.heading));
+    if (m.stage === 'grab') {
+      // Get hold round the waist, low.
+      const p = ahead(1.0 - 0.25 * ease(s / SLAM.lift));
       def.x += (p.x - def.x) * damp(10, this.dt);
       def.z += (p.z - def.z) * damp(10, this.dt);
       act(att, { armsForward: 1, crouch: 0.5, lean: 0.4 });
       act(def, { armsForward: 0.8, crouch: 0.3, lean: 0.2 });
-    } else if (s < 1.35) {
-      // Up across the chest, held there for a beat, then down.
-      const up = ease((s - 0.5) / 0.45) * (1 - ease((s - 1.12) / 0.23));
-      const p = ahead(0.85 - 0.35 * up + (s > 1.12 ? 0.6 * ease((s - 1.12) / 0.23) : 0));
-      def.x = p.x;
-      def.z = p.z;
-      def.y = MAT_Y + 1.15 * up;
-      def.pitch = ON_BACK * ease((s - 0.5) / 0.5);
-      def.ground = true; // never through the mat on the way down
-      def.tagDrop = -1.4 * ease((s - 0.5) / 0.5);
-      act(att, s < 1.12 ? { armsUp: 0.85 * up, armsForward: 1 - up, crouch: 0.45 * (1 - up) + 0.1 } : { armsForward: 1.2, crouch: 0.55, lean: 0.55 }, 0.12);
-      act(def, { flail: 0.7, spread: 0.4, walk: f.t * 8 }, 0.18);
+    } else if (m.stage === 'lift' || m.stage === 'hold') {
+      // Up and turned across the chest; gripSlam() puts them on the hands.
+      const up = ease((s - SLAM.lift) / (SLAM.hold - SLAM.lift));
+      def.pitch = ON_BACK * up;
+      face.set(def, lerpAngle(headingTo(def.x, def.z, att.x, att.z), across, up));
+      def.ground = true; // never through the mat
+      def.tagDrop = -1.4 * up;
+      def.y = MAT_Y;
+      m.grip = up;
+      act(att, { armsForward: 1 - 0.45 * up, armsUp: 0.6 * up, spread: 0.12 * up, crouch: 0.5 - 0.35 * up, lean: 0.4 * (1 - up) }, 0.12);
+      act(def, { flail: 0.3, spread: 0.35, look: 0.2, walk: f.t * 6 }, 0.18);
+    } else if (m.stage === 'slam') {
+      // Driven down, still across, flat onto the mat in front of the lifter.
+      const q = (s - SLAM.drop) / (SLAM.down - SLAM.drop);
+      // From exactly where the body was last shown on the hands (the root as drawn, after place() kept
+      // it off the mat), so the drop starts in the hands, not below them.
+      const held = m.held ?? { x: def.x, y: MAT_Y, z: def.z, tag: MAT_Y - 1.4 };
+      const land = ahead(0.95);
+      const off = m.offset ?? { x: 0, z: 0 }; // from the body's middle to its root (feet), from the hold
+      def.x = held.x + (land.x + off.x - held.x) * q;
+      def.z = held.z + (land.z + off.z - held.z) * q;
+      def.y = held.y + (MAT_Y - held.y) * q * q; // falling, faster as it goes
+      def.pitch = ON_BACK;
+      def.ground = true;
+      def.tagDrop = (held.tag - held.y) + (-1.4 - (held.tag - held.y)) * q;
+      face.set(def, across);
+      m.grip = 0;
+      act(att, { armsForward: 1.2, crouch: 0.55, lean: 0.55 }, 0.1);
+      act(def, { flail: 0.3, spread: 0.45, look: 0.2, walk: f.t * 6 }, 0.18);
     } else {
       if (!m.landed) {
         m.landed = true;
         this.sfx?.play('hit', 0);
         this.particles.burst(new THREE.Vector3(def.x, MAT_Y + 0.15, def.z), { count: 8, colors: ['#c9c1ad', '#adb5bd'], speed: 2, up: 1, life: 0.45, size: 0.09, gravity: 6 });
       }
-      this.knockedDown(def, s - 1.35 + 0.3, null, this.dt);
+      face.set(def, def.heading); // they stay lying where they landed
+      this.knockedDown(def, s - SLAM.down + 0.3, null, this.dt);
       act(att, { guard: 0.7, crouch: 0.3, lean: 0.15, look: 0.2 });
-      if (s - 1.35 + 0.3 >= KNOCKDOWN.up) f.t = f.dur;
+      if (s - SLAM.down + 0.3 >= KNOCKDOWN.up) f.t = f.dur;
     }
+  }
+
+  /**
+   * Rests a lifted body on the lifter's hands (#104): its upper back on one hand, its thigh on the
+   * other, with the body's underside on the hands. Runs after everyone is posed and placed, so it uses
+   * the hands as they actually are for this pair's sizes, easing in as the lift starts.
+   */
+  gripSlam(att, def, m) {
+    if (!(m.grip > 0)) return;
+    const hands = this.hands(att);
+    const body = this.gripPoints(def, hands[0].distanceTo(hands[1]));
+    // Which way the hands run: the body lies along that line, head towards the hand on the m.dir side.
+    const [head, feet] = m.dir > 0 ? hands : [hands[1], hands[0]];
+    const along = headingTo(feet.x, feet.z, head.x, head.z) + Math.PI; // a back-down body's head points opposite its heading
+    m.across = m.across === undefined ? along : lerpAngle(m.across, along, 0.5);
+    const mid = (a, b) => a.clone().add(b).multiplyScalar(0.5);
+    const lift = mid(hands[0], hands[1]);
+    lift.y += 0.13 * def.rig.height / 1.8; // the back's thickness: the hands are under it
+    const delta = lift.sub(mid(body.chest, body.thigh)).multiplyScalar(ease(m.grip * 3)); // eases in
+    const r = def.rig;
+    r.root.position.add(delta);
+    r.tags.position.add(delta);
+    def.x = r.root.position.x;
+    def.z = r.root.position.z;
+    // Where it's drawn: the drop starts from here (#104).
+    m.held = { x: def.x, y: r.root.position.y, z: def.z, tag: r.tags.position.y };
+    m.offset = { x: def.x - (body.chest.x + body.thigh.x) / 2 - delta.x, z: def.z - (body.chest.z + body.thigh.z) / 2 - delta.z };
+  }
+
+  /** Where a wrestler's hands are, in world space. */
+  hands(w) {
+    const r = w.rig;
+    r.root.updateMatrixWorld(true);
+    const parts = r.skinnedRig ? [r.bones.hand_l, r.bones.hand_r] : r.arms.map((a) => a.hand);
+    return parts.map((o) => o.getWorldPosition(new THREE.Vector3()));
+  }
+
+  /**
+   * Where a slam takes hold of the body, in world space: two points along it, `gap` apart (the
+   * lifter's hands), either side of its balance point just above the hips: one under the back, one
+   * under the legs.
+   */
+  gripPoints(w, gap) {
+    const r = w.rig;
+    r.root.updateMatrixWorld(true);
+    const at = (o) => o.getWorldPosition(new THREE.Vector3());
+    const [hips, head] = r.skinnedRig ? [at(r.bones.pelvis), at(r.bones.Head)] : [at(r.hips), at(r.head)];
+    const axis = head.clone().sub(hips).normalize();
+    const balance = hips.clone().addScaledVector(axis, 0.07 * r.height);
+    return { chest: balance.clone().addScaledVector(axis, gap / 2), thigh: balance.clone().addScaledVector(axis, -gap / 2) };
   }
 
   /** Flat on the back for a moment after a tackle or a slam, then back up to a crouch. */
@@ -718,7 +844,7 @@ export class WrestleMatch {
       const rope = this.ropePoint(att, att === a ? b : a);
       if (rope.reach < 1.2 || rope.reach > 4.5 || this.nearAction(rope)) f.move = 'strikes';
     }
-    f.dur = { lockup: 1.2 + this.random() * 0.8, strikes: 1.25, stagger: 0.8, shove: 1, circle: 0.8 + this.random() * 0.6, reversal: 2.3, rebound: 6, slam: 1.35 - 0.3 + KNOCKDOWN.up }[f.move];
+    f.dur = { lockup: 1.2 + this.random() * 0.8, strikes: 1.25, stagger: 0.8, shove: 1, circle: 0.8 + this.random() * 0.6, reversal: 2.3, rebound: 6, slam: SLAM.down - 0.3 + KNOCKDOWN.up }[f.move];
   }
 
   /**
@@ -730,7 +856,17 @@ export class WrestleMatch {
     let tx = o.x;
     let tz = o.z;
     let reach = 1.25;
-    if (p && !p.out) {
+    // Someone in the middle of being slammed, reversed or knocked down: wait at a distance for them.
+    const f = o.fight;
+    const tied = f && f === p?.fight && (CONTACT.has(f.move) || (f.move === 'rebound' && f.m.stage === 'down'));
+    if (tied) {
+      const cx = (o.x + p.x) / 2;
+      const cz = (o.z + p.z) / 2;
+      const away = Math.hypot(w.x - cx, w.z - cz) || 0.001;
+      tx = cx + ((w.x - cx) / away) * 2.4;
+      tz = cz + ((w.z - cz) / away) * 2.4;
+      reach = 0.2;
+    } else if (p && !p.out) {
       // A flank: beside the one they're attacking, off the line between the two already fighting.
       const fx = p.x - o.x;
       const fz = p.z - o.z;
@@ -752,6 +888,11 @@ export class WrestleMatch {
       w.walk += s * 3.2;
       w.swing = 0;
       this.act(w, 'gang:close', { walk: w.walk, stride: 0.4, guard: 0.8, crouch: 0.25 });
+      return;
+    }
+    if (tied) {
+      w.swing = 0;
+      this.act(w, 'gang:wait', { guard: 0.8, crouch: 0.3, walk: w.walk, stride: 0.1 });
       return;
     }
     w.swing += dt;
@@ -825,9 +966,16 @@ export class WrestleMatch {
     return { x: 0, z: 0 };
   }
 
-  /** Where in the ring throws or a close call are happening right now (there can be two at once). */
+  /**
+   * Where in the ring throws or a close call are happening right now (there can be two at once), and
+   * where Satyaki is running for a rope rebound, so free fights keep out of the way.
+   */
   actionCentres() {
-    return (this.actions ?? []).map((b) => this.sideFrame(b.side, b.spot).at(HALF - 1.5));
+    return (this.actions ?? []).flatMap((b) => {
+      const centre = this.sideFrame(b.side, b.spot).at(HALF - 1.5);
+      const runner = b.type === 'elimination' && this.t < b.throwAt && this.runs?.get(`${b.start}:${b.victim}`) ? this.wrestlers[b.thrower] : null;
+      return runner ? [centre, { x: runner.x, z: runner.z }] : [centre];
+    });
   }
 
   /** Keep free wrestlers out of the way of a throw or close call. */
@@ -881,8 +1029,10 @@ export class WrestleMatch {
   place(w, dt = 0) {
     const r = w.rig;
     // Tipping over and getting up are smoothed, so a move that ends early never snaps the body upright.
-    w.shownPitch = w.shownPitch === undefined ? w.pitch ?? 0 : lerpAngle(w.shownPitch, w.pitch ?? 0, damp(16, dt));
-    w.shownRoll = w.shownRoll === undefined ? w.roll ?? 0 : lerpAngle(w.shownRoll, w.roll ?? 0, damp(16, dt));
+    // (A throw is shown exactly as flown.)
+    const follow = w.exact ? 1 : damp(16, dt);
+    w.shownPitch = w.shownPitch === undefined ? w.pitch ?? 0 : lerpAngle(w.shownPitch, w.pitch ?? 0, follow);
+    w.shownRoll = w.shownRoll === undefined ? w.roll ?? 0 : lerpAngle(w.shownRoll, w.roll ?? 0, follow);
     r.root.position.set(w.x, w.y, w.z);
     r.root.rotation.y = w.heading;
     r.root.rotation.x = w.shownPitch;
@@ -899,6 +1049,16 @@ export class WrestleMatch {
       w.outLift ??= this.groundLift(w);
       r.root.position.y += w.outLift;
     }
+    // Backed up against the ropes in a grapple: keep every part of the body this side of the top rope
+    // (the throw then starts from there).
+    if (w.ropeHold) {
+      w.ropeBack = Math.max(w.ropeBack ?? 0, this.ropeOvershoot(w));
+      r.root.position.x -= w.ropeHold.nx * w.ropeBack;
+      r.root.position.z -= w.ropeHold.nz * w.ropeBack;
+    }
+    // Going over the top rope: lift the body if any part of it would pass through the rope (#105).
+    w.ropeLift = w.ropeGuard ? Math.max(this.ropeLift(w), (w.ropeLift ?? 0) - 2 * dt) : 0;
+    r.root.position.y += w.ropeLift;
     r.tags.position.set(w.x, Math.max(w.y, w.out ? 0 : MAT_Y) + (w.tagDrop ?? 0), w.z);
     // Keep name tags a steady size on screen: smaller when the camera moves in close.
     const s = Math.max(0.32, Math.min(1, this.camera.position.distanceTo(r.root.position) / 15));
@@ -909,6 +1069,36 @@ export class WrestleMatch {
     const fade = (w.out ? 0.55 : 1) * this.tagFade;
     if (r.tag.material.opacity !== fade) r.tag.material.opacity = r.asTag.material.opacity = fade;
     r.tags.visible = fade > 0;
+  }
+
+  /** How far any part of the body, below the top rope's top, reaches past the inside of the rope. */
+  ropeOvershoot(w) {
+    const f = w.ropeHold;
+    const inside = HALF + 0.1 - 0.07;
+    let over = 0;
+    eachVertex(w.rig, 4, true, (p) => {
+      if (p.y > ROPE_TOP + 0.06 || Math.abs(p.x * f.ux + p.z * f.uz) > HALF + 0.15) return;
+      over = Math.max(over, p.x * f.nx + p.z * f.nz - inside);
+    });
+    return over;
+  }
+
+  /**
+   * How far a thrown body must rise so that no part of it near the top rope (from just inside it to its
+   * far side, along its length) is below the rope's top, with a little room. Usually nothing: the
+   * flight is shaped to clear it; this catches the tallest bodies and the widest flails.
+   */
+  ropeLift(w) {
+    const f = w.ropeGuard;
+    const rope = HALF + 0.1;
+    let need = 0;
+    eachVertex(w.rig, 4, true, (p) => {
+      const out = p.x * f.nx + p.z * f.nz;
+      if (out < rope - 0.08 || out > rope + 0.08) return;
+      if (Math.abs(p.x * f.ux + p.z * f.uz) > HALF + 0.15) return;
+      need = Math.max(need, ROPE_TOP + 0.09 - p.y);
+    });
+    return need;
   }
 
   /**
@@ -961,11 +1151,16 @@ export class WrestleMatch {
     // Facing back into the ring, square to the ropes: the way the victim faces the thrower in the
     // grapple, and goes over backwards.
     const intoRing = (w) => headingTo(w.x, w.z, w.x - f.nx, w.z - f.nz);
-    const tipBack = overhead ? 0 : 0.3; // non-lifters' victims lean back over the rope as the throw starts
+    // Satyaki: a run to the ropes, a bounce off them and a running tackle, when there's room (#106).
+    const run = this.reboundRun(b, h, f, push);
+    const move = run ? 'rebound' : overhead ? 'overhead' : hipToss ? 'hipToss' : 'shove';
+    const tipBack = overhead || run ? 0 : 0.3; // a grappled victim leans back over the rope as the throw starts
     // Hidimbi changes form mid-grapple: her outline pulses while she's locked up.
     const shapeshift = (w) => (w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1);
 
-    if (t < b.grappleAt) {
+    if (run && t < b.throwAt) {
+      this.runUp(b, t, v, h, f, run, intoRing);
+    } else if (t < b.grappleAt) {
       // Meet at the ropes. Strides are paced by distance covered (#99), shorten as they arrive, and
       // the hands come up to take hold just as they meet (#98).
       const raw = (t - b.start) / PACE.approach;
@@ -1001,6 +1196,9 @@ export class WrestleMatch {
       v.heading = lerpAngle(headingTo(v.x, v.z, h.x, h.z), intoRing(v), settle);
       h.heading = headingTo(h.x, h.z, v.x, v.z);
       v.pitch = tipBack * settle;
+      v.exact = true;
+      v.ropeHold = f; // backed up against the ropes, but not into them
+      if (k < 0.05) v.ropeBack = 0;
       this.act(v, 'grapple', { armsForward: 1, crouch: 0.3, lean: 0.15 - k * 0.3 });
       // Lifters sink their weight to load the lift; everyone else drives in.
       this.act(h, 'grapple', { armsForward: 1, crouch: 0.35 + (overhead ? 0.15 * settle : 0), lean: 0.3 });
@@ -1008,7 +1206,7 @@ export class WrestleMatch {
     } else if (t < b.landAt) {
       // The throw: over the top rope and down to the floor.
       const k = (t - b.throwAt) / PACE.throw;
-      this.emit(`throw:${b.start}`, { type: 'throw', victim: v, thrower: h });
+      this.emit(`throw:${b.start}`, { type: 'throw', victim: v, thrower: h, move });
       if (this.fired.has(`throw:${b.start}`) && !this.fired.has(`throwSound:${b.start}`)) {
         this.fired.add(`throwSound:${b.start}`);
         this.sfx?.play('throw');
@@ -1022,24 +1220,45 @@ export class WrestleMatch {
       if (overhead && k < 0.35) {
         // Bhima's two-handed overhead toss: up first, the hands going from the grip to overhead...
         const q = ease(k / 0.35);
-        x = start.x - f.nx * 0.6 * q;
-        z = start.z - f.nz * 0.6 * q;
+        const back = (v.ropeBack ?? 0) + 0.6 * q;
+        x = start.x - f.nx * back;
+        z = start.z - f.nz * back;
         y = MAT_Y + 1.9 * q;
         flip = 0.4 * q; // leaning back, held overhead
         this.act(h, 'throw', { armsForward: 1 - q, armsUp: q, crouch: 0.5 - 0.3 * q, lean: 0.3 * (1 - q) });
       } else {
         // ...then out over the ropes (everyone else shoves straight through).
         const q = overhead ? (k - 0.35) / 0.65 : k;
-        const from = overhead ? { x: start.x - f.nx * 0.6, z: start.z - f.nz * 0.6, y: MAT_Y + 1.9 } : { ...start, y: MAT_Y };
-        x = from.x + (landing.x - from.x) * q;
-        z = from.z + (landing.z - from.z) * q;
-        y = from.y + (0.25 - from.y) * q + (overhead ? 1.6 : 2.9) * 4 * q * (1 - q);
+        // From where the grapple left them (held just off the ropes, see place()).
+        const back = (v.ropeBack ?? 0) + (overhead ? 0.6 : 0);
+        const from = { x: start.x - f.nx * back, z: start.z - f.nz * back, y: overhead ? MAT_Y + 1.9 : MAT_Y };
         // Over backwards: from leaning back to flat on the back as they reach the floor.
         const from0 = overhead ? 0.4 : tipBack;
         flip = from0 + (ON_BACK - from0) * ease(q);
         // Karna and Shikhandi send them through one full cartwheel, still landing on the back.
         v.roll = hipToss ? ease(q) * Math.PI * 2 : 0;
-        this.act(h, overhead ? 'throw' : 'throw:release', overhead
+        // The body turns about its middle, not its feet, and that middle flies an arc that peaks early,
+        // over the ropes, so the trailing legs clear the top rope (#105). It starts and ends exactly
+        // where the grapple left them and where the landing picks them up.
+        const middle = (pitch, roll, root) => new THREE.Vector3(0, v.rig.height * 0.45, 0)
+          .applyEuler(new THREE.Euler(pitch, intoRing(f.at(0)), roll, 'YXZ')).add(root);
+        const c0 = middle(from0, 0, new THREE.Vector3(from.x, from.y, from.z));
+        const c1 = middle(ON_BACK, 0, new THREE.Vector3(landing.x, 0.25, landing.z));
+        const centre = c0.clone().lerp(c1, q);
+        centre.y += (overhead ? FLIGHT.overhead : hipToss ? FLIGHT.hipToss : FLIGHT.peak) * (256 / 27) * q * (1 - q) ** 3; // highest a quarter of the way
+        const root = centre.sub(middle(flip, v.roll, new THREE.Vector3()));
+        x = root.x;
+        z = root.z;
+        y = root.y;
+        if (run) {
+          // The tackle carries Satyaki on a step or two towards the ropes as they go over.
+          const go = ease(Math.min(1, q * 2.5));
+          h.x = run.contact.x + f.nx * 0.55 * go;
+          h.z = run.contact.z + f.nz * 0.55 * go;
+          // He keeps the line of his charge through the contact, squaring to the ropes as he follows through.
+          h.heading = lerpAngle(run.charge, headingTo(0, 0, f.nx, f.nz), ease(q / RUN.tackle));
+          this.act(h, 'run:tackle', { lean: 0.65 - 0.45 * q, armsForward: 0.7, crouch: 0.35 - 0.15 * q, spread: 0.2 }, 0.1);
+        } else this.act(h, overhead ? 'throw' : 'throw:release', overhead
           ? { armsUp: 1 - q * 0.4, spread: q * 0.3, crouch: 0.2 * (1 - q) }
           : hipToss ? { armsForward: 1, twist: 0.8 * q, crouch: 0.35 - 0.05 * q, lean: 0.3 * (1 - q) }
             : { armsForward: 1 + 0.2 * Math.min(1, q * 4), lean: 0.3 + 0.15 * Math.min(1, q * 4) - 0.45 * q, crouch: 0.35 * (1 - q) });
@@ -1048,6 +1267,8 @@ export class WrestleMatch {
       v.z = z;
       v.y = y;
       v.pitch = flip;
+      v.exact = true; // shown exactly as flown: the body turns about its middle
+      v.ropeGuard = f; // and nothing goes through the top rope
       v.heading = intoRing(v); // facing the ring: their back goes over the ropes first
       v.tagDrop = -1.4;
       v.ground = true; // never let any part of the body pass through the ring or the floor
@@ -1065,8 +1286,9 @@ export class WrestleMatch {
         v.outAt = landing;
         this.crowd.ringOut(landing.x, landing.z, t);
         v.outSince = 0;
+        v.outTime = t; // the HUD keeps ring-out callouts off them for a few seconds
       }
-      this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final });
+      this.emit(`out:${b.start}`, { type: 'out', victim: v, thrower: h, remaining: this.inRing().length, final: b.final, move });
       const since = t - b.landAt;
       v.roll = 0;
       // The impact carries them a little further out as they bounce.
@@ -1085,6 +1307,8 @@ export class WrestleMatch {
       v.y = 0;
       v.hop = hop;
       v.ground = true;
+      v.exact = true;
+      v.ropeGuard = null; // well clear of the ropes now
       v.landed = true; // resting on the floor: settle onto it, never hover
       // Square to the ropes as they land, turning to face the ring centre as they sit up.
       v.heading = lerpAngle(intoRing(v), headingTo(v.x, v.z, 0, 0), sitUp);
@@ -1110,6 +1334,108 @@ export class WrestleMatch {
         v.ground = false;
         v.hop = 0;
       }
+    }
+  }
+
+  /**
+   * Satyaki's rope rebound for a ring-out (#106): a rope on another side of the ring he can run to,
+   * bounce off and charge back from, straight out through the victim, arriving as the throw starts,
+   * and clear of any other throw going on. Decided once, as the exchange starts; null when there's
+   * no such run (then he uses the standard throw, and the feed says what he did).
+   */
+  reboundRun(b, h, f, push) {
+    const key = `${b.start}:${b.victim}`;
+    this.runs ??= new Map();
+    if (this.runs.has(key)) return this.runs.get(key);
+    let best = null;
+    if (h.kind.style === 'rebound') {
+      const from = this.anchor(b, h);
+      const contact = f.at(HALF - 0.95 + push - 0.85); // where the tackle meets the victim, backed onto the ropes
+      const time = PACE.approach + PACE.grapple - RUN.bounce;
+      for (let side = 0; side < 4; side++) {
+        if (side === b.side) continue;
+        const g = this.sideFrame(side, 0);
+        for (let along = -4.5; along <= 4.5; along += 0.5) {
+          const rope = g.at(HALF - ROPE_CONTACT, along);
+          const dx = contact.x - rope.x;
+          const dz = contact.z - rope.z;
+          const charge = Math.hypot(dx, dz);
+          if (charge < 3.5 || charge > 8 || (dx * f.nx + dz * f.nz) / charge < 0.6) continue; // a run-up, outwards
+          const t1 = Math.hypot(rope.x - from.x, rope.z - from.z) / RUN.speed;
+          const speed = charge / (time - t1);
+          if (time - t1 <= 0 || speed < 4 || speed > 7.5) continue;
+          if (this.crossesAction(from, rope, b) || this.crossesAction(rope, contact, b)) continue;
+          const score = Math.abs(speed - RUN.speed);
+          if (!best || score < best.score) best = { rope, contact, t1, score, charge: headingTo(rope.x, rope.z, contact.x, contact.z) };
+        }
+      }
+    }
+    this.runs.set(key, best);
+    return best;
+  }
+
+  /** Whether a straight run from `a` to `c` passes near a throw or close call other than `self`. */
+  crossesAction(a, c, self) {
+    const others = this.plan.beats.filter((o) => o !== self && (o.type === 'elimination' || o.type === 'closeCall')
+      && o.start < self.throwAt && o.end > self.start);
+    for (const o of others) {
+      const centre = this.sideFrame(o.side, o.spot).at(HALF - 1.5);
+      for (let k = 0; k <= 1; k += 0.1) {
+        if (Math.hypot(a.x + (c.x - a.x) * k - centre.x, a.z + (c.z - a.z) * k - centre.z) < 2.6) return true;
+      }
+    }
+    return false;
+  }
+
+  /** The rope rebound up to the tackle: the victim backs onto the ropes, Satyaki runs, bounces, charges. */
+  runUp(b, t, v, h, f, run, intoRing) {
+    const since = t - b.start;
+    const step = (w, x, z) => {
+      w.walk += Math.hypot(x - w.x, z - w.z) * 3.2;
+      w.x = x;
+      w.z = z;
+      w.y = MAT_Y;
+    };
+    // The victim: backed onto the ropes, dazed, turning to face the ring as Satyaki comes back.
+    const av = this.anchor(b, v);
+    const at = { x: run.contact.x + f.nx * 0.85, z: run.contact.z + f.nz * 0.85 };
+    const k = ease(since / PACE.approach);
+    step(v, av.x + (at.x - av.x) * k, av.z + (at.z - av.z) * k);
+    v.ropeBack = 0;
+    const brace = ease((t - (b.throwAt - 0.6)) / 0.5);
+    // Each turn is followed on from the last update, never re-chosen the short way round from a heading
+    // that is itself turning: that flips direction as the two pass opposite each other.
+    const toward = headingTo(v.x, v.z, h.x, h.z);
+    run.toward = run.toward === undefined ? av.heading + turnBy(av.heading, toward) : run.toward + turnBy(run.toward, toward);
+    const facing = av.heading + (run.toward - av.heading) * k;
+    if (brace > 0 && run.braceTo === undefined) run.braceTo = facing + turnBy(facing, intoRing(v));
+    v.heading = brace > 0 ? facing + (run.braceTo - facing) * brace : facing;
+    if (since < PACE.approach) this.act(v, 'run:back', { walk: v.walk, stride: 0.35 * (1 - k), guard: 0.6, crouch: 0.2, lean: -0.15 });
+    else this.act(v, 'run:dazed', { guard: 0.4 + 0.5 * brace, crouch: 0.2 + 0.1 * brace, look: -0.3 * (1 - brace), tilt: 0.15 * Math.sin(t * 3) * (1 - brace), lean: -0.1 });
+    // Satyaki: out to the ropes, off them, and back at full speed. His facing is set by time alone:
+    // towards the ropes he runs to, then round to the charge as he reaches them. Each leg is a fixed
+    // turn between fixed headings, so overlapping legs never change his direction of turn.
+    const ah = this.anchor(b, h);
+    const outH = headingTo(ah.x, ah.z, run.rope.x, run.rope.z);
+    const turn = ease((since - run.t1 + RUN.early) / RUN.turn);
+    h.heading = ah.heading + turnBy(ah.heading, outH) * ease(since / RUN.start) + turnBy(outH, run.charge) * turn;
+    if (since < run.t1) {
+      const q = (since / run.t1) ** 1.5; // building speed into the ropes
+      step(h, ah.x + (run.rope.x - ah.x) * q, ah.z + (run.rope.z - ah.z) * q);
+      this.act(h, 'run:out', { walk: h.walk, stride: 0.7, guard: 0.2, crouch: 0.2, lean: 0.25 });
+    } else if (since < run.t1 + RUN.bounce) {
+      const s = Math.sin(((since - run.t1) / RUN.bounce) * Math.PI);
+      step(h, run.rope.x, run.rope.z);
+      this.act(h, 'run:bounce', { lean: -0.55 * s, spread: 0.5 * s, crouch: 0.25 }, 0.1);
+      if (!this.fired.has(`bounce-rope:${b.start}`)) {
+        this.fired.add(`bounce-rope:${b.start}`);
+        this.sfx?.play('hit');
+      }
+    } else {
+      const q = (since - run.t1 - RUN.bounce) / (b.throwAt - b.start - run.t1 - RUN.bounce);
+      step(h, run.rope.x + (run.contact.x - run.rope.x) * q, run.rope.z + (run.contact.z - run.rope.z) * q);
+      const dip = ease((q - 0.7) / 0.3); // shoulder down for the tackle
+      this.act(h, 'run:charge', { walk: h.walk, stride: 0.7 * (1 - 0.5 * dip), guard: 0.2 * (1 - dip), crouch: 0.25 + 0.15 * dip, lean: 0.3 + 0.35 * dip, armsForward: 0.5 * dip });
     }
   }
 

@@ -45,6 +45,7 @@ const SURFACES = [
   ['#roster label:has(input:checked)', ['var(--text)']],
   ['#roster li.ineligible label', ['var(--muted)', '#ffa8a8']],
   ['#recent li', ['var(--text)', 'var(--muted)']],
+  ['#ring-toggle', ['var(--text)']],
   ['code', ['var(--text)', 'var(--muted)']],
   ['#retry-save', ['var(--text)']],
   ['button.secondary', ['var(--text)']],
