@@ -129,7 +129,7 @@ warriors. Choose poses, orbit/zoom, inspect equipment from behind, compare the o
 or watch a match with reversible roles. Preview matches never save meeting results. Original
 models remain the HD fallback if assets cannot load; **Classic** always selects the originals, even
 after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
-and [models.md](models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
+and [docs/models.md](docs/models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
 
 **Performance test:** open [`wrestling-performance.html`](public/wrestling-performance.html) or use
 **Run all 12 · performance test** in the studio. It runs a complete match with all twelve models,

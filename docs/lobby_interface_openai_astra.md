@@ -10,7 +10,7 @@ I reviewed the v1.6.2 lobby in Chrome at 1440 × 900, 390 × 844, and 320 × 568
 - **The footer is already at its limit.** At 390 px wide, Start race and the immediate pick occupy one row, with Rumble and HD on a second. At 320 px they take three button rows. The sticky footer and its summary measure about 260 px tall in the 568 px viewport. At the top of the scroll area, it covers the roster rows.
 - **The header and status copy compete for space on phones.** The title, badge, tagline, and Exit use about 188 px at 320 px wide. The bottom hint repeats the attendance count and wraps beside the preview link. Mode-specific requirements are revealed through tooltips, which are easy to miss on a touch screen.
 
-The pressure points are the fixed-width panel and sticky footer in [`style.css`](public/css/style.css), the race settings and launch controls in [`index.html`](public/index.html), and the mode-specific button wiring in [`main.js`](public/js/main.js).
+The pressure points are the fixed-width panel and sticky footer in [`style.css`](../public/css/style.css), the race settings and launch controls in [`index.html`](../public/index.html), and the mode-specific button wiring in [`main.js`](../public/js/main.js).
 
 ## Proposed layout
 

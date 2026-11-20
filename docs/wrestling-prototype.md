@@ -71,7 +71,7 @@ at 1024 pixels. Models are loaded lazily and shared immutable assets stay cached
 lifetime. Match instances have independent skeletons/materials and release their own resources.
 The server and static demo both host all required assets and Three.js addons locally.
 
-See [models.md](../models.md) for the simple Arjuna build guide and download links.
+See [models.md](models.md) for the simple Arjuna build guide and download links.
 
 ## Remaining visual limits
 
