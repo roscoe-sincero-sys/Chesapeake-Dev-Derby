@@ -7,6 +7,8 @@ to release.
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-11-19
+
 ### Fixed
 - **Close calls (#112):** both wrestlers turn smoothly as they approach the ropes and hold their facing
   through the close call.
@@ -225,7 +227,8 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.4.0...v1.5.0
