@@ -1,7 +1,7 @@
 // Winner history page: every recorded result, newest first, with how it was decided.
 
 import { displayNames, nameKey } from './eligibility.js';
-import { request, cell, dateAndTime, MODE, startBackground } from './page-common.js';
+import { request, cell, dateAndTime, MODE, MODE_COUNT, startBackground } from './page-common.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,11 +37,11 @@ async function load() {
       rows.append(tr);
     });
     $('history-table').hidden = !history.length;
-    const races = history.filter((h) => h.mode === 'race').length;
-    const skips = history.filter((h) => h.mode === 'skip').length;
-    const wrestles = history.filter((h) => h.mode === 'wrestle').length;
+    const counts = Object.entries(MODE_COUNT).map(([mode, words]) => `${history.filter((h) => h.mode === mode).length} ${words}`);
+    const unknown = history.filter((h) => !Object.hasOwn(MODE_COUNT, h.mode ?? '')).length;
+    if (unknown) counts.push(`${unknown} recorded before the history was kept (how unknown)`);
     summary.textContent = history.length
-      ? `${history.length} result${history.length === 1 ? '' : 's'}: ${races} by race, ${wrestles} by wrestling, ${skips} skipped${history.length - races - skips - wrestles ? `, ${history.length - races - skips - wrestles} recorded before the history was kept (how unknown)` : ''}.`
+      ? `${history.length} result${history.length === 1 ? '' : 's'}: ${counts.join(', ')}.`
       : 'No winners yet. Results appear here after each race or pick.';
   } catch (err) {
     summary.className = 'hint error-text';
