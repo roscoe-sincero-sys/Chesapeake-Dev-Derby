@@ -79,7 +79,7 @@ const FLYOVER_SPEED = 9;
 export class Game {
   /**
    * @param {HTMLCanvasElement} canvas
-   * @param {object} hooks  callbacks: onCountdown(text), onRaceStart(), onEvent(event), onFrame(sim), onWinner(racer), onDone()
+   * @param {object} hooks  callbacks: onCountdown(text), onEvent(event), onFrame(sim)
    * @param {import('./audio.js').Sfx} sfx
    */
   constructor(canvas, hooks, sfx) {
@@ -164,10 +164,6 @@ export class Game {
 
   // ------------------------------------------------------------ race set-up
 
-  /**
-   * Builds a new race for `names` and starts the countdown.
-   * Returns the line-up: [{ id, name, color, kind }].
-   */
   /** A sample course layout (obstacles and crates, no racers) for the lobby fly-over. */
   buildShowcase() {
     const course = generateCourse();
@@ -186,8 +182,14 @@ export class Game {
     return { group, items };
   }
 
-  startRace(names, { rng = Math.random, timeScale = 1 } = {}) {
+  /**
+   * Builds a new race for `names` and starts the countdown. `options`: { rng, timeScale, onStart, onWinner }:
+   * onStart() fires at GO, onWinner(racer, kind) when the first racer crosses the line.
+   * Returns the line-up: [{ id, name, color, kind }].
+   */
+  startRace(names, { rng = Math.random, timeScale = 1, onStart, onWinner } = {}) {
     this.clearRace();
+    this.raceHooks = { onStart, onWinner };
     this.showcase.group.visible = false;
     this.timeScale = timeScale;
     this.sim = new RaceSim({ names, rng });
@@ -341,7 +343,7 @@ export class Game {
     if (count === 'GO') {
       this.phase = 'racing';
       this.phaseTime = 0;
-      this.hooks.onRaceStart?.();
+      this.raceHooks?.onStart?.();
     }
   }
 
@@ -474,7 +476,7 @@ export class Game {
           // Winner's name tag always shows on top, even with the pack crowding round.
           visual.label.material.depthTest = false;
           visual.label.renderOrder = 20;
-          this.hooks.onWinner?.(e.racer, this.visuals[e.racer.id].kind);
+          this.raceHooks?.onWinner?.(e.racer, this.visuals[e.racer.id].kind);
         }
         break;
     }

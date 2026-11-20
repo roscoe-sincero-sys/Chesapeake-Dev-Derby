@@ -38,10 +38,18 @@ export function dateAndTime(iso) {
   ];
 }
 
+/** How each way of winning (WIN_MODES in data-rules.js) is labelled in the Full history and Absentee list. */
 export const MODE = {
   race: '🏁 Race',
   skip: '🎲 Skip',
   wrestle: '🤼 Wrestle',
+};
+
+/** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
+export const MODE_COUNT = {
+  race: 'by race',
+  wrestle: 'by wrestling',
+  skip: 'skipped',
 };
 
 /**

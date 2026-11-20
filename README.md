@@ -66,17 +66,19 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
      full entry. Hover a name to see it in full.
-   - **Uncheck** anyone who is absent today. Attendance and race speed are kept in this browser tab
-     through reloads and visits to **Edit team list**. Removed names are dropped from saved attendance;
-     new names start checked. Settings are scoped to the tab's browser session. An explicit `?speed=`
-     URL setting overrides the saved race length. A length saved by an older version of the slider moves
+   - **Uncheck** anyone who is absent today. Attendance, race speed, the game you last started (race or
+     Rumble, and Rumble's Classic or HD models) are kept in this browser tab through reloads and visits to
+     **Edit team list**. Removed names are dropped from saved attendance;
+     new names start checked. Settings are scoped to the tab's browser session; a new tab starts on the
+     race. An explicit `?speed=` or `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves
      to the nearest of the five lengths. When anyone is unchecked, the count ("2 people marked absent.")
      appears at the end of the hint line under **Team list**.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("won last race", "won 2 races ago"…).
 
 3. Click **Start race** (or press **Enter**). You need at least two racers. When the lobby opens, keyboard focus
-   is already on **Start race**; on Full history and Edit team list it starts on **Back to lobby**.
+   is already on **Start race** (or, if this tab last played Rumble, on that Rumble button, so **Enter**
+   starts Rumble again); on Full history and Edit team list it starts on **Back to lobby**.
 
 4. Watch the race. The result shows actual elapsed racing time, excluding the countdown. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
    the moment they cross the line. That file holds the last three winners; when it already has three,
@@ -282,6 +284,7 @@ Handy for demos and testing:
 | Option      | Effect                                                    |
 | ----------- | --------------------------------------------------------- |
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
+| `?mode=rumble` | Initial game: `race` or `rumble`. An unknown name is ignored. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
 | `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
 
@@ -300,8 +303,11 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/sim.test.js`** — the race itself: every race finishes with one winner, a typical race at 1x lasts
   about two minutes, every obstacle and item comes into play, firewalls block exactly one hit, races replay
   from a seed, and outcomes are unbiased.
-- **`test/lobby-settings.test.js`** — saved attendance and race length, the five slider lengths, and
-  snapping older or typed-in speeds to the nearest length.
+- **`test/lobby-settings.test.js`** — saved attendance, game and options, the five slider lengths,
+  snapping older or typed-in speeds to the nearest length, upgrading settings saved by 1.6 and earlier, and
+  falling back to the race and to default options for unknown or invalid values.
+- **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
+  history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
   controls stay readable (see [Accessibility](#accessibility)).
 - **`test/wrestle.test.js`** — the battle royal's plan: a fair draw, everyone but the winner thrown out
@@ -343,13 +349,15 @@ public/
   js/page-common.js  Shared by the history and absentee pages: loading, table cells, 3D background
   js/flyover-handoff.js  Carries the background fly-over on from page to page (sessionStorage)
   css/style.css
-  js/main.js         Lobby logic, starts races, saves the winner
+  js/main.js         Lobby logic, starts the selected game, saves the winner
+  js/modes.js        The game modes (race, Rumble): names, player ranges, options, and how each starts
   js/api.js          Sends API requests to the server, or to the demo store in the online demo
   js/config.js       DEMO switch (false here; the demo build replaces this file)
   js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
   js/demo-api.js     The online demo's in-browser store (localStorage)
   js/eligibility.js  Who may race (last three winners sit out)
-  js/lobby-settings.js  Race lengths offered, and attendance/length kept for the browser tab
+  js/lobby-settings.js  Attendance, game and options kept for the browser tab
+  js/race-lengths.js    Race lengths offered, and the slider's steps
   js/sim.js          The race simulation — pure logic, no graphics
   js/game.js         Three.js scene, camera, and syncing models to the simulation
   js/track.js        The winding bridge and the (distance, offset) → 3D mapping
@@ -386,7 +394,7 @@ The online demo uses the same pages.
 
 - **Keyboard:**
   - every control can be reached with **Tab** and used with **Enter** or **Space**;
-  - in the lobby, **Enter** starts the race;
+  - in the lobby, **Enter** starts the race (or Rumble, if that is what this tab last played);
   - **M** turns sound on or off;
   - **Escape** closes the reset dialog.
 - **Focus:**

@@ -1,28 +1,32 @@
-// App entry point: loads the roster, runs the lobby, starts races and saves the winner.
+// App entry point: loads the roster, runs the lobby, starts the selected game mode and saves the winner.
+// The modes themselves (race, rumble) live in modes.js.
 
-import { Game, runHeadless } from './game.js';
-import { Hud, who, throwText } from './hud.js';
-import { prepareWrestlerModels } from './wrestlers.js';
-import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
+import { Game } from './game.js';
+import { Hud } from './hud.js';
+import { WRESTLER_KINDS } from './wrestle-sim.js';
 import { Sfx } from './audio.js';
 import { RACER_KINDS } from './racers.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName, selectAbsentees } from './eligibility.js';
 import { mulberry32 } from './sim.js';
 import { apiFetch, DEMO } from './api.js';
 import { endSession, resumeSession } from './session.js';
-import { readLobbySettings, writeLobbySettings, retainRosterAbsences, normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './lobby-settings.js';
+import { readLobbySettings, writeLobbySettings, retainRosterAbsences } from './lobby-settings.js';
+import { normalizeSpeed, RACE_LENGTHS, DEFAULT_SPEED, speedToStep, stepToSpeed } from './race-lengths.js';
+import { MODES, findMode, fitsPlayers, modeOptions } from './modes.js';
 
 const $ = (id) => document.getElementById(id);
 
 
 // Optional URL switches, handy for demos and testing:
-//   ?seed=123   replay the same race every time
-//   ?speed=4    starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
-//   ?test       expose the game and HUD as window.derbyTest (the browser tests use it)
+//   ?seed=123     replay the same race every time
+//   ?speed=4      starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
+//   ?mode=rumble  starting game mode: race or rumble (an unknown mode is ignored)
+//   ?test         expose the game and HUD as window.derbyTest (the browser tests use it)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
 const savedSettings = readLobbySettings();
-let speed = params.has('speed') ? normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED) : savedSettings.speed;
+if (params.has('speed')) savedSettings.options.race.speed = normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED);
+if (MODES.some((mode) => mode.id === params.get('mode'))) savedSettings.mode = params.get('mode');
 let attendanceRestored = savedSettings.absent.size > 0;
 let settingsSaved = true;
 let initialFocusDone = false;
@@ -34,10 +38,39 @@ const state = {
   shown: new Map(), // nameKey -> on-screen name (email addresses shortened when unambiguous)
   raceNames: new Map(), // on-screen name -> stored name, for the race in progress
   absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
-  phase: 'lobby', // lobby | race | results
+  mode: savedSettings.mode, // the selected mode's id, retained within this browser tab
+  options: savedSettings.options, // each mode's option values: { race: { speed }, rumble: { models } }
+  phase: 'lobby', // lobby | loading | race | results | exiting
   pendingWinner: null,
-  raceStartedAt: null,
 };
+
+/**
+ * The lobby's launch buttons, until mode cards replace them (#117): each starts a mode with some of its
+ * options preset. Buttons with a `tip` use aria-disabled rather than disabled when the headcount doesn't
+ * fit, so they stay focusable and the tooltip explaining the player limit can still be read.
+ */
+const LAUNCHERS = [
+  { id: 'run', mode: 'race', options: {} },
+  { id: 'wrestle', mode: 'rumble', options: { models: 'classic' }, tip: 'Original character models.' },
+  { id: 'wrestle-hd', mode: 'rumble', options: { models: 'hd' }, tip: 'Detailed character models.' },
+];
+
+/** The launch button for the selected mode and options (Enter, and focus on opening the lobby). */
+function selectedLauncher() {
+  const options = state.options[state.mode] ?? {};
+  return LAUNCHERS.find((launcher) => launcher.mode === state.mode
+    && Object.entries(launcher.options).every(([id, value]) => options[id] === value)) ?? LAUNCHERS[0];
+}
+
+function launcherBlocked(launcher) {
+  const button = $(launcher.id);
+  return button.disabled || button.getAttribute('aria-disabled') === 'true';
+}
+
+function setLauncherBlocked(launcher, blocked) {
+  if (launcher.tip) $(launcher.id).setAttribute('aria-disabled', String(blocked));
+  else $(launcher.id).disabled = blocked;
+}
 
 /** The on-screen form of a stored name. */
 const show = (name) => state.shown.get(nameKey(name)) ?? name;
@@ -106,7 +139,8 @@ async function loadState() {
     $('check-all').disabled = $('check-none').disabled = true;
     $('recent-section').hidden = true;
     $('reset-winners').hidden = true;
-    $('run').disabled = $('pick').disabled = true;
+    for (const launcher of LAUNCHERS) setLauncherBlocked(launcher, true);
+    $('pick').disabled = true;
   }
 }
 
@@ -246,48 +280,52 @@ async function resetWinners() {
 }
 
 /**
- * When the lobby first opens, put keyboard focus on Start race, so Enter still starts the race.
- * If there aren't enough racers yet, use the first usable control in the lobby panel instead.
+ * When the lobby first opens, put keyboard focus on the selected mode's start button (Start race unless
+ * this tab last played something else), so Enter starts it. If the headcount doesn't fit that mode, use
+ * the first usable control in the lobby panel instead.
  * Only on first load, and never if the user has already moved focus somewhere.
  */
 function focusLobbyOnce() {
   if (initialFocusDone) return;
   initialFocusDone = true;
   if (document.activeElement && document.activeElement !== document.body) return;
-  const target = !$('run').disabled
-    ? $('run')
-    : $('lobby').querySelector('button:not([disabled]):not([hidden]), a[href], input:not([disabled]), summary');
+  const launcher = selectedLauncher();
+  const target = !launcherBlocked(launcher)
+    ? $(launcher.id)
+    : $('lobby').querySelector('button:not([disabled]):not([hidden]):not([aria-disabled="true"]), a[href], input:not([disabled]), summary');
   target?.focus({ preventScroll: true });
 }
 
 function saveLobbySettings() {
-  settingsSaved = writeLobbySettings({ absent: state.absent, speed });
+  settingsSaved = writeLobbySettings({ absent: state.absent, mode: state.mode, options: state.options });
 }
 
 function updateAttendanceStatus() {
   const count = state.absent.size;
   const parts = [];
   if (count) parts.push(`${count} ${count === 1 ? 'person' : 'people'} ${attendanceRestored ? 'still ' : ''}marked absent.`);
-  if (!settingsSaved) parts.push('Browser storage is unavailable. Attendance and speed cannot be kept after leaving or reloading this page.');
+  if (!settingsSaved) parts.push('Browser storage is unavailable. Attendance, the game and its settings cannot be kept after leaving or reloading this page.');
   $('attendance-status').textContent = parts.join(' ');
   $('attendance-status').hidden = !parts.length;
 }
 
 function updateRunButton() {
   updateAttendanceStatus();
-  const racing = selectRacers(state.roster, state.absent).length;
-  $('racer-count').textContent = `${racing} racing`;
-  $('run').disabled = $('pick').disabled = racing < 2;
-  // aria-disabled (not disabled) keeps the count limit's explanation reachable.
-  const canWrestle = racing >= MIN_WRESTLERS && racing <= MAX_WRESTLERS;
-  const explanation = canWrestle
-    ? `You need ${MIN_WRESTLERS} to ${MAX_WRESTLERS} wrestlers. ${racing} ready to wrestle.`
-    : `You need ${MIN_WRESTLERS} to ${MAX_WRESTLERS} wrestlers. ${racing} ${racing === 1 ? 'is' : 'are'} checked.`;
-  for (const [id, description] of [['wrestle', 'Original character models.'], ['wrestle-hd', 'Detailed character models.']]) {
-    $(id).setAttribute('aria-disabled', String(!canWrestle || state.phase === 'loading'));
-    $(`${id}-tip`).textContent = `${description} ${explanation}`;
+  const ready = selectRacers(state.roster, state.absent).length;
+  $('racer-count').textContent = `${ready} racing`;
+  $('pick').disabled = ready < 2;
+  // While a mode loads (HD models), no other launch can start.
+  const loading = state.phase === 'loading';
+  for (const launcher of LAUNCHERS) {
+    const mode = findMode(launcher.mode);
+    const fits = fitsPlayers(mode, ready);
+    setLauncherBlocked(launcher, !fits || loading);
+    if (launcher.tip) {
+      const { min, max } = mode.players;
+      $(`${launcher.id}-tip`).textContent = `${launcher.tip} You need ${min} to ${max} wrestlers. ${fits ? `${ready} ready to wrestle.` : `${ready} ${ready === 1 ? 'is' : 'are'} checked.`}`;
+    }
   }
-  $('run-hint').textContent = racing < 2 ? 'Select at least two racers.' : `${racing} racers on the grid — may the best tab win. Let's go see it in your virtual meeting room.`;
+  $('run-hint').textContent = ready < 2 ? 'Select at least two racers.' : findMode('race').ready(ready);
 }
 
 function setAll(present) {
@@ -301,118 +339,45 @@ function setAll(present) {
   renderLobby();
 }
 
-// ------------------------------------------------------------------ racing
+// ------------------------------------------------------------------ starting a mode
 
-function run() {
-  if (state.phase !== 'lobby') return;
-  const racers = selectRacers(state.roster, state.absent).map(show);
-  if (racers.length < 2) return;
-  state.raceNames = new Map(selectRacers(state.roster, state.absent).map((name) => [show(name), name]));
-  sfx.unlock();
-  const rng = seed === null ? Math.random : mulberry32(seed);
-  state.phase = 'race';
-  $('lobby').hidden = true;
-
-  if (!game) {
-    // No WebGL: decide the race instantly and go straight to the result.
-    const started = performance.now();
-    const sim = runHeadless(racers, rng);
-    const elapsed = (performance.now() - started) / 1000;
-    hud.showWinner(sim.winner.name, null, elapsed, 0, `Race completed off-screen in ${elapsed.toFixed(1)}s.`);
-    sim.standings().slice(1, 3).forEach((r, i) => hud.podium(i + 2, r.name));
-    state.phase = 'results';
-    saveWinner(stored(sim.winner.name), 'race');
-    return;
-  }
-
-  const lineup = game.startRace(racers, { rng, timeScale: speed });
-  hud.begin(lineup);
-  $('quit').textContent = '✕ Quit race';
-  $('quit').hidden = false;
-}
-
-// ------------------------------------------------------------------ wrestling
-
-/** How the close call ends, by who's on the ropes (or who is pulling them back). */
-function closeCallText(w, other) {
-  const saved = {
-    counter: 'slips free at the ropes!',
-    duck: 'ducks out low under the ropes!',
-    shapeshift: 'changes form and slips free!',
-  }[w.kind.style] ?? (other.kind.style === 'centre' ? `is pulled back to the centre by ${other.kind.label}!` : 'hangs on at the ropes!');
-  return `Close call — ${who(w)} ${saved}`;
-}
-
-/** Rumble shares one set of rules; model style only selects the character renderer. */
-async function wrestle(modelStyle = 'classic') {
+/**
+ * Starts `mode` with these option values (merged into its saved ones, which become this tab's choice).
+ * Click and Enter share this guard: only from the lobby, and only if the headcount fits the mode now.
+ */
+async function start(mode, options = {}) {
   if (state.phase !== 'lobby') return;
   const storedNames = selectRacers(state.roster, state.absent);
-  if (storedNames.length < MIN_WRESTLERS || storedNames.length > MAX_WRESTLERS) return;
-  const names = storedNames.map(show);
+  if (!fitsPlayers(mode, storedNames.length)) return;
+  state.mode = mode.id;
+  state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], ...options });
+  saveLobbySettings();
   state.raceNames = new Map(storedNames.map((name) => [show(name), name]));
   sfx.unlock();
-  let useStyle = modelStyle;
-  let hdFallback = false;
-  if (game && modelStyle === 'hd') {
-    state.phase = 'loading';
-    $('status').textContent = 'Preparing HD characters…';
-    $('wrestle').setAttribute('aria-disabled', 'true');
-    $('wrestle-hd').setAttribute('aria-disabled', 'true');
-    try {
-      await prepareWrestlerModels();
-      $('status').textContent = '';
-    } catch (error) {
-      console.warn('Free character assets unavailable; using the original roster.', error);
-      $('status').textContent = 'Character models could not load. Using the original wrestlers for this match.';
-      useStyle = 'classic';
-      hdFallback = true;
-    }
-    if (state.phase !== 'loading') return;
-  }
-  const rng = seed === null ? Math.random : mulberry32(seed);
-  state.phase = 'race';
-  $('lobby').hidden = true;
-
-  if (!game) {
-    // No WebGL: the same draw, decided instantly.
-    const plan = planMatch(names, rng);
-    const winner = plan.wrestlers[plan.winner];
-    hud.showWinner(winner.name, null, null, 0, `Won the battle royal as ${winner.kind.label} (decided off-screen).`, { kicker: 'Leads today’s standup' });
-    state.phase = 'results';
-    saveWinner(stored(winner.name), 'wrestle');
-    return;
-  }
-
-  const lineup = game.startWrestle(names, {
-    rng,
-    modelStyle: useStyle,
-    onEvent: (e) => {
-      if (e.type === 'bell') hud.note('🔔 Ding ding! Last one in the ring leads today’s standup.', true);
-      else if (e.type === 'out') {
-        hud.wrestleOut(e.victim.id);
-        hud.outCallout(e.victim.name);
-        hud.note(throwText(e));
-      } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
-      else if (e.type === 'closeCall') hud.note(closeCallText(e.wrestler, e.other)); else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
+  await mode.start({
+    names: storedNames.map(show),
+    rng: seed === null ? Math.random : mulberry32(seed),
+    game,
+    hud,
+    sfx,
+    get phase() { return state.phase; },
+    setPhase: (phase) => {
+      state.phase = phase;
+      updateRunButton();
     },
-    onWinner: (w) => {
-      state.phase = 'results';
-      $('quit').hidden = true;
-      hud.callout(`${w.name} leads today’s standup!`, 2400);
-      hud.showWinner(w.name, null, null, 2600, `Won the battle royal as ${w.kind.label}`, {
-        kicker: 'Leads today’s standup',
-        // The card says who won as whom: fade the floating name tags so they don't compete with it.
-        onShown: () => game?.wrestle?.fadeNameTags(),
-      });
-      saveWinner(stored(w.name), 'wrestle');
+    setStatus: (text) => { $('status').textContent = text; },
+    hideLobby: () => { $('lobby').hidden = true; },
+    showQuit: (label) => {
+      $('quit').textContent = label;
+      $('quit').hidden = false;
     },
-  });
-  hud.beginWrestle(lineup);
-  // Ring-out callouts stay off the landings they announce (#107).
-  hud.sceneBlocks = (width, height) => game?.wrestle?.landingRects(width, height) ?? [];
-  if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
-  $('quit').textContent = '✕ Quit match';
-  $('quit').hidden = false;
+    hideQuit: () => { $('quit').hidden = true; },
+    saveWinner: (name) => saveWinner(stored(name), mode.winMode),
+  }, state.options[mode.id]);
+}
+
+function launch(launcher) {
+  if (!launcherBlocked(launcher)) start(findMode(launcher.mode), launcher.options);
 }
 
 function pick() {
@@ -435,7 +400,8 @@ function backToLobby() {
   state.phase = 'lobby';
   state.pendingWinner = null;
   loadState();
-  $('run').focus({ preventScroll: true });
+  // Back on the button that started the game just played.
+  $(selectedLauncher().id).focus({ preventScroll: true });
 }
 
 /**
@@ -493,17 +459,8 @@ function init() {
       $('scene'),
       {
         onCountdown: (text) => hud.countdown(text),
-        onRaceStart: () => { state.raceStartedAt = performance.now(); },
         onFrame: (sim) => hud.frame(sim),
         onEvent: (event) => hud.event(event),
-        onWinner: (racer, kind) => {
-          state.phase = 'results';
-          $('quit').hidden = true;
-          const elapsed = (performance.now() - state.raceStartedAt) / 1000;
-          hud.showWinner(racer.name, kind, elapsed, 2600 / speed);
-          // Save immediately, so the result is recorded even if the tab is closed.
-          saveWinner(stored(racer.name), 'race');
-        },
       },
       sfx,
     );
@@ -531,7 +488,8 @@ function init() {
   slider.step = 1;
   const showSpeed = () => {
     const step = Number(slider.value);
-    speed = stepToSpeed(step);
+    const speed = stepToSpeed(step);
+    state.options.race.speed = speed;
     const { seconds } = RACE_LENGTHS[step];
     const length = `About ${seconds} seconds${speed === DEFAULT_SPEED ? ' (default)' : ''}`;
     $('speed-value').textContent = length;
@@ -540,16 +498,11 @@ function init() {
     saveLobbySettings();
     updateAttendanceStatus();
   };
-  slider.value = speedToStep(speed);
+  slider.value = speedToStep(state.options.race.speed);
   slider.addEventListener('input', showSpeed);
   showSpeed();
 
-  $('run').addEventListener('click', run);
-  for (const [id, style] of [['wrestle', 'classic'], ['wrestle-hd', 'hd']]) {
-    $(id).addEventListener('click', () => {
-      if ($(id).getAttribute('aria-disabled') !== 'true') wrestle(style);
-    });
-  }
+  for (const launcher of LAUNCHERS) $(launcher.id).addEventListener('click', () => launch(launcher));
   $('pick').addEventListener('click', pick);
   $('exit-app').addEventListener('click', exitApp);
   $('check-all').addEventListener('click', () => setAll(true));
@@ -578,7 +531,8 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && state.phase === 'lobby' && !e.target.closest('button, summary, a, input, textarea, select')) {
       e.preventDefault();
-      run();
+      // Starts the selected mode (the one this tab last played), if the headcount fits it.
+      launch(selectedLauncher());
     } else if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
       mute.click();
     }

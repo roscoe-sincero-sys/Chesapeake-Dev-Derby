@@ -117,7 +117,7 @@ export function addWinner(winners, name, date = new Date().toISOString()) {
 
 /**
  * Normalises the contents of history.json into `[{ name, date, mode }]`, oldest first.
- * `mode` is 'race', 'skip', or null for results recorded before the history existed.
+ * `mode` is one of WIN_MODES ('race', 'skip', 'wrestle'), or null for results recorded before the history existed.
  */
 export function parseHistory(raw) {
   const list = Array.isArray(raw) ? raw : raw && Array.isArray(raw.history) ? raw.history : [];
@@ -172,13 +172,18 @@ export function checkAbsentees(names, recent, winner, absent) {
   return names.filter((n) => wanted.has(nameKey(n)) && !sittingOut.has(nameKey(n)) && nameKey(n) !== nameKey(winner));
 }
 
+/** "a", "a or b", "a, b or c". */
+function listOr(items) {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} or ${items.at(-1)}`;
+}
+
 /**
  * Checks a winner against the team list and the allowed modes. Returns the name as it is spelled on
  * the list, or throws an Error with statusCode 400.
  */
 export function checkWinner(names, name, mode) {
   if (!WIN_MODES.includes(mode)) {
-    throw Object.assign(new Error('"mode" must be "race", "skip" or "wrestle".'), { statusCode: 400 });
+    throw Object.assign(new Error(`"mode" must be ${listOr(WIN_MODES.map((m) => `"${m}"`))}.`), { statusCode: 400 });
   }
   const match = names.find((n) => nameKey(n) === nameKey(name));
   if (!match) throw Object.assign(new Error(`"${name}" is not in names.json`), { statusCode: 400 });

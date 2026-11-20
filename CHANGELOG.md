@@ -7,6 +7,17 @@ to release.
 
 ## [Unreleased]
 
+### Changed
+- **Game modes in one place (#117, phases 1 and 2):** the race and Rumble are now described by a mode
+  registry (`public/js/modes.js`): name, player range, options and how each starts. The lobby's buttons
+  start them through it and look the same as before. This prepares the lobby redesign and makes a new
+  mode an entry plus a game module.
+- **The lobby remembers the game, not just the race length:** the tab keeps the last game started (race or
+  Rumble, Classic or HD) with each game's options. When the lobby opens, focus is on that game's button,
+  and **Enter** starts it. Settings saved by 1.6 are kept. New `?mode=race|rumble` URL switch.
+- The server's error for an unknown result type and the Full history summary are built from the list of
+  modes, instead of naming each one.
+
 ## [1.6.2] - 2026-11-19
 
 ### Fixed
