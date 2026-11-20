@@ -1,6 +1,6 @@
 {
   "name": "chesapeake-dev-derby",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Pick who leads the team meeting with a 3D item race (Three.js). Web-dev and Maryland themed.",
   "license": "Apache-2.0",
   "private": true,
