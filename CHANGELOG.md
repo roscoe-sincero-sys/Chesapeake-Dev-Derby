@@ -7,14 +7,62 @@ to release.
 
 ## [Unreleased]
 
+### Added
+- **Lobby browser tests (#117, phase 4):** `test/lobby-browser.test.js` adds a stand-in third game, and
+  six games with a very long name, and checks the lobby takes them with no change to its markup or CSS:
+  selection by keyboard, each game's options, player limits in text, Enter (from a card or an option) and
+  the shared Start, focus, saved settings, How to play closing on a change of game, the phone's Who's here
+  row, and the layout from a laptop down to a 320 px phone. CI's **Browser tests** job runs it.
+- README: screenshots of the lobby on a laptop and a phone, and **Adding a game**.
+
+### Fixed
+- **WAVE "empty button":** the wrestler list's button (shown during a Rumble on small screens) was empty
+  in the page until a match filled it. It now reads "🤼 Wrestlers in the ring" until the match gives the
+  count, and `test/markup.test.js` checks every button on every page has a name.
+- **Lobby keyboard (#117):** choosing a game hides the previous game's options straight away (the new
+  ones still fade in). The fade-out ran only as fast as the page drew frames, and on a busy page Tab could
+  reach a hidden game's controls until it ended.
+- **Lobby keyboard (#117):** **Tab** now reaches every game card. The cards (and the Classic | HD choices)
+  were one radio group, so Tab stopped only on the selected card and another game could be chosen only with
+  the arrow keys. Each is now a button that reads as pressed when selected; **Space** or **Enter** selects
+  it, and **Enter** on Start or a slider starts the game.
+- **Lobby:** a toggle with more choices than fit now wraps, instead of widening every game's options past
+  a small phone's screen. After **Reset** on a phone, focus moves to Start rather than into the folded team
+  list.
+- Remaining race-only wording: the no-3D notice ("games are decided off-screen") and the team editor
+  ("Changes apply to the next pick").
+
 ### Changed
+- **The lobby remembers your game from one meeting to the next:** the selected game and each game's
+  options (race length, Classic or HD) are kept in this browser (`localStorage`), so tomorrow's new tab
+  opens on HD Rumble if that's what you played. Attendance is still kept for the tab only, so each meeting
+  starts with everyone present. Choices saved in the tab by earlier versions carry over.
+- **Quieter options panel:** the selected game's options sit on `#161c2a` with a `#3b4557` border, so the
+  game cards above them stand out first.
+- **Edit team list** sits apart from Select all / Clear all, since it leaves the lobby.
+- The model notes, base character notes and security reviews moved into `docs/`.
+- **A new lobby (#117, phase 3):** three questions in order, then one button. **Who's here** (the team
+  list), **Pick a game** (a card per game: 🏁 Derby Race, 2+ players; 🤼 Let’s Rumble, 2–12) and that
+  game's options, then **▶ Start race** / **▶ Start rumble** and **Just pick someone**.
+  - Each game's settings belong to it: the race's **Race length** slider, and Rumble's
+    **Models: Classic | HD** toggle (replacing the separate HD button) and **Preview wrestlers** link.
+    **How to play** in each game's options replaces the one Field guide.
+  - Player limits are shown as text, not in tooltips: a card that doesn't fit the headcount says so in red
+    ("2–12 players · 14 checked"), and the line beside Start says what to change, with a **Review team
+    list** link. Choosing a card never starts a game; Start does.
+  - On wide screens (1000 px and up) the team list and the game sit side by side, so everything shows
+    without scrolling on a 1366 × 768 laptop. Below that they stack. On phones the team list folds into a
+    **Who's here · 12 playing** row, and Just pick and Start stay at the bottom in one row.
+  - The last three winners are one **Sitting out** line under the team list, with **Full history** and
+    **Reset**. Wording no longer assumes a race: "12 playing", "Sits out 2 more picks", and the header
+    says "Pick who leads the team meeting."
 - **Game modes in one place (#117, phases 1 and 2):** the race and Rumble are now described by a mode
   registry (`public/js/modes.js`): name, player range, options and how each starts. The lobby's buttons
   start them through it and look the same as before. This prepares the lobby redesign and makes a new
   mode an entry plus a game module.
-- **The lobby remembers the game, not just the race length:** the tab keeps the last game started (race or
-  Rumble, Classic or HD) with each game's options. When the lobby opens, focus is on that game's button,
-  and **Enter** starts it. Settings saved by 1.6 are kept. New `?mode=race|rumble` URL switch.
+- **The lobby remembers the game, not just the race length:** the selected game (race or Rumble) and each
+  game's options are saved (in this browser, see above). When the lobby opens, focus is on Start, and
+  **Enter** starts the selected game. Settings saved by 1.6 are kept. New `?mode=race|rumble` URL switch.
 - The server's error for an unknown result type and the Full history summary are built from the list of
   modes, instead of naming each one.
 

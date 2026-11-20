@@ -5,87 +5,11 @@
 // unless DERBY_BROWSER_TESTS=required (as in CI's browser job), when they fail instead.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { createServer } from '../server.js';
+import { skip, openBrowser, startServer } from './browser.js';
 
-function findChrome() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  ];
-  for (const name of ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']) {
-    try {
-      candidates.push(execFileSync('which', [name], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
-    } catch { /* not installed */ }
-  }
-  return candidates.find((p) => p && existsSync(p));
-}
-
-const chrome = findChrome();
-const missing = !chrome ? 'no Chrome found (set CHROME_PATH)' : typeof WebSocket === 'undefined' ? 'needs Node 22+ (WebSocket)' : false;
-// Where these must run (CI's browser job), a missing Chrome or old Node fails them rather than skipping.
-const required = process.env.DERBY_BROWSER_TESTS === 'required';
-const skip = required ? false : missing;
-
-/** Starts headless Chrome and returns a DevTools session on its page: `send(method, params)`. */
-async function openBrowser(t, flags = ['--disable-gpu']) {
-  if (missing) assert.fail(`browser tests required, but ${missing}`);
-  const profile = await mkdtemp(path.join(os.tmpdir(), 'derby-chrome-'));
-  // CI's Ubuntu runners don't allow Chrome's sandbox; the page is only ever this test's own server.
-  const sandbox = process.env.CI ? ['--no-sandbox'] : [];
-  const proc = spawn(chrome, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
-    '--no-first-run', '--no-default-browser-check', ...sandbox, ...flags, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
-  let errors = '';
-  proc.stderr.on('data', (d) => { errors = (errors + d).slice(-4000); });
-  t.after(async () => {
-    proc.kill();
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    await rm(profile, { recursive: true, force: true }).catch(() => {});
-  });
-  let port;
-  // A cold CI runner can take a while to start Chrome the first time.
-  for (let i = 0; i < 300 && !port && proc.exitCode === null; i++) {
-    port = (await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8').catch(() => '')).split('\n')[0];
-    if (!port) await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  assert.ok(port, `Chrome started (exit code ${proc.exitCode}): ${errors.trim() || 'no output'}`);
-  const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-  const ws = new WebSocket(pages.find((p) => p.type === 'page').webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => {
-    ws.onopen = resolve;
-    ws.onerror = reject;
-  });
-  t.after(() => ws.close());
-  let id = 0;
-  const waiting = new Map();
-  ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if (waiting.has(data.id)) {
-      waiting.get(data.id)(data);
-      waiting.delete(data.id);
-    }
-  };
-  return (method, params = {}) => new Promise((resolve, reject) => {
-    waiting.set(++id, (data) => (data.error ? reject(new Error(data.error.message)) : resolve(data.result)));
-    ws.send(JSON.stringify({ id, method, params }));
-  });
-}
-
-test('paired ring-out callouts with long names stay on screen, off the roster and the toolbar, through a rotation', { skip, timeout: 60000 }, async (t) => {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-srv-'));
-  await writeFile(path.join(dir, 'names.json'), JSON.stringify({ names: ['Ada', 'Grace'] }));
-  const server = createServer({ dataDir: dir });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  t.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
-    await rm(dir, { recursive: true, force: true });
-  });
+// It starts Chrome first on a cold CI runner, which can take most of a minute on its own.
+test('paired ring-out callouts with long names stay on screen, off the roster and the toolbar, through a rotation', { skip, timeout: 120000 }, async (t) => {
+  const base = await startServer(t, ['Ada', 'Grace']);
   const send = await openBrowser(t);
   const evaluate = async (expression) => {
     const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
@@ -95,7 +19,7 @@ test('paired ring-out callouts with long names stay on screen, off the roster an
   const screen = (width, height) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
 
   await screen(390, 844);
-  await send('Page.navigate', { url: `http://127.0.0.1:${server.address().port}/` });
+  await send('Page.navigate', { url: `${base}/` });
   for (let i = 0; i < 100 && (await evaluate('document.readyState').catch(() => '')) !== 'complete'; i++) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -175,19 +99,6 @@ test('paired ring-out callouts with long names stay on screen, off the roster an
   await toggle();
   await check('320 px phone, roster open');
 });
-
-/** Serves the app from a temporary data folder holding `names`; returns its address. */
-async function startServer(t, names) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-srv-'));
-  await writeFile(path.join(dir, 'names.json'), JSON.stringify({ names }));
-  const server = createServer({ dataDir: dir });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  t.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
-    await rm(dir, { recursive: true, force: true });
-  });
-  return `http://127.0.0.1:${server.address().port}`;
-}
 
 const LONG_NAMES = Array.from({ length: 12 }, (_, i) => `${String(i + 1).padStart(2, '0')} Alexandria Charlotte Montgomery`);
 
@@ -271,7 +182,7 @@ async function startMatch(t, width, height, { mobile = false } = {}) {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: STEPPED_CLOCK });
-  await send('Page.navigate', { url: `${base}/?seed=17&test` });
+  await send('Page.navigate', { url: `${base}/?seed=17&test&mode=rumble` });
   const until = async (expression, ms, what) => {
     for (const end = Date.now() + ms; Date.now() < end;) {
       if (await evaluate(expression).catch(() => false)) return;
@@ -279,8 +190,11 @@ async function startMatch(t, width, height, { mobile = false } = {}) {
     }
     assert.fail(`timed out waiting for ${what}`);
   };
-  await until(`document.getElementById('wrestle-hd')?.getAttribute('aria-disabled') === 'false' && !!window.derbyTest?.game`, 60000, 'the HD match button');
-  await evaluate("document.getElementById('wrestle-hd').click()");
+  // Rumble is selected by the URL; choose HD models, then Start.
+  await until(`document.getElementById('start')?.disabled === false && !!window.derbyTest?.game`, 60000, 'the Start rumble button');
+  await evaluate(`document.querySelector('[data-option="rumble-models"] [data-value="hd"]').click()`);
+  assert.equal(await evaluate(`document.getElementById('start').textContent`), '▶ Start rumble');
+  await evaluate("document.getElementById('start').click()");
   await until('!!window.derbyTest.game.wrestle', 120000, 'the HD match');
   return { send, evaluate };
 }

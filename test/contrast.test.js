@@ -41,15 +41,26 @@ const SURFACES = [
   ['#status.warn', ['var(--text)']],
   ['#status button', ['var(--text)']],
   ['#roster label', ['var(--text)', 'var(--muted)']],
+  ['.team-toggle', ['var(--text)', 'var(--muted)', 'var(--gold)']],
+  ['.team-toggle:hover', ['var(--text)', 'var(--muted)', 'var(--gold)']],
   ['#roster label:hover', ['var(--text)', 'var(--muted)']],
   ['#roster label:has(input:checked)', ['var(--text)']],
   ['#roster li.ineligible label', ['var(--muted)', '#ffa8a8']],
-  ['#recent li', ['var(--text)', 'var(--muted)']],
+  // Mode cards: unselected, hovered and selected, each with the red "doesn't fit" range line.
+  ['.mode-card', ['var(--text)', 'var(--muted)', '#ffa8a8']],
+  ['.mode-card:hover', ['var(--text)', 'var(--muted)', '#ffa8a8']],
+  ['.mode-card[aria-pressed="true"]', ['var(--text)', 'var(--muted)', '#ffa8a8', 'var(--gold)']],
+  // The selected mode's options panel, and the Classic | HD toggle in it.
+  ['.mode-config', ['var(--text)', 'var(--muted)', 'var(--gold)', '#8ab4f8']],
+  ['.segment', ['var(--text)']],
+  ['.segment:hover', ['var(--text)']],
+  ['.segment[aria-pressed="true"]', ['#1b0f00']],
   ['#ring-toggle', ['var(--text)']],
   ['code', ['var(--text)', 'var(--muted)']],
   ['#retry-save', ['var(--text)']],
   ['button.secondary', ['var(--text)']],
   ['button.primary:disabled', ['var(--muted)']],
+  ['button.primary[aria-disabled="true"]', ['var(--muted)']],
 ];
 
 test('text on every panel surface reaches WCAG AA contrast, on a solid background', () => {
@@ -73,18 +84,19 @@ test('the primary button has a solid colour under its gradient, and its dark tex
 });
 
 test('disabled controls stay readable: no see-through or dimming filters on their text', () => {
-  const wrestle = rule('button.wrestle[aria-disabled="true"]');
-  assert.equal(wrestle.opacity, undefined);
-  assert.doesNotMatch(wrestle.filter ?? '', /brightness|opacity|contrast/);
-  assert.ok(ratio(hex(wrestle.color), hex(wrestle.background)) >= 4.5);
-  const primary = rule('button.primary:disabled');
-  assert.equal(primary.opacity, undefined);
-  assert.equal(primary.filter, undefined);
+  for (const selector of ['button.primary:disabled', 'button.primary[aria-disabled="true"]']) {
+    const primary = rule(selector);
+    assert.equal(primary.opacity, undefined, selector);
+    assert.equal(primary.filter, undefined, selector);
+  }
+  // A card that doesn't fit the headcount isn't disabled: it says so in red text, not by fading.
+  assert.deepEqual(rule('.mode-card.misfit .mode-players'), { color: '#ffa8a8' });
   assert.doesNotMatch(css, /#ring-roster li\.out\s*\{\s*opacity/, 'knocked-out wrestlers are greyed by colour, not opacity');
 });
 
 test('hover tips are hidden with visibility, not only opacity, so checkers like WAVE skip them (#86)', () => {
-  for (const wrap of ['.wrestle-wrap', '.exit-wrap']) {
+  // Exit's is the only tooltip left in the lobby (#117): rules such as player limits are shown as text.
+  for (const wrap of ['.exit-wrap']) {
     const hidden = rule(`${wrap} .tip`);
     assert.equal(hidden.visibility, 'hidden', `${wrap} tip at rest`);
     assert.match(hidden.transition, /visibility/, `${wrap} tip still fades`);

@@ -9,7 +9,8 @@
 import { runHeadless } from './game.js';
 import { who, throwText } from './hud.js';
 import { prepareWrestlerModels } from './wrestlers.js';
-import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS } from './wrestle-sim.js';
+import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
+import { RACER_KINDS } from './racers.js';
 import { RACE_LENGTHS, DEFAULT_SPEED, normalizeSpeed } from './race-lengths.js';
 
 /**
@@ -21,14 +22,18 @@ import { RACE_LENGTHS, DEFAULT_SPEED, normalizeSpeed } from './race-lengths.js';
  *   phase            the lobby's current phase (read-only): 'loading' | 'race' | 'results' | …
  *   setPhase(phase)  'loading' while assets load (blocks other launches), 'race' once under way,
  *                    'results' once a winner is decided
- *   setStatus(text)  the lobby's status line (while the lobby is still showing)
+ *   setProgress(text) a progress message beside Start while the mode loads ('' to clear)
  *   hideLobby(), showQuit(label), hideQuit()
  *   saveWinner(name) records the winner (an on-screen name) under this mode's `winMode`
  *
- * Option types the lobby can show:
- *   range      { steps: [{ value, label }], default, normalize? }  a stepped slider
- *   segmented  { choices: [{ value, label }], default }            a pill toggle (radio group)
- *   link       { href }                                            a secondary link (no value)
+ * Option types the lobby can show (every option also has an `id` and a `label`):
+ *   range      { steps: [{ value, label, text }], default, normalize? }  a stepped slider: `label` under
+ *              each step on the scale, `text` read out for the chosen step
+ *   segmented  { choices: [{ value, label }], default }                  a pill toggle (radio group)
+ *   link       { href }                                                  a secondary link (no value)
+ *
+ * The lobby shows each mode's How to play from `<template id="guide-‹guide›">` in index.html; the
+ * optional `fillGuide(root)` fills in the parts that come from code (character lists).
  */
 export const MODES = [
   {
@@ -44,13 +49,16 @@ export const MODES = [
         id: 'speed',
         type: 'range',
         label: 'Race length',
-        steps: RACE_LENGTHS.map(({ seconds, speed }) => ({ value: speed, label: `${seconds}s` })),
+        steps: RACE_LENGTHS.map(({ seconds, speed }) => ({ value: speed, label: `${seconds}s`, text: `About ${seconds} seconds` })),
         default: DEFAULT_SPEED,
         // Older saved speeds and ?speed= values snap to the nearest offered length.
         normalize: normalizeSpeed,
       },
     ],
     guide: 'race',
+    fillGuide: (root) => {
+      for (const el of root.querySelectorAll('[data-list="racers"]')) el.textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
+    },
     ready: (n) => `${n} racers on the grid — may the best tab win. Let's go see it in your virtual meeting room.`,
     start: startRace,
   },
@@ -73,6 +81,9 @@ export const MODES = [
       { id: 'preview', type: 'link', label: 'Preview wrestlers', href: 'character-prototype.html' },
     ],
     guide: 'rumble',
+    fillGuide: (root) => {
+      for (const el of root.querySelectorAll('[data-list="wrestlers"]')) el.textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
+    },
     ready: (n) => `${n} wrestlers ready — last one in the ring leads standup.`,
     start: startRumble,
   },
@@ -89,6 +100,21 @@ export function findMode(id) {
 /** True if `n` players is within the mode's player range. */
 export function fitsPlayers(mode, n) {
   return n >= mode.players.min && n <= mode.players.max;
+}
+
+/** The player range for a mode card: "2+ players" or "2–12 players". */
+export function playersText(mode) {
+  const { min, max } = mode.players;
+  return max === Infinity ? `${min}+ players` : `${min}–${max} players`;
+}
+
+/** Why `n` checked players can't play the mode, or '' if they can. */
+export function capacityText(mode, n) {
+  const { min, max } = mode.players;
+  const checked = `${n} ${n === 1 ? 'is' : 'are'} checked`;
+  if (n < min) return `${mode.name} needs at least ${min} players. ${checked}.`;
+  if (n > max) return `${mode.name} supports ${min}–${max} players. ${checked} — uncheck ${n - max}.`;
+  return '';
 }
 
 /** The options that hold a value (links don't). */
@@ -167,13 +193,13 @@ async function startRumble(ctx, { models }) {
   let hdFallback = false;
   if (ctx.game && models === 'hd') {
     ctx.setPhase('loading');
-    ctx.setStatus('Preparing HD characters…');
+    ctx.setProgress('Preparing HD characters…');
     try {
       await prepareWrestlerModels();
-      ctx.setStatus('');
+      ctx.setProgress('');
     } catch (error) {
       console.warn('Free character assets unavailable; using the original roster.', error);
-      ctx.setStatus('Character models could not load. Using the original wrestlers for this match.');
+      ctx.setProgress('Character models could not load. Using the original wrestlers for this match.');
       modelStyle = 'classic';
       hdFallback = true;
     }

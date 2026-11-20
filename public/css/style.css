@@ -89,7 +89,9 @@ button {
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
-  padding: 22px 26px 20px;
+  --pad-x: 26px;
+  --pad-b: 20px;
+  padding: 22px var(--pad-x) var(--pad-b);
   gap: 14px;
   overflow-y: auto;
 }
@@ -132,13 +134,6 @@ h2 {
   font-weight: 650;
 }
 
-.section-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-#roster-section .section-head { flex-wrap: wrap; }
 .roster-actions {
   display: flex;
   align-items: baseline;
@@ -276,71 +271,63 @@ button.link, a.link {
   white-space: nowrap;
 }
 
-#recent {
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
+.sitting-out {
+  margin: 10px 0 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 14px;
-}
-
-#recent li {
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: #212430; /* rgba(255, 255, 255, 0.07) on the panel, as a solid colour */
-}
-
-#recent li .when {
-  color: var(--muted);
-  font-size: 12px;
-  margin-left: 6px;
-}
-
-#recent li.none {
-  background: none;
-  padding-left: 0;
-  color: var(--muted);
-}
-
-#guide {
+  align-items: baseline;
+  gap: 2px 10px;
   font-size: 13px;
   color: var(--muted);
 }
 
-#guide summary {
+.sitting-out b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sitting-links {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* How to play: each mode's part of the field guide, at the bottom of its options. */
+.how-to-play {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.how-to-play summary {
   cursor: pointer;
   color: #8ab4f8;
 }
 
-.guide-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 24px;
-  margin-top: 8px;
+.how-to-play p {
+  margin: 6px 0;
+  line-height: 1.5;
 }
 
-.guide-grid h3 {
-  margin: 6px 0 4px;
+.how-to-play h4 {
+  margin: 8px 0 4px;
   font-size: 13px;
   color: var(--text);
+}
+
+.how-to-play b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 24px;
 }
 
 .guide-grid ul {
   margin: 0;
   padding-left: 16px;
   line-height: 1.55;
-}
-
-.guide-grid b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.guide-racers {
-  margin: 0;
-  line-height: 1.6;
 }
 
 code {
@@ -353,16 +340,14 @@ code {
 .lobby-foot {
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   position: sticky;
-  bottom: -20px;
-  margin: 0 -26px -20px;
-  padding: 12px 26px 18px;
+  bottom: calc(-1 * var(--pad-b));
+  margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b));
+  padding: 12px var(--pad-x) calc(var(--pad-b) - 2px);
   background: var(--panel);
-}
-
-.lobby-foot .hint {
-  margin: 0;
+  border-top: 1px solid var(--panel-border);
 }
 
 button.primary {
@@ -393,6 +378,14 @@ button.primary:disabled {
   color: var(--muted);
   box-shadow: 0 4px 0 #1c2029;
   cursor: not-allowed;
+}
+
+/* While a game loads (HD models): looks disabled, but keeps focus (aria-disabled, not disabled). */
+button.primary[aria-disabled="true"] {
+  background: #2f3440;
+  color: var(--muted);
+  box-shadow: 0 4px 0 #1c2029;
+  cursor: progress;
 }
 
 button:focus-visible {
@@ -731,26 +724,19 @@ button:focus-visible {
 
 @media (max-width: 720px) {
   #lobby {
-    padding: 16px 16px 14px;
+    padding-top: 16px;
   }
-  .lobby-head {
-    padding-right: 48px;
+  #lobby {
+    --pad-x: 16px;
+    --pad-b: 14px;
   }
   /* On a small screen the winner card needs the room. */
   #hud.results-open #leaderboard,
   #hud.results-open #progress {
     display: none;
   }
-  .lobby-foot {
-    margin: 0 -16px -14px;
-    padding: 10px 16px 14px;
-    bottom: -14px;
-  }
   h1 {
     font-size: 23px;
-  }
-  .guide-grid {
-    grid-template-columns: 1fr;
   }
   #progress {
     top: auto;
@@ -784,26 +770,18 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   outline: 3px solid #8ab4f8;
   outline-offset: 3px;
 }
-.speed-control {
-  padding: 14px 16px;
-  border: 1px solid #67758d;
-  border-radius: 12px;
-  background: #1b2639;
-}
-#speed-label { font-weight: 650; }
-#speed-value { margin-left: auto; color: var(--gold); font: 700 20px var(--mono); }
-#race-speed {
-  appearance: none; width: 100%; height: 12px; margin: 18px 0;
+.range-option input[type="range"] {
+  appearance: none; width: 100%; height: 12px; margin: 16px 0 12px;
   border: 1px solid #a9b1c3; border-radius: 999px;
   background: linear-gradient(to right, var(--gold) var(--fill), #101420 var(--fill));
   cursor: pointer;
 }
-#race-speed::-webkit-slider-thumb {
+.range-option input[type="range"]::-webkit-slider-thumb {
   appearance: none; width: 26px; height: 26px; border-radius: 50%;
   background: var(--gold); border: 3px solid #101420;
   box-shadow: 0 0 0 2px var(--gold);
 }
-#race-speed::-moz-range-thumb {
+.range-option input[type="range"]::-moz-range-thumb {
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--gold); border: 3px solid #101420;
   box-shadow: 0 0 0 2px var(--gold);
@@ -825,28 +803,18 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* Keep actions readable on narrow screens without moving the length control. */
-.lobby-foot { flex-wrap: wrap; gap: 10px; }
-.lobby-summary { flex: 1 0 100%; display: flex; align-items: baseline; gap: 12px; }
-.lobby-summary .hint { flex: 1; min-width: 0; }
-.lobby-summary .wrestler-preview { flex: none; margin-left: auto; white-space: nowrap; }
 button.primary { white-space: nowrap; }
-.lobby-foot button.primary { padding-inline: 22px; }
 button.secondary {
   background: #26364a; border: 1px solid #8997ac; border-radius: 10px;
   color: var(--text); padding: 12px; font-size: 14px; white-space: nowrap;
 }
 button.secondary:disabled { cursor: not-allowed; }
-.speed-control .section-head { flex-wrap: wrap; }
-#speed-value { font-size: 15px; }
-.length-scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.range-scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 
 /* Absent count shares the hint line under "Team list". */
 #attendance-status { color: var(--gold); }
 
 /* Reset the last three winners. */
-#recent-section .section-head { flex-wrap: wrap; }
-#recent-section .roster-actions { margin-left: auto; }
 .error-text { color: #ffa8a8; }
 #reset-dialog {
   max-width: min(420px, calc(100vw - 32px));
@@ -883,25 +851,6 @@ button.danger:hover { filter: brightness(1.1); }
   .log-table th, .log-table td { padding: 8px 5px; white-space: normal; }
   .log-table td.mode { white-space: nowrap; }
 }
-
-/* Rumble model choices: adjacent actions, each with its own hover / focus tip. Hidden tips use
-   visibility: hidden, not just opacity: 0, so contrast checkers (WAVE) don't measure invisible text. */
-.rumble-buttons { position: relative; margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
-.wrestle-wrap { display: inline-flex; }
-button.wrestle { font-weight: 650; }
-button.rumble-hd { font-weight: 750; letter-spacing: 0.06em; padding-inline: 12px; }
-/* grayscale() keeps brightness, so it greys the emoji without lowering contrast. */
-button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433; border-color: #3b4557; cursor: not-allowed; filter: grayscale(1); }
-.wrestle-wrap .tip {
-  position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5;
-  width: max-content; max-width: min(330px, calc(100vw - 36px)); white-space: normal;
-  padding: 6px 10px; border-radius: 8px; font-size: 13px;
-  color: var(--text); background: #1f2638; border: 1px solid var(--panel-border);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-  visibility: hidden; opacity: 0; transform: translateY(4px); pointer-events: none;
-  transition: opacity 0.12s, transform 0.12s, visibility 0.12s;
-}
-.wrestle-wrap:hover .tip, .wrestle-wrap:focus-within .tip { visibility: visible; opacity: 1; transform: none; }
 
 /* During a wrestling match: no race standings or progress bar; a list of who is still in. */
 #ring-roster { display: none; }
@@ -984,7 +933,7 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
   color: var(--gold);
 }
 
-/* Exit: top right of the lobby card, with a hover / focus tip like Let's Wrestle Instead's. */
+/* Exit: top right of the lobby card, with a hover / focus tip (the lobby's only tooltip). */
 .exit-wrap { position: relative; margin-left: auto; align-self: flex-start; display: inline-flex; }
 button.exit { padding: 8px 14px; }
 .exit-wrap .tip {
@@ -1004,6 +953,203 @@ button.exit { padding: 8px 14px; }
 @media (max-width: 720px) {
   /* Narrow screens: Exit gets its own line under the title, so the name keeps its room. */
   .lobby-head { flex-wrap: wrap; }
-  .lobby-title { flex: 1 1 0; min-width: 0; }
+  /* Only the title keeps clear of the Mute button; Exit lines up with the lobby's right edge. */
+  .lobby-title { flex: 1 1 0; min-width: 0; padding-right: 44px; }
   .exit-wrap { order: 3; flex-basis: 100%; justify-content: flex-end; margin-top: -6px; }
+}
+
+/* ---------- lobby layout (#117): Who's here, Pick a game, then one action bar ---------- */
+
+/* Quiet section headings, so the mode cards and Start are what stand out. */
+.area-title {
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lobby-body { display: flex; flex-direction: column; gap: 24px; }
+.lobby-area { min-width: 0; }
+#game-section { border-top: 1px solid var(--panel-border); padding-top: 24px; }
+.area-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+#team-body .roster-actions { margin: 0; flex-wrap: wrap; }
+#team-body .hint { margin: 4px 0 10px; }
+
+/* On wide screens the heading is plain text; on phones it's a full-width row that folds the team list:
+   "WHO'S HERE 12 playing · 2 absent ▸". */
+.team-toggle {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+}
+.team-toggle:hover { background: #2a2e39; }
+.team-toggle::after { content: '▸'; margin-left: auto; font-size: 16px; letter-spacing: 0; color: var(--muted); }
+.team-toggle[aria-expanded="true"]::after { content: '▾'; }
+.team-summary { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+/* Edit team list leaves the lobby: set it apart from Select all / Clear all. */
+#team-body .roster-actions a.link { margin-left: auto; }
+
+/* Mode cards: one button each, pressed when selected, so Tab reaches every card. */
+.mode-picker { margin: 0; padding: 0; border: none; min-width: 0; }
+.mode-picker legend { margin-bottom: 10px; }
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 76px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.mode-card:hover { background: #2a2e39; }
+.mode-card[aria-pressed="true"] { background: #27241f; border-color: var(--gold); }
+.mode-icon { font-size: 28px; line-height: 1; }
+.mode-name { font-weight: 650; font-size: 15px; padding-right: 18px; }
+.mode-players { font-size: 13px; color: var(--muted); }
+/* Doesn't fit the headcount: still selectable, and the range line says why ("· 14 checked"). */
+.mode-card.misfit .mode-players { color: #ffa8a8; }
+.mode-check { position: absolute; top: 8px; right: 10px; color: var(--gold); font-weight: 750; visibility: hidden; }
+.mode-card[aria-pressed="true"] .mode-check { visibility: visible; }
+
+/* The selected mode's options. Every panel shares one grid cell, so the area is as tall as the tallest
+   panel and Start doesn't move when the mode changes; the others are hidden with visibility. */
+.mode-options { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
+.mode-config {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #3b4557;
+  border-radius: 12px;
+  /* Quieter than the cards above it, so Pick a game reads first. */
+  background: #161c2a;
+  color: var(--text);
+  /* The selected game's options are visible (and can take focus) at once, and fade in. */
+  transition: opacity 0.12s;
+}
+/* The others are hidden straight away, not faded out: a fade runs only as fast as the page draws frames,
+   and until it ended, the hidden game's controls would still be in the Tab order. */
+.mode-config.inactive { visibility: hidden; opacity: 0; transition: none; }
+.mode-tagline { margin: 6px 0 0; font-size: 14px; }
+.option-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.option-label { font-weight: 650; }
+.option-value { margin-left: auto; color: var(--gold); font: 700 15px var(--mono); }
+.range-option { margin: 0; }
+
+/* Segmented toggle (Classic | HD): a native radio group drawn as pills. */
+.segmented-option { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+/* Wraps when there are more choices than fit (a round shape, not a pill, keeps wrapped rows tidy). */
+.segments {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 23px;
+  background: #101420;
+  border: 1px solid #67758d;
+}
+.segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 40px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #101420;
+  color: var(--text);
+  font-weight: 650;
+  font-size: 14px;
+  cursor: pointer;
+}
+.segment:hover { background: #26364a; }
+.segment[aria-pressed="true"] { background: #f2b817; color: #1b0f00; }
+.segment .tick { display: none; margin-right: 6px; }
+.segment[aria-pressed="true"] .tick { display: inline; }
+.option-link { align-self: flex-start; font-size: 14px; }
+
+/* Action bar: what the selected game needs, then Just pick someone and Start. */
+.readiness { flex: 1 1 260px; margin: 0; font-size: 14px; color: var(--muted); }
+.readiness.blocked { color: #ffa8a8; }
+.readiness button.link { font-size: 14px; }
+.lobby-actions { display: flex; gap: 10px; margin-left: auto; }
+.lobby-actions button { min-height: 48px; }
+/* Wide enough for any "Start ‹verb›", so Start doesn't shift when the mode changes. */
+.lobby-actions button.primary { padding-inline: 26px; min-width: 210px; }
+
+/* Wide screens: attendance on the left, the game on the right, both in view. */
+@media (min-width: 1000px) {
+  #lobby { width: min(1040px, calc(100vw - 32px)); }
+  .lobby-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
+  #roster-section { padding-right: 24px; }
+  /* Three columns beside the game, so 15 names take five rows. */
+  #roster { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
+  #game-section { border-top: none; padding-top: 0; border-left: 1px solid var(--panel-border); padding-left: 24px; }
+}
+
+/* Phones (and phones on their side): the team list folds into a summary row, the readiness line joins
+   the flow, and only the two buttons stick to the bottom, in one row. */
+@media (max-width: 640px), (max-height: 500px) {
+  .lobby-foot { display: contents; }
+  .readiness { flex: none; }
+  /* Tabbing down the page scrolls controls clear of the sticky buttons. */
+  #lobby { scroll-padding-bottom: 96px; }
+  .lobby-actions {
+    justify-content: flex-end;
+    position: sticky;
+    bottom: calc(-1 * var(--pad-b));
+    margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b));
+    padding: 10px var(--pad-x) calc(var(--pad-b) - 2px);
+    background: var(--panel);
+    border-top: 1px solid var(--panel-border);
+  }
+  /* Tall enough for a label on two lines, so a long "Start ‹verb›" that wraps doesn't resize or move Start. */
+  .lobby-actions button { flex: 1 1 0; min-width: 0; max-width: 260px; min-height: 56px; white-space: normal; padding: 8px 10px; line-height: 1.2; }
+  .lobby-actions button.primary { flex-grow: 1.5; min-width: 0; font-size: 16px; padding-inline: 12px; }
+  .team-toggle { display: flex; }
+  #team-heading { flex: 1; min-width: 0; }
+  .team-title, #racer-count { display: none; }
+  .area-head { margin-bottom: 0; }
+  #roster-section.collapsed #team-body { display: none; }
+}
+@media (max-width: 640px) {
+  .lobby-body { gap: 16px; }
+  #game-section { padding-top: 16px; }
+  .flag-chip { width: 40px; height: 40px; border-radius: 10px; }
+  .lobby-head { gap: 12px; }
+  .lobby-head h1 { font-size: 20px; }
+  .tagline { font-size: 13px; }
+}
+@media (max-width: 400px) {
+  .pick-long { display: none; }
 }

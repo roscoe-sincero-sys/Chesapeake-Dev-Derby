@@ -25,13 +25,13 @@ Repository inspection found a useful separation between rules and visuals:
 
 | Existing code | What it does | Implication |
 | --- | --- | --- |
-| [package.json](package.json) | Depends on Three.js; installed version inspected is 0.170.0 | Loading skeletal models is supported by the existing rendering stack. |
-| [public/js/wrestle-sim.js](public/js/wrestle-sim.js) | Plans a 2–10-person match, assigns 12 distinct character kinds/styles, draws elimination order, and schedules match beats | Keep this logic intact. Character size and animation must not influence who wins. |
-| [public/js/wrestlers.js](public/js/wrestlers.js) | Builds bodies from primitive meshes; exposes hips, torso, head, arms and legs; poses them procedurally; creates labels | This is the main replacement/adapter boundary. Imported bone axes and rest poses will differ. |
-| [public/js/wrestle.js](public/js/wrestle.js) | Moves characters, stages grapples and ring-outs, animates special styles, places bodies on the floor, controls cameras | Preserve its timing and trajectories, but recalibrate contact, dimensions and pose handling. |
-| [public/js/game.js](public/js/game.js), [public/js/main.js](public/js/main.js) | Start wrestling synchronously, return the lineup immediately, handle HUD/results and a no-WebGL draw | Asynchronous asset preparation needs an explicit loading step or a fallback. |
-| [scripts/build-demo.mjs](scripts/build-demo.mjs) | Copies public assets and only the Three.js core module into the static demo | Imported models will copy with public assets, but loader utilities and their dependencies need packaging changes. |
-| [test/wrestle.test.js](test/wrestle.test.js) | Checks fairness, character assignment, timing, feet touching the mat and bodies resting on the floor | Preserve behavior tests and adapt geometry checks for skinned bodies. |
+| [package.json](../package.json) | Depends on Three.js; installed version inspected is 0.170.0 | Loading skeletal models is supported by the existing rendering stack. |
+| [public/js/wrestle-sim.js](../public/js/wrestle-sim.js) | Plans a 2–10-person match, assigns 12 distinct character kinds/styles, draws elimination order, and schedules match beats | Keep this logic intact. Character size and animation must not influence who wins. |
+| [public/js/wrestlers.js](../public/js/wrestlers.js) | Builds bodies from primitive meshes; exposes hips, torso, head, arms and legs; poses them procedurally; creates labels | This is the main replacement/adapter boundary. Imported bone axes and rest poses will differ. |
+| [public/js/wrestle.js](../public/js/wrestle.js) | Moves characters, stages grapples and ring-outs, animates special styles, places bodies on the floor, controls cameras | Preserve its timing and trajectories, but recalibrate contact, dimensions and pose handling. |
+| [public/js/game.js](../public/js/game.js), [public/js/main.js](../public/js/main.js) | Start wrestling synchronously, return the lineup immediately, handle HUD/results and a no-WebGL draw | Asynchronous asset preparation needs an explicit loading step or a fallback. |
+| [scripts/build-demo.mjs](../scripts/build-demo.mjs) | Copies public assets and only the Three.js core module into the static demo | Imported models will copy with public assets, but loader utilities and their dependencies need packaging changes. |
+| [test/wrestle.test.js](../test/wrestle.test.js) | Checks fairness, character assignment, timing, feet touching the mat and bodies resting on the floor | Preserve behavior tests and adapt geometry checks for skinned bodies. |
 
 This is a scripted battle royal, not a combat simulator. That makes the replacement substantially easier: no new gameplay AI, hit detection or physics engine is required. The current visual vocabulary includes overhead lifts, hip tosses, pushes, ducking, rope survival, tumbling, sitting, celebrations, illusion flicker and shapeshift scaling. A model that only walks is insufficient.
 
@@ -142,7 +142,7 @@ At the time of this initial analysis, no asset archive had been imported, no run
 
 ## Prototype implementation follow-up
 
-The two-character free prototype is now implemented; see [implementation notes](docs/wrestling-prototype.md).
+The two-character free prototype is now implemented; see [implementation notes](wrestling-prototype.md).
 Archive inspection confirmed that Standard contains only the male/female Superhero bodies, not the
 Regular or Teen bases. Ghatotkacha and Abhimanyu therefore use the free male mesh with different
 proportions, hair, skin treatment, weighted clothing and accessories. No paid content is used.
@@ -154,5 +154,5 @@ and the costume recipes are in `public/js/wrestler-looks.js`. The studio can com
 characters. See [models.md](models.md) to recreate Arjuna from the original free archive.
 
 Full hardware-accelerated performance testing subsequently validated twelve concurrent
-wrestlers, and the normal limit is now twelve. See the [performance report](docs/wrestling-performance.md)
+wrestlers, and the normal limit is now twelve. See the [performance report](wrestling-performance.md)
 for repeated ten-versus-twelve measurements and the live test page.

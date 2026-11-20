@@ -58,29 +58,49 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** Pick a **Race length** on the slider: about 120, 60 (default), 30, 15 or 10 seconds
-   of racing, not counting the short countdown. Everyone is listed with a checkbox. A ticked box means that
-   person is racing.
+2. **Open the lobby.** It asks three things in order: **Who's here**, **Pick a game**, and that game's
+   options. Then one button starts it. On a wide screen (1000 px and up) the team list is on the left and
+   the game on the right; on a narrower one they stack. On a phone the team list folds into a
+   **Who's here · 12 playing** row: tap it to open the list (it starts open when fewer than two people are
+   ready). Everyone is listed with a checkbox. A ticked box means that person is playing.
+
+   <img src="docs/lobby-wide.png" alt="The lobby on a laptop: Who's here with the team list on the left; Pick a game with the Derby Race card selected and its Race length slider on the right; Just pick someone and Start race at the bottom." width="640">
+   <img src="docs/lobby-phone.png" alt="The lobby on a phone: the team list folded into a Who's here row, the Let's Rumble card selected with its Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
    - The list is in **alphabetical order**. A name that is an email address is shown without the
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
      full entry. Hover a name to see it in full.
-   - **Uncheck** anyone who is absent today. Attendance, race speed, the game you last started (race or
-     Rumble, and Rumble's Classic or HD models) are kept in this browser tab through reloads and visits to
-     **Edit team list**. Removed names are dropped from saved attendance;
-     new names start checked. Settings are scoped to the tab's browser session; a new tab starts on the
-     race. An explicit `?speed=` or `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves
-     to the nearest of the five lengths. When anyone is unchecked, the count ("2 people marked absent.")
-     appears at the end of the hint line under **Team list**.
+   - **Uncheck** anyone who is absent today. Attendance is kept in this browser tab through reloads, games
+     and visits to **Edit team list**; a new tab (the next meeting) starts with everyone present. Removed
+     names are dropped from saved attendance; new names start checked. The selected game and each game's
+     options (race length, Classic or HD) are kept in this browser from one meeting to the next
+     (`localStorage`); a browser that has never chosen starts on the race. An explicit `?speed=` or
+     `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves to the nearest of
+     the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears at the end
+     of the hint line under **Who's here**.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
-     checkbox ("won last race", "won 2 races ago"…).
+     checkbox ("Sits out 3 more picks"…), and named on the **Sitting out** line under the list, next to
+     **Full history** and **Reset**.
 
-3. Click **Start race** (or press **Enter**). You need at least two racers. When the lobby opens, keyboard focus
-   is already on **Start race** (or, if this tab last played Rumble, on that Rumble button, so **Enter**
-   starts Rumble again); on Full history and Edit team list it starts on **Back to lobby**.
+3. **Pick a game.** Click a card: **🏁 Derby Race** (2 or more players) or **🤼 Let’s Rumble** (2 to 12).
+   Choosing a card only selects it; nothing starts until you click Start. The selected game's options
+   appear underneath:
+   - the race has a **Race length** slider: about 120, 60 (default), 30, 15 or 10 seconds of racing, not
+     counting the short countdown;
+   - Rumble has **Models: Classic | HD** and **Preview wrestlers** (see [Let’s Rumble](#lets-rumble)).
 
-4. Watch the race. The result shows actual elapsed racing time, excluding the countdown. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
+   **How to play**, at the bottom of the options, explains that game. If the number checked doesn't suit
+   the selected game, its card says so in red ("2–12 players · 14 checked"), Start is disabled, and the
+   line beside Start says what to change, with a **Review team list** link.
+
+4. Click **▶ Start race** (the button follows the selected game: **▶ Start rumble** for Rumble), or press
+   **Enter**. When the lobby opens, keyboard focus is already on Start if the selected game can start;
+   on Full history and Edit team list it starts on **Back to lobby**. **Just pick someone**, beside Start,
+   picks a winner at random without playing any game (see [Resetting or correcting the
+   history](#resetting-or-correcting-the-history)).
+
+5. Watch the race. The result shows actual elapsed racing time, excluding the countdown. The winner is announced and **saved to [`data/winners.json`](data/winners.json)**
    the moment they cross the line. That file holds the last three winners; when it already has three,
    the new winner replaces the oldest.
 
@@ -88,16 +108,18 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    fly-over of the whole course from the start line, at normal speed whatever the race length was, so
    everyone can read the billboards. The result card stays on screen.
 
-5. **Back to lobby** returns to the roster with the new winner now sitting out.
+6. **Back to lobby** returns to the lobby, with the same game and options selected and the new winner
+   now sitting out.
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
 ### Let’s Rumble
 
-A second way to pick: **🤼 Let’s Rumble**, at the far right of the **Start race** row, uses the original
-character models. The adjacent **HD** button starts the same match with the new detailed models.
-Both support **2 to 12** checked teammates and follow the same selection and winner-history rules.
-Their hover/focus tips explain the model choice and whether enough teammates are checked.
+A second way to pick: select the **🤼 Let’s Rumble** card, then **▶ Start rumble**. Its **Models** option
+chooses **Classic** (the original character models, the default) or **HD** (the new detailed models); the
+match is the same either way. Rumble supports **2 to 12** checked teammates and follows the same selection
+and winner-history rules. With more or fewer checked, its card and the line beside Start say how many,
+and Start stays disabled until the team fits.
 
 The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
 their name floating above them. During the match the corner button reads **Quit match** (it saves nothing).
@@ -106,13 +128,12 @@ Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a
 12 wrestlers). Their styles show in how they move, throw and get out of trouble:
 
 **Character studio:** the HD option uses free, skinned Quaternius bodies with custom costumes
-and equipment for all twelve characters. Open the permanent **Preview wrestlers** link beneath
-the lobby's Rumble/HD buttons, or visit [`character-prototype.html`](public/character-prototype.html), and select any two
+and equipment for all twelve characters. Open **Preview wrestlers** in Rumble's options, or visit [`character-prototype.html`](public/character-prototype.html), and select any two
 warriors. Choose poses, orbit/zoom, inspect equipment from behind, compare the original models,
 or watch a match with reversible roles. Preview matches never save meeting results. Original
-models remain the HD fallback if assets cannot load; the ordinary Rumble button always selects
-the originals, even after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
-and [models.md](models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
+models remain the HD fallback if assets cannot load; **Classic** always selects the originals, even
+after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
+and [docs/models.md](docs/models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
 
 **Performance test:** open [`wrestling-performance.html`](public/wrestling-performance.html) or use
 **Run all 12 · performance test** in the studio. It runs a complete match with all twelve models,
@@ -176,9 +197,9 @@ on average), whatever the **Race length** slider says (the slider is only for ra
 ### Winner history
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
-5,000). Click **Full history** next to **Last three winners** in the lobby to see the list, newest first,
-with each winner's date and time and whether they won a **race**, won by **wrestling** (Let’s Wrestle
-Instead), or were picked with **Skip race, just pick**. On an install from before the history was added, the list starts with the winners already in
+5,000). Click **Full history** on the **Sitting out** line in the lobby to see the list, newest first,
+with each winner's date and time and whether they won a **race**, won by **wrestling** (Let’s Rumble),
+or were picked with **Just pick someone** (shown as Skip). On an install from before the history was added, the list starts with the winners already in
 `data/winners.json`; those show **—** under How because that wasn't recorded.
 
 ### Absentee list
@@ -204,7 +225,7 @@ Someone who misses 90% of standups can open the file in a text editor and, like 
 
 ### Resetting or correcting the history
 
-To make everyone eligible again, click **Reset list** next to **Last three winners** in the lobby and
+To make everyone eligible again, click **Reset** on the **Sitting out** line in the lobby and
 confirm. This empties `data/winners.json` and can't be undone. The full history is kept.
 
 `data/winners.json` is plain JSON, oldest first. You can also edit it by hand to fix a mistake, or empty
@@ -214,8 +235,9 @@ the list yourself:
 { "winners": [] }
 ```
 
-For an immediate result, use **Skip race, just pick**. It randomly picks from the same eligible,
-present racers and saves the result with the same three-race exclusion. Both actions need at least two racers.
+For an immediate result, use **Just pick someone**, beside Start. It works whichever game is selected:
+it randomly picks from the same eligible, present teammates, plays no game, and saves the result with the
+same three-pick exclusion. It needs at least two people checked.
 
 ## What's on the track
 
@@ -286,7 +308,7 @@ Handy for demos and testing:
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?mode=rumble` | Initial game: `race` or `rumble`. An unknown name is ignored. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
-| `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
+| `?test`     | Expose the game and HUD as `window.derbyTest`, and add stand-in modes from `window.derbyTestModes`, for the browser tests |
 
 ## Tests
 
@@ -303,9 +325,12 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/sim.test.js`** — the race itself: every race finishes with one winner, a typical race at 1x lasts
   about two minutes, every obstacle and item comes into play, firewalls block exactly one hit, races replay
   from a seed, and outcomes are unbiased.
-- **`test/lobby-settings.test.js`** — saved attendance, game and options, the five slider lengths,
-  snapping older or typed-in speeds to the nearest length, upgrading settings saved by 1.6 and earlier, and
-  falling back to the race and to default options for unknown or invalid values.
+- **`test/lobby-settings.test.js`** — attendance kept for the tab and the game and its options for the
+  browser (a new tab keeps the game, with everyone present), the five slider lengths, snapping older or
+  typed-in speeds to the nearest length, upgrading settings saved in the tab by earlier versions, falling
+  back to the race and to default options for unknown or invalid values, and blocked storage.
+- **`test/markup.test.js`** — every button on every page has text or a label, so checkers like WAVE find
+  no empty button, even on one that stays hidden until needed (the wrestler list's button in a match).
 - **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
@@ -329,7 +354,28 @@ Uses Node's built-in test runner — no extra packages. Covers:
   older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
   a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
   checks that all of them ran. A last live match on a 320 × 568 phone taps the list's button to open and
-  close it, and checks every tap on it reaches it rather than Mute or Quit.
+  close it, and checks every tap on it reaches it rather than Mute or Quit. The HD match is started the way
+  a person would: the Rumble card, **HD**, then **Start rumble**.
+- **`test/lobby-browser.test.js`** — the lobby takes more games without changing its markup or CSS. Before
+  the page's scripts run, the test adds stand-in modes through `?test`, with a stub start that records
+  what it was given:
+  - **a third mode** (Arena, 2–4 players, a three-way toggle and a slider, its own How to play): it appears
+    as one more card; **Tab** reaches every card and **Enter** on one selects it without starting it;
+    six checked are refused in text beside a disabled Start, which Enter can't get round; **Review team
+    list** goes to the list; once it fits, Tab goes on through the toggle's choices (**Space** picks one) to
+    the slider (the arrow keys move it), and **Enter** there starts it with its options; Quit returns focus
+    to Start; a reload keeps the mode, its options and attendance, and Enter on Start starts it again; a new
+    tab keeps the mode and options with everyone present; and an open **How to play** closes when another
+    game is chosen, so the options area shrinks back;
+  - **the phone's Who's here row**: a tap anywhere on it, the count included, unfolds the team list, it
+    shows who's absent ("5 playing · 1 absent"), and a tap by the arrow folds it again;
+  - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568 (with reduced motion,
+    so nothing is caught mid-fade): no sideways
+    scrolling, cards and buttons at least 44 px, names wrapped rather than cut off, only the selected
+    mode's options showing, and Start in exactly the same place for every mode.
+
+  `test/browser.js` holds what both browser tests share: starting Chrome and the app on a temporary data
+  folder.
 
 ## How it's put together
 
@@ -356,7 +402,7 @@ public/
   js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
   js/demo-api.js     The online demo's in-browser store (localStorage)
   js/eligibility.js  Who may race (last three winners sit out)
-  js/lobby-settings.js  Attendance, game and options kept for the browser tab
+  js/lobby-settings.js  Attendance kept for the tab; the game and its options kept for the browser
   js/race-lengths.js    Race lengths offered, and the slider's steps
   js/sim.js          The race simulation — pure logic, no graphics
   js/game.js         Three.js scene, camera, and syncing models to the simulation
@@ -364,7 +410,7 @@ public/
   js/scenery.js      Bay, islands, lighthouses, sailboats, billboards
   js/racers.js       The 11 racer models and their karts
   js/audience.js     Grandstands and the cheering wildlife
-  js/wrestle-sim.js  Let’s Wrestle Instead: the battle royal's rules and script (pure logic)
+  js/wrestle-sim.js  Let’s Rumble: the battle royal's rules and script (pure logic)
   js/wrestle.js      The wrestling ring, camera and choreography
   js/wrestlers.js    The Mahabharata wrestler models and their poses
   js/crowd.js        The reacting crowd and its hand-lettered signs
@@ -383,6 +429,22 @@ The simulation (`sim.js`) works in simple track coordinates — distance along t
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
 the models to match, so the outcome is the same on a fast or slow machine.
 
+### Adding a game
+
+The lobby is built from the list of games in `public/js/modes.js`. Each entry gives a game's icon, name,
+player range, options, the line shown beside Start when it's ready, and a `start(ctx, options)` function.
+The lobby draws the cards, options and Start button from that list, so adding a game (a third-person
+arena, say) doesn't touch the lobby's markup or CSS:
+
+1. Write the game module, split like `wrestle.js` (3D) and `wrestle-sim.js` (rules, no graphics).
+2. Add one entry to `MODES` in `modes.js`. Options can be a `range` (a stepped slider), a `segmented`
+   toggle, or a `link`.
+3. Add its `winMode` to `WIN_MODES` (`data-rules.js`), and a label to `MODE` and wording to `MODE_COUNT`
+   (`page-common.js`) for the history pages. `test/modes.test.js` fails if any of these is missing.
+4. Add `<template id="guide-‹its guide›">` to `index.html` with its How to play.
+
+`test/lobby-browser.test.js` checks this with a stand-in third game, and with six games.
+
 ## Accessibility
 
 The derby aims to meet **WCAG 2.2 level AA** on every screen it shows: the lobby, the race and wrestling
@@ -394,12 +456,15 @@ The online demo uses the same pages.
 
 - **Keyboard:**
   - every control can be reached with **Tab** and used with **Enter** or **Space**;
-  - in the lobby, **Enter** starts the race (or Rumble, if that is what this tab last played);
+  - every game card, and each **Classic | HD** choice, is its own **Tab** stop, a button that reads as
+    pressed when selected; **Space** or **Enter** selects it without starting anything;
+  - in the lobby, **Enter** on Start, on a slider, or anywhere that isn't a control starts the selected
+    game;
   - **M** turns sound on or off;
   - **Escape** closes the reset dialog.
 - **Focus:**
-  - each page starts on the most useful control: **Start race** in the lobby, **Back to lobby** on the
-    other pages;
+  - each page starts on the most useful control: Start in the lobby (or the selected game's card when
+    the team doesn't fit it), **Back to lobby** on the other pages; after a game, focus returns to Start;
   - focused controls show a clear blue outline.
 - **Screen readers:**
   - status messages are announced as they change: loading, saving, warnings and errors;
@@ -407,9 +472,12 @@ The online demo uses the same pages.
   - the winner card is a labelled dialog;
   - the race-length slider reads out the length in words ("About 60 seconds");
   - the mute button reports whether sound is on;
-  - hover tips (**Let's Wrestle Instead**, **Exit**) are also shown on keyboard focus and are linked to
-    their buttons, so screen readers read them too. While hidden they are fully hidden, not just
-    see-through, so contrast checkers don't measure invisible text.
+  - each mode card is read with its player range ("Let’s Rumble, 2–12 players · 14 checked"), and the
+    line beside Start, which says what the selected game needs, is announced as it changes and linked to
+    Start;
+  - rules such as player limits are always shown as text. The only hover tip, on **Exit**, is also shown
+    on keyboard focus and linked to its button. While hidden it is fully hidden, not just see-through, so
+    contrast checkers don't measure invisible text.
 - **Colour contrast:**
   - all text meets AA: 4.5:1, or 3:1 for large text;
   - text sits on solid panels, never directly on the moving 3D scene;
@@ -458,7 +526,8 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    `color` in the **Styles** pane; the colour picker shows the contrast ratio and whether it passes AA.
 5. **Keyboard:** put the mouse aside.
    1. Press **Tab** through the lobby: every control should get a visible outline.
-   2. Start a race with **Enter**, and toggle sound with **M**.
+   2. **Tab** to each game card and select one with **Space** or **Enter** (nothing starts), then Tab on
+      to Start and press **Enter**; after **Quit**, focus is back on Start. Toggle sound with **M**.
    3. Open **Reset list** and close it with **Escape**.
 6. **Screen reader:**
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
@@ -494,8 +563,8 @@ Found a problem? Open an issue with the `accessibility` label, naming the page, 
 ## Online demo
 
 A public, browser-only demo runs on GitHub Pages at
-<https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>. Anyone can try the race, **Skip race, just
-pick** and **Let's Wrestle Instead** without installing anything.
+<https://roscoe-sincero-sys.github.io/Chesapeake-Dev-Derby/>. Anyone can try the race, **Let’s Rumble** and
+**Just pick someone** without installing anything.
 
 - **Sample team:** it starts with characters from the Maranao epic *Maharadia Lawana*: Radia Mangandiri,
   Radia Mangawarna, Potre Malaila Ganding, Laksamana, Maharadia Lawana and Kabayan.
@@ -509,7 +578,8 @@ pick** and **Let's Wrestle Instead** without installing anything.
 **How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
 `npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
 repository's **Deployments → github-pages**. A separate **Browser tests** job runs
-`test/callout-browser.test.js` in headless Chrome on Node 22, and the deploy waits for it too. Pull
+`test/callout-browser.test.js` and `test/lobby-browser.test.js` in headless Chrome on Node 22, and the
+deploy waits for it too. Pull
 requests run the tests, the browser tests and the build without deploying.
 The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
 
