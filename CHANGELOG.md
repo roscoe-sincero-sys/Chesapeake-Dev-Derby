@@ -7,6 +7,12 @@ to release.
 
 ## [Unreleased]
 
+### Fixed
+- **Close calls (#112):** both wrestlers turn smoothly as they approach the ropes and hold their facing
+  through the close call.
+- **Satyaki's rebound (#113):** his opponent turns at a limited rate as Satyaki runs past, then eases
+  into the position for the tackle.
+
 ## [1.6.1] - 2026-11-19
 
 ### Fixed

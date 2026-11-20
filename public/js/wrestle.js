@@ -64,7 +64,7 @@ const KNOCKDOWN = { lie: 0.9, up: 1.7 }; // seconds after going down: start gett
 // out to the charge back over `turn` seconds: starting `early` before he reaches the ropes (side first
 // into them), through the bounce and on into the charge; and over the first `tackle` of the throw he
 // squares up to the ropes. His facing is set by time, so it never jumps, at any update rate.
-const RUN = { speed: 5.2, bounce: 0.3, start: 0.65, early: 0.25, turn: 0.75, tackle: 0.45 };
+const RUN = { speed: 5.2, bounce: 0.3, start: 0.65, early: 0.25, turn: 0.75, tackle: 0.45, victimTurn: 2 * Math.PI, brace: 0.75 };
 const ROPE_CONTACT = 0.5; // a wrestler's root this far inside the rope line has their back on the ropes
 const ROOM = 4.4; // how far apart fights try to stay (#100)
 const BLEND = 0.22; // seconds for one move to ease into the next (#98)
@@ -1405,14 +1405,21 @@ export class WrestleMatch {
     const k = ease(since / PACE.approach);
     step(v, av.x + (at.x - av.x) * k, av.z + (at.z - av.z) * k);
     v.ropeBack = 0;
-    const brace = ease((t - (b.throwAt - 0.6)) / 0.5);
-    // Each turn is followed on from the last update, never re-chosen the short way round from a heading
-    // that is itself turning: that flips direction as the two pass opposite each other.
-    const toward = headingTo(v.x, v.z, h.x, h.z);
-    run.toward = run.toward === undefined ? av.heading + turnBy(av.heading, toward) : run.toward + turnBy(run.toward, toward);
-    const facing = av.heading + (run.toward - av.heading) * k;
-    if (brace > 0 && run.braceTo === undefined) run.braceTo = facing + turnBy(facing, inwardHeading);
-    v.heading = brace > 0 ? facing + (run.braceTo - facing) * brace : facing;
+    const braceAt = b.throwAt - RUN.brace;
+    const brace = ease((t - braceAt) / RUN.brace);
+    if (t >= braceAt) {
+      // Finish square to the ropes before flight, starting from the last heading actually shown.
+      run.braceFrom ??= v.heading;
+      v.heading = lerpAngle(run.braceFrom, inwardHeading, brace);
+    } else {
+      // Follow the bearing continuously and limit the displayed turn when Satyaki runs close by (#113).
+      const toward = headingTo(v.x, v.z, h.x, h.z);
+      const previous = run.toward ?? av.heading;
+      run.toward = previous + turnBy(previous, toward);
+      const facing = av.heading + (run.toward - av.heading) * k;
+      const maxTurn = RUN.victimTurn * this.dt;
+      v.heading += THREE.MathUtils.clamp(facing - v.heading, -maxTurn, maxTurn);
+    }
     if (since < PACE.approach) this.act(v, 'run:back', { walk: v.walk, stride: 0.35 * (1 - k), guard: 0.6, crouch: 0.2, lean: -0.15 });
     else this.act(v, 'run:dazed', { guard: 0.4 + 0.5 * brace, crouch: 0.2 + 0.1 * brace, look: -0.3 * (1 - brace), tilt: 0.15 * Math.sin(t * 3) * (1 - brace), lean: -0.1 });
     // Satyaki: out to the ropes, off them, and back at full speed. His facing is set by time alone:
@@ -1453,28 +1460,28 @@ export class WrestleMatch {
     const pw = f.at(HALF - 0.55);
     const po = f.at(HALF - 1.85);
     const since = t - b.start;
+    const approachTime = 0.9;
+    const approach = ease(since / approachTime);
+    const aw = this.anchor(b, w);
+    const ao = this.anchor(b, o);
+    // Face each other along the rope normal by the end of the approach and hold that facing (#112).
+    w.heading = lerpAngle(aw.heading, headingTo(pw.x, pw.z, po.x, po.z), approach);
+    o.heading = lerpAngle(ao.heading, headingTo(po.x, po.z, pw.x, pw.z), approach);
     w.y = o.y = MAT_Y;
-    if (since < 0.9) {
-      const k = ease(since / 0.9);
-      const aw = this.anchor(b, w);
-      const ao = this.anchor(b, o);
-      w.x = aw.x + (pw.x - aw.x) * k;
-      w.z = aw.z + (pw.z - aw.z) * k;
-      o.x = ao.x + (po.x - ao.x) * k;
-      o.z = ao.z + (po.z - ao.z) * k;
-      w.heading = lerpAngle(aw.heading, headingTo(w.x, w.z, o.x, o.z), ease(since / 0.4));
-      o.heading = lerpAngle(ao.heading, headingTo(o.x, o.z, w.x, w.z), ease(since / 0.4));
+    if (since < approachTime) {
+      w.x = aw.x + (pw.x - aw.x) * approach;
+      w.z = aw.z + (pw.z - aw.z) * approach;
+      o.x = ao.x + (po.x - ao.x) * approach;
+      o.z = ao.z + (po.z - ao.z) * approach;
       this.act(w, 'cc:back', { walk: t * 7, stride: 0.35 * (1 - ease((since - 0.6) / 0.3)), guard: 0.6, lean: -0.2 });
       this.act(o, 'cc:drive', { armsForward: 1, walk: t * 7, stride: 0.35 * (1 - ease((since - 0.6) / 0.3)), lean: 0.35 });
     } else if (since < 1.9) {
       // Teetering over the top rope.
-      const k = (since - 0.9) / 1.0;
+      const k = (since - approachTime) / (1.9 - approachTime);
       if (!this.fired.has(`close:${b.start}`)) this.crowd.closeCall(pw.x, pw.z, t);
       this.emit(`close:${b.start}`, { type: 'closeCall', wrestler: w, other: o });
       w.x = pw.x;
       w.z = pw.z;
-      w.heading = headingTo(w.x, w.z, o.x, o.z);
-      o.heading = headingTo(o.x, o.z, w.x, w.z);
       w.pulse = w.kind.style === 'shapeshift' ? 1 + 0.1 * Math.sin(t * 24) : 1;
       this.act(w, 'cc:teeter', { lean: -0.95 * Math.sin(Math.min(1, k * 1.4) * Math.PI * 0.5), flail: 1, walk: t * 9, crouch: 0.15 });
       this.act(o, 'cc:drive', { armsForward: 1.1, lean: 0.4 });
