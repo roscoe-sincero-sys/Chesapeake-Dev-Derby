@@ -13,6 +13,7 @@ const names = (n) => Array.from({ length: n }, (_, i) => `Wrestler ${i + 1}`);
 const kind = (id) => WRESTLER_KINDS.find((k) => k.id === id);
 const MAT_Y = 1.3;
 const HALF = 6;
+const turnDegrees = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) * (180 / Math.PI);
 
 /** Steps `match` at `hz` until `until` seconds, calling `frame()` after each update. */
 function run(match, hz, until, frame = () => {}) {
@@ -475,34 +476,34 @@ test('body slams drop from where the hold was shown: no jump from the hands into
 
 test("Satyaki and his victim turn smoothly from the run out, off the ropes, through the tackle, at 30 and 60 updates/s", async () => {
   await loadHdAssets();
-  const deg = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) * (180 / Math.PI);
+  // Four wrestlers, seed 11: the victim turned too fast as Satyaki ran past (#113).
   // Seed 17: his first ring-out, where the victim used to swing 157 degrees in one update at 30/s.
   // Seed 9: his run-up turn used to change direction 0.5 s in (23 degrees in one update at 30/s).
   // Seed 8: two rebounds, one victim swinging 143 degrees.
-  for (const [seed, styles] of [[17, ['hd', 'classic']], [9, ['hd', 'classic']], [8, ['classic']]]) {
+  for (const [count, seed, styles] of [[4, 11, ['classic']], [12, 17, ['hd', 'classic']], [12, 9, ['hd', 'classic']], [12, 8, ['classic']]]) {
     for (const modelStyle of styles) {
       for (const hz of [30, 60]) {
-        const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle });
+        const match = new WrestleMatch(names(count), { rng: mulberry32(seed), modelStyle });
         const outs = [];
         match.onEvent = (e) => e.type === 'out' && outs.push(e);
         const beats = match.plan.beats.filter((x) => x.type === 'elimination' && match.wrestlers[x.thrower].kind.style === 'rebound');
         assert.ok(beats.length > 0, `seed ${seed} has a Satyaki ring-out`);
-        const label = `seed ${seed} ${modelStyle} @${hz}`;
+        const label = `${count} wrestlers, seed ${seed} ${modelStyle} @${hz}`;
         const prev = new Map();
         const worst = { turn: 0 };
         const nearest = new Map();
         run(match, hz, Math.max(...beats.map((b) => b.landAt)) + 0.5, (m) => {
           for (const b of beats) {
             if (m.t < b.start || m.t >= b.throwAt + PACE.throw) continue;
-            // Satyaki through the tackle; the victim until he is thrown (the throw itself is another move).
-            for (const [who, id, until] of [['Satyaki', b.thrower, b.throwAt + PACE.throw], ['his victim', b.victim, b.throwAt]]) {
-              const w = m.wrestlers[id];
+            // Satyaki through the tackle and his victim through the first frame of the throw.
+            for (const [who, id, until] of [['Satyaki', b.thrower, b.landAt], ['his victim', b.victim, b.throwAt + 1 / hz]]) {
+              const heading = m.wrestlers[id].rig.root.rotation.y;
               const key = `${b.start}:${who}`;
               if (prev.has(key) && m.t < until) {
-                const turn = deg(w.heading, prev.get(key));
+                const turn = turnDegrees(heading, prev.get(key));
                 if (turn > worst.turn) worst.turn = turn, worst.at = `${who}, ${(m.t - b.start).toFixed(2)} s into the ring-out at ${b.start.toFixed(1)} s`;
               }
-              prev.set(key, w.heading);
+              prev.set(key, heading);
             }
             const h = m.wrestlers[b.thrower];
             if (m.t < b.throwAt) nearest.set(b, Math.min(nearest.get(b) ?? Infinity, HALF - Math.max(Math.abs(h.x), Math.abs(h.z))));
@@ -585,8 +586,7 @@ test('standard ring-out throwers and victims turn smoothly from approach through
             if (b.type !== 'elimination' || m.t >= b.landAt) continue;
             for (const role of ['thrower', 'victim']) {
               const id = b[role];
-              const delta = current[id] - previous[id];
-              const degrees = Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta))) * (180 / Math.PI);
+              const degrees = turnDegrees(current[id], previous[id]);
               const key = `${b.victim}:${role}`;
               if (degrees > (worst.get(key)?.degrees ?? -1)) {
                 worst.set(key, { degrees, since: m.t - b.start });
@@ -606,6 +606,36 @@ test('standard ring-out throwers and victims turn smoothly from approach through
             assert.ok(degrees <= 400 / hz, `${label}: ${kind.label} (${role}) turns ${degrees.toFixed(1)}° in one update, ${since.toFixed(2)} s into the ${move}`);
           }
         }
+      }
+    }
+  }
+});
+
+// ---------------------------------------------------------------- #112 close-call facing
+
+test('both wrestlers turn smoothly through the final close call', async () => {
+  await loadHdAssets();
+  for (const [count, seed] of [[2, 19], [2, 13], [2, 20], [4, 27], [4, 22], [12, 2]]) {
+    for (const modelStyle of ['classic', 'hd']) {
+      for (const hz of [30, 60]) {
+        const match = new WrestleMatch(names(count), { rng: mulberry32(seed), modelStyle });
+        const beat = match.plan.beats.find((b) => b.type === 'closeCall');
+        const pair = [match.wrestlers[beat.wrestler], match.wrestlers[beat.other]];
+        const previous = pair.map((w) => w.rig.root.rotation.y);
+        let worst = { degrees: 0 };
+        run(match, hz, beat.end, (m) => {
+          for (const [i, w] of pair.entries()) {
+            const heading = w.rig.root.rotation.y;
+            if (m.t >= beat.start && m.t < beat.end) {
+              const degrees = turnDegrees(heading, previous[i]);
+              if (degrees > worst.degrees) worst = { degrees, who: w.kind.label, since: m.t - beat.start };
+            }
+            previous[i] = heading;
+          }
+        });
+        const label = `${count} wrestlers, seed ${seed} ${modelStyle} @${hz}`;
+        assert.ok(worst.degrees <= 400 / hz,
+          `${label}: ${worst.who} turns ${worst.degrees.toFixed(1)}° in one update, ${worst.since?.toFixed(2)} s into the close call`);
       }
     }
   }
