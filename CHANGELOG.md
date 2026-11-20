@@ -10,8 +10,9 @@ to release.
 ### Added
 - **Lobby browser tests (#117, phase 4):** `test/lobby-browser.test.js` adds a stand-in third game, and
   six games with a very long name, and checks the lobby takes them with no change to its markup or CSS:
-  selection by keyboard, each game's options, player limits in text, Enter and the shared Start, focus,
-  saved settings, and the layout from a laptop down to a 320 px phone. CI's **Browser tests** job runs it.
+  selection by keyboard, each game's options, player limits in text, Enter (from a card or an option) and
+  the shared Start, focus, saved settings, How to play closing on a change of game, the phone's Who's here
+  row, and the layout from a laptop down to a 320 px phone. CI's **Browser tests** job runs it.
 - README: screenshots of the lobby on a laptop and a phone, and **Adding a game**.
 
 ### Fixed

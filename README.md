@@ -358,9 +358,13 @@ Uses Node's built-in test runner — no extra packages. Covers:
   - **a third mode** (Arena, 2–4 players, a three-way toggle and a slider, its own How to play): it appears
     as one more card; the arrow keys select it without starting it; six checked are refused in text
     beside a disabled Start and Enter does nothing; **Review team list** goes to the list; once it fits,
-    **Enter** starts it with its options; Quit returns focus to Start; and a reload keeps the mode, its
-    options and attendance;
-  - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568: no sideways
+    **Enter** on its card, or on one of its options, starts it with its options; Quit returns focus to
+    Start; a reload keeps the mode, its options and attendance; and an open **How to play** closes when
+    another game is chosen, so the options area shrinks back;
+  - **the phone's Who's here row**: a tap anywhere on it, the count included, unfolds the team list, it
+    shows who's absent ("5 playing · 1 absent"), and a tap by the arrow folds it again;
+  - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568 (with reduced motion,
+    so nothing is caught mid-fade): no sideways
     scrolling, cards and buttons at least 44 px, names wrapped rather than cut off, only the selected
     mode's options showing, and Start in exactly the same place for every mode.
 

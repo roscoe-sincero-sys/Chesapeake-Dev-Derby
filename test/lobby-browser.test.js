@@ -67,11 +67,13 @@ function installModes(extra) {
 const NAMES = ['Ada', 'Grace', 'Linus', 'Hedy', 'Barbara', 'Ken'];
 
 /** Opens the lobby with `extra` stand-in modes on a `width` x `height` screen. */
-async function openLobby(t, { extra, names = NAMES, width = 1366, height = 768, mobile = false }) {
+async function openLobby(t, { extra, names = NAMES, width = 1366, height = 768, mobile = false, reducedMotion = false }) {
   const base = await startServer(t, names);
   const send = await openBrowser(t);
   const page = pageHelpers(send);
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
+  // Without motion, the options' crossfade is instant, so what shows can be read straight after a change.
+  if (reducedMotion) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: `(${installModes})(${extra})` });
   const load = async (query = '') => {
@@ -83,7 +85,14 @@ async function openLobby(t, { extra, names = NAMES, width = 1366, height = 768, 
   const key = async (key, code, keyCode) => {
     for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: keyCode });
   };
-  return { send, ...page, load, key };
+  /** A real tap (mouse press and release) at the centre of what `selector` finds, or at `dx` px from its left. */
+  const tap = async (selector, dx = null) => {
+    const r = await page.evaluate(`(() => { const r = document.querySelector('${selector}').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()`);
+    const x = dx === null ? r[0] + r[2] / 2 : r[0] + dx;
+    const y = r[1] + r[3] / 2;
+    for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+  };
+  return { send, ...page, load, key, tap };
 }
 
 /** What the lobby shows for the selected mode. */
@@ -124,11 +133,10 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.panel, 'Arena options');
   assert.match(lobby.howToPlay, /Knock everyone off the arena/);
 
-  // Six checked don't fit 2–4: said beside a disabled Start, and Enter in the lobby does nothing.
+  // Six checked don't fit 2–4: said beside a disabled Start, and Enter on the card does nothing.
   assert.equal(lobby.start, '▶ Start arena');
   assert.ok(lobby.startDisabled);
   assert.equal(lobby.readiness, 'Arena supports 2–4 players. 6 are checked — uncheck 2. Review team list');
-  await evaluate('document.activeElement.blur()');
   await key('Enter', 'Enter', 13);
   assert.deepEqual(await evaluate('window.derbyTestCalls'), []);
 
@@ -147,8 +155,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   await evaluate(`(() => { const s = document.getElementById('opt-arena-rounds'); s.value = 2; s.dispatchEvent(new Event('input')); })()`);
   assert.equal(await evaluate(`document.getElementById('opt-arena-rounds').getAttribute('aria-valuetext')`), '5 rounds');
 
-  // Enter in the lobby starts the selected mode, with its options, through the shared Start.
-  await evaluate('document.activeElement.blur()');
+  // Enter on the selected card starts it, with its options, through the shared Start.
+  await evaluate(`document.querySelector('input[name="mode"][value="arena"]').focus()`);
   await key('Enter', 'Enter', 13);
   lobby = await evaluate(LOBBY);
   assert.equal(lobby.calls.length, 1);
@@ -169,27 +177,55 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(await evaluate(`document.querySelector('input[name="opt-arena-map"]:checked').value`), 'lighthouse');
   assert.equal(await evaluate(`document.getElementById('opt-arena-rounds').value`), '2');
 
+  // Enter on one of its options (the slider) starts it too.
+  await evaluate(`document.getElementById('opt-arena-rounds').focus()`);
+  await key('Enter', 'Enter', 13);
+  await until('window.derbyTestCalls.length === 1 && document.getElementById("lobby").hidden', 10000, 'Arena to start from the slider');
+  await evaluate(`document.getElementById('quit').click()`);
+  await until(`!document.getElementById('lobby').hidden`, 10000, 'the lobby after Quit');
+
   // Back to the race: attendance is shared, and the race's options are still its own.
   await evaluate(`document.querySelector('input[name="mode"][value="race"]').click()`);
   lobby = await evaluate(LOBBY);
   assert.equal(lobby.start, '▶ Start race');
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.panel, 'Race options');
+
+  // An open How to play doesn't follow you to another game: the options area shrinks back.
+  const area = `Math.round(document.getElementById('mode-options').getBoundingClientRect().height)`;
+  const closed = await evaluate(area);
+  await evaluate(`document.querySelector('.mode-config[data-mode="race"] .how-to-play').open = true`);
+  assert.ok(await evaluate(area) > closed + 100, 'the race guide is long');
+  await evaluate(`document.querySelector('input[name="mode"][value="rumble"]').click()`);
+  assert.equal(await evaluate(`document.querySelector('.mode-config[data-mode="race"] .how-to-play').open`), false);
+  assert.equal(await evaluate(area), closed, 'the options area is back to its size');
+});
+
+test('on a phone, the whole Who’s here row folds and unfolds the team list, and shows who’s absent', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, tap } = await openLobby(t, { extra: 0, width: 390, height: 844, mobile: true });
+  const state = () => evaluate(`[document.getElementById('team-toggle').getAttribute('aria-expanded'),
+    getComputedStyle(document.getElementById('team-body')).display, document.getElementById('team-toggle').textContent.replace(/\\s+/g, ' ').trim()]`);
+  assert.deepEqual(await state(), ['false', 'none', 'Who’s here 6 playing'], 'six ready: folded');
+  // A tap on the count, not the label, opens it.
+  await tap('#team-summary');
+  assert.deepEqual((await state()).slice(0, 2), ['true', 'block']);
+  await evaluate(`document.querySelector('#roster input').click()`);
+  assert.equal((await state())[2], 'Who’s here 5 playing · 1 absent');
+  // And a tap at the far end of the row, by the arrow, folds it again.
+  const width = await evaluate(`document.getElementById('team-toggle').getBoundingClientRect().width`);
+  await tap('#team-toggle', width - 10);
+  assert.deepEqual(await state(), ['false', 'none', 'Who’s here 5 playing · 1 absent']);
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
-    const { evaluate, until } = await openLobby(t, { extra: 4, names, width, height, mobile });
+    const { evaluate } = await openLobby(t, { extra: 4, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('input[name="mode"]')].map((r) => r.value)`);
     assert.deepEqual(ids, ['race', 'rumble', 'arena', 'quiz', 'relay', 'regatta']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`document.querySelector('input[name="mode"][value="${id}"]').click()`);
-      // Once the options' 120 ms crossfade has finished (slower on a busy software-drawn page), only the
-      // selected mode's options are visible.
-      await until(`[...document.querySelectorAll('.mode-config')].filter((p) => getComputedStyle(p).visibility === 'visible').length === 1`,
-        5000, `only ${id}'s options to show`);
       const s = await evaluate(`(() => {
         const box = (el) => el.getBoundingClientRect();
         const lobby = document.getElementById('lobby');
@@ -201,16 +237,14 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
           pick: [Math.round(pick.width), Math.round(pick.height)],
           oneRow: Math.abs(start.top - pick.top) < 2,
           cards: [...document.querySelectorAll('.mode-card')].map((c) => ({ w: c.offsetWidth, h: c.offsetHeight, cut: c.scrollWidth > c.clientWidth + 1 })),
-          panel: document.querySelector('.mode-config:not(.inactive)').dataset.mode,
-          shownPanels: [...document.querySelectorAll('.mode-config')].filter((p) => getComputedStyle(p).visibility === 'visible').length,
+          shown: [...document.querySelectorAll('.mode-config')].filter((p) => getComputedStyle(p).visibility === 'visible').map((p) => p.dataset.mode),
           label: document.getElementById('start').textContent,
         };
       })()`);
       const at = `${id} at ${width} x ${height}`;
       assert.ok(!s.hscroll, `${at}: no sideways scrolling`);
       assert.ok(s.oneRow, `${at}: Just pick and Start in one row`);
-      assert.equal(s.panel, id, `${at}: its options show`);
-      assert.equal(s.shownPanels, 1, `${at}: only its options show`);
+      assert.deepEqual(s.shown, [id], `${at}: its options show, and no others`);
       assert.equal(s.label, `▶ Start ${id}`);
       for (const card of s.cards) {
         assert.ok(card.w >= 140 && card.h >= 44, `${at}: card ${card.w} x ${card.h} is a big enough target`);
