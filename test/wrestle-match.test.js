@@ -559,6 +559,58 @@ test('Satyaki comes off the ropes for a ring-out when there is room, and the fee
   assert.ok(pairedRebound >= 1 && pairedStandard >= 1, `paired: ${pairedRebound} rebounds, ${pairedStandard} without room`);
 });
 
+// ---------------------------------------------------------------- #109 standard ring-out facing
+
+test('standard ring-out throwers and victims turn smoothly from approach through flight', async () => {
+  await loadHdAssets();
+  // Exercise Kichaka's shove in seed 5, the paired Arjuna and Dushasana throws in seed 6,
+  // and the hip tosses in seed 17. Seed 5 also has an overhead toss in its first four ring-outs.
+  for (const [seed, count] of [[5, 4], [6, 7], [17, 3]]) {
+    for (const modelStyle of ['classic', 'hd']) {
+      for (const hz of [30, 60]) {
+        const moves = new Map();
+        const match = new WrestleMatch(names(12), {
+          rng: mulberry32(seed), modelStyle,
+          onEvent(e) {
+            if (e.type === 'throw') moves.set(e.victim.id, e.move);
+          },
+        });
+        const beats = match.plan.beats.filter((b) => b.type === 'elimination').slice(0, count);
+        const worst = new Map();
+        const headings = () => match.wrestlers.map((w) => w.rig.root.rotation.y);
+        let previous = headings();
+        run(match, hz, beats.at(-1).landAt, (m) => {
+          const current = headings();
+          for (const b of m.actions) {
+            if (b.type !== 'elimination' || m.t >= b.landAt) continue;
+            for (const role of ['thrower', 'victim']) {
+              const id = b[role];
+              const delta = current[id] - previous[id];
+              const degrees = Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta))) * (180 / Math.PI);
+              const key = `${b.victim}:${role}`;
+              if (degrees > (worst.get(key)?.degrees ?? -1)) {
+                worst.set(key, { degrees, since: m.t - b.start });
+              }
+            }
+          }
+          previous = current;
+        });
+        const label = `seed ${seed} ${modelStyle} @${hz}`;
+        for (const b of beats) {
+          const move = moves.get(b.victim);
+          assert.ok(move, `${label}: ring-out at ${b.start.toFixed(2)} s plays`);
+          if (move === 'rebound') continue;
+          for (const role of ['thrower', 'victim']) {
+            const { degrees, since } = worst.get(`${b.victim}:${role}`);
+            const { kind } = match.wrestlers[b[role]];
+            assert.ok(degrees <= 400 / hz, `${label}: ${kind.label} (${role}) turns ${degrees.toFixed(1)}° in one update, ${since.toFixed(2)} s into the ${move}`);
+          }
+        }
+      }
+    }
+  }
+});
+
 // ---------------------------------------------------------------- #107 callouts clear of the roster
 
 test('ring-out callouts stay on screen, beside or below the roster rather than covering it', async () => {

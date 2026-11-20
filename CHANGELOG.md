@@ -7,6 +7,10 @@ to release.
 
 ## [Unreleased]
 
+### Fixed
+- **Standard ring-outs (#109)** now turn both wrestlers smoothly as they approach the ropes and keep
+  their facing steady through the grapple and throw.
+
 ## [1.6.0] - 2026-11-19
 
 ### Fixed
