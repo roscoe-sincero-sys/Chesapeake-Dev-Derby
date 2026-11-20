@@ -22,7 +22,7 @@ import { RACE_LENGTHS, DEFAULT_SPEED, normalizeSpeed } from './race-lengths.js';
  *   phase            the lobby's current phase (read-only): 'loading' | 'race' | 'results' | …
  *   setPhase(phase)  'loading' while assets load (blocks other launches), 'race' once under way,
  *                    'results' once a winner is decided
- *   setStatus(text)  the lobby's status line (while the lobby is still showing)
+ *   setProgress(text) a progress message beside Start while the mode loads ('' to clear)
  *   hideLobby(), showQuit(label), hideQuit()
  *   saveWinner(name) records the winner (an on-screen name) under this mode's `winMode`
  *
@@ -193,13 +193,13 @@ async function startRumble(ctx, { models }) {
   let hdFallback = false;
   if (ctx.game && models === 'hd') {
     ctx.setPhase('loading');
-    ctx.setStatus('Preparing HD characters…');
+    ctx.setProgress('Preparing HD characters…');
     try {
       await prepareWrestlerModels();
-      ctx.setStatus('');
+      ctx.setProgress('');
     } catch (error) {
       console.warn('Free character assets unavailable; using the original roster.', error);
-      ctx.setStatus('Character models could not load. Using the original wrestlers for this match.');
+      ctx.setProgress('Character models could not load. Using the original wrestlers for this match.');
       modelStyle = 'classic';
       hdFallback = true;
     }

@@ -42,7 +42,7 @@ async function load() {
     if (unknown) counts.push(`${unknown} recorded before the history was kept (how unknown)`);
     summary.textContent = history.length
       ? `${history.length} result${history.length === 1 ? '' : 's'}: ${counts.join(', ')}.`
-      : 'No winners yet. Results appear here after each race or pick.';
+      : 'No winners yet. Results appear here after each game or pick.';
   } catch (err) {
     summary.className = 'hint error-text';
     // Pages are read from disk on every request, but the server's API only changes when it restarts:

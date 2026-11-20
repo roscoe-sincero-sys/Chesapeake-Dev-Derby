@@ -44,6 +44,7 @@ const state = {
   options: savedSettings.options, // each mode's option values: { race: { speed }, rumble: { models } }
   phase: 'lobby', // lobby | loading | race | results | exiting
   loaded: false, // the team list has arrived from the server
+  progress: '', // what a loading mode is doing ("Preparing HD characters…"), shown beside Start
   pendingWinner: null,
 };
 
@@ -132,8 +133,8 @@ async function saveWinner(name, mode) {
     });
     state.winners = data.winners;
     state.pendingWinner = null;
-    // The three-pick rule applies however someone won; only a race win is counted in races.
-    hud.saveStatus(`Saved. ${show(name)} sits out the next three ${mode === 'race' ? 'races' : 'picks'}.`, 'ok');
+    // The three-pick rule applies however someone won.
+    hud.saveStatus(`Saved. ${show(name)} sits out the next three picks.`, 'ok');
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -319,6 +320,9 @@ function updateReadiness() {
   const mode = findMode(state.mode);
   const fits = fitsPlayers(mode, ready);
   $('racer-count').textContent = `${ready} playing`;
+  // The phone's folded summary row: "12 playing · 2 absent".
+  const absent = state.absent.size;
+  $('team-summary').replaceChildren(el('span', 'count', `${ready} playing`), ...(absent ? [` · ${absent} absent`] : []));
   $('pick').disabled = ready < 2;
 
   for (const card of $('mode-cards').children) {
@@ -337,12 +341,13 @@ function updateReadiness() {
 
   // The readiness line is a live region: only rewrite it when what it says changes.
   const eligible = state.roster.filter((entry) => entry.eligible).length;
-  const fix = !state.loaded ? '' : !state.names.length || (!fits && ready < mode.players.min && eligible < mode.players.min) ? 'edit' : fits ? '' : 'review';
-  const text = !state.loaded ? '' : !state.names.length ? 'The team list is empty.' : fits ? mode.ready(ready) : capacityText(mode, ready);
+  const loading = state.phase === 'loading' && state.progress;
+  const fix = !state.loaded || loading ? '' : !state.names.length || (!fits && ready < mode.players.min && eligible < mode.players.min) ? 'edit' : fits ? '' : 'review';
+  const text = loading ? state.progress : !state.loaded ? '' : !state.names.length ? 'The team list is empty.' : fits ? mode.ready(ready) : capacityText(mode, ready);
   if (`${text}|${fix}` === lastReadiness) return;
   lastReadiness = `${text}|${fix}`;
   const line = $('readiness');
-  line.classList.toggle('blocked', state.loaded && !fits);
+  line.classList.toggle('blocked', state.loaded && !fits && !loading);
   line.replaceChildren(text);
   if (fix === 'review') {
     const review = document.createElement('button');
@@ -373,7 +378,12 @@ function el(tag, className, text) {
 function selectMode(id) {
   state.mode = findMode(id).id;
   saveLobbySettings();
-  for (const panel of $('mode-options').children) panel.classList.toggle('inactive', panel.dataset.mode !== state.mode);
+  for (const panel of $('mode-options').children) {
+    const inactive = panel.dataset.mode !== state.mode;
+    panel.classList.toggle('inactive', inactive);
+    // An open How to play would keep its (now hidden) panel tall, and with it the shared options area.
+    if (inactive) panel.querySelector('.how-to-play')?.removeAttribute('open');
+  }
   updateReadiness();
 }
 
@@ -524,6 +534,7 @@ async function start(mode) {
   const storedNames = selectRacers(state.roster, state.absent);
   if (!fitsPlayers(mode, storedNames.length)) return;
   state.raceNames = new Map(storedNames.map((name) => [show(name), name]));
+  state.progress = '';
   sfx.unlock();
   await mode.start({
     names: storedNames.map(show),
@@ -536,7 +547,10 @@ async function start(mode) {
       state.phase = phase;
       updateReadiness();
     },
-    setStatus: (text) => { $('status').textContent = text; },
+    setProgress: (text) => {
+      state.progress = text;
+      updateReadiness();
+    },
     hideLobby: () => { $('lobby').hidden = true; },
     showQuit: (label) => {
       $('quit').textContent = label;
@@ -684,9 +698,11 @@ function init() {
   showMute();
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && state.phase === 'lobby' && !e.target.closest('button, summary, a, input, textarea, select')) {
+    // Enter starts the selected game (if the headcount fits it) from anywhere in the lobby, including a
+    // game card or one of its options, but not from a button, link, checkbox or text field.
+    const choice = e.target.matches?.('#lobby input[type="radio"], #lobby input[type="range"]');
+    if (e.key === 'Enter' && state.phase === 'lobby' && (choice || !e.target.closest('button, summary, a, input, textarea, select'))) {
       e.preventDefault();
-      // Starts the selected game, if the headcount fits it.
       startSelected();
     } else if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
       mute.click();
