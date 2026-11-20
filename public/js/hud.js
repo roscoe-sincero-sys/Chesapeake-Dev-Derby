@@ -169,8 +169,17 @@ export class Hud {
     // A resize (or a phone turning) re-fits the board and moves any callout on screen into the new space.
     window.addEventListener('resize', () => {
       this.layout();
+      this.placeToggle();
       this.placeCallout();
     });
+    // Quit appears (and its label changes) after the roster is set up: move its button out of the way then.
+    const toolbar = $('toolbar');
+    if (toolbar && typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => {
+        this.placeToggle();
+        this.placeCallout();
+      }).observe(toolbar);
+    }
     // On narrow or short screens the wrestling roster folds into a count that opens it (#107).
     this.ringToggle = $('ring-toggle');
     this.ringToggle?.addEventListener('click', () => {
@@ -301,6 +310,24 @@ export class Hud {
     const rows = $('ring-roster').children;
     const out = [...rows].filter((li) => li.classList.contains('out')).length;
     if (this.ringToggle) this.ringToggle.textContent = `🤼 ${rows.length - out} of ${rows.length} in the ring`;
+    this.placeToggle();
+  }
+
+  /**
+   * On a phone too narrow for the folded roster's button beside Mute and Quit (320 px wide, say), moves
+   * it, and the list it opens, below them (#107), through `--ring-top`.
+   */
+  placeToggle() {
+    const toggle = this.ringToggle;
+    if (!toggle) return;
+    this.root.style.removeProperty('--ring-top');
+    if (!toggle.offsetWidth) return;
+    const r = toggle.getBoundingClientRect();
+    const gap = 8;
+    const under = [...document.querySelectorAll('#toolbar button')].filter((b) => b.offsetWidth > 0)
+      .map((b) => b.getBoundingClientRect())
+      .filter((b) => !(r.right + gap <= b.left || r.left >= b.right + gap || r.bottom <= b.top || r.top >= b.bottom));
+    if (under.length) this.root.style.setProperty('--ring-top', `${Math.ceil(Math.max(...under.map((b) => b.bottom))) + gap}px`);
   }
 
   /**

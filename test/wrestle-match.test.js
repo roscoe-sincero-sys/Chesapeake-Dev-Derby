@@ -473,32 +473,50 @@ test('body slams drop from where the hold was shown: no jump from the hands into
 
 // ---------------------------------------------------------------- #106 Satyaki's rope rebound
 
-test("Satyaki's facing turns smoothly from the run out, off the ropes, through the tackle, at 30 and 60 updates/s", async () => {
+test("Satyaki and his victim turn smoothly from the run out, off the ropes, through the tackle, at 30 and 60 updates/s", async () => {
   await loadHdAssets();
-  for (const modelStyle of ['hd', 'classic']) {
-    for (const hz of [30, 60]) {
-      const match = new WrestleMatch(names(12), { rng: mulberry32(17), modelStyle });
-      const outs = [];
-      match.onEvent = (e) => e.type === 'out' && outs.push(e);
-      const b = match.plan.beats.find((x) => x.type === 'elimination');
-      const h = match.wrestlers[b.thrower];
-      assert.equal(h.kind.style, 'rebound', 'seed 17 opens with a Satyaki ring-out');
-      let prev = null;
-      let worst = { turn: 0 };
-      let nearest = Infinity;
-      run(match, hz, b.landAt + 0.5, (m) => {
-        if (m.t < b.start) return;
-        if (prev !== null && m.t < b.throwAt + PACE.throw) {
-          const turn = Math.abs(Math.atan2(Math.sin(h.heading - prev), Math.cos(h.heading - prev))) * (180 / Math.PI);
-          if (turn > worst.turn) worst = { turn, at: (m.t - b.start).toFixed(2) };
+  const deg = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) * (180 / Math.PI);
+  // Seed 17: his first ring-out, where the victim used to swing 157 degrees in one update at 30/s.
+  // Seed 9: his run-up turn used to change direction 0.5 s in (23 degrees in one update at 30/s).
+  // Seed 8: two rebounds, one victim swinging 143 degrees.
+  for (const [seed, styles] of [[17, ['hd', 'classic']], [9, ['hd', 'classic']], [8, ['classic']]]) {
+    for (const modelStyle of styles) {
+      for (const hz of [30, 60]) {
+        const match = new WrestleMatch(names(12), { rng: mulberry32(seed), modelStyle });
+        const outs = [];
+        match.onEvent = (e) => e.type === 'out' && outs.push(e);
+        const beats = match.plan.beats.filter((x) => x.type === 'elimination' && match.wrestlers[x.thrower].kind.style === 'rebound');
+        assert.ok(beats.length > 0, `seed ${seed} has a Satyaki ring-out`);
+        const label = `seed ${seed} ${modelStyle} @${hz}`;
+        const prev = new Map();
+        const worst = { turn: 0 };
+        const nearest = new Map();
+        run(match, hz, Math.max(...beats.map((b) => b.landAt)) + 0.5, (m) => {
+          for (const b of beats) {
+            if (m.t < b.start || m.t >= b.throwAt + PACE.throw) continue;
+            // Satyaki through the tackle; the victim until he is thrown (the throw itself is another move).
+            for (const [who, id, until] of [['Satyaki', b.thrower, b.throwAt + PACE.throw], ['his victim', b.victim, b.throwAt]]) {
+              const w = m.wrestlers[id];
+              const key = `${b.start}:${who}`;
+              if (prev.has(key) && m.t < until) {
+                const turn = deg(w.heading, prev.get(key));
+                if (turn > worst.turn) worst.turn = turn, worst.at = `${who}, ${(m.t - b.start).toFixed(2)} s into the ring-out at ${b.start.toFixed(1)} s`;
+              }
+              prev.set(key, w.heading);
+            }
+            const h = m.wrestlers[b.thrower];
+            if (m.t < b.throwAt) nearest.set(b, Math.min(nearest.get(b) ?? Infinity, HALF - Math.max(Math.abs(h.x), Math.abs(h.z))));
+          }
+        });
+        for (const b of beats) {
+          const out = outs.find((e) => e.victim === match.wrestlers[b.victim]);
+          if (out?.move !== 'rebound') continue; // no room for it this time: the standard throw
+          assert.ok(nearest.get(b) < 0.6, `${label}: he reaches the ropes (${nearest.get(b).toFixed(2)} inside)`);
         }
-        if (m.t < b.throwAt) nearest = Math.min(nearest, HALF - Math.max(Math.abs(h.x), Math.abs(h.z)));
-        prev = h.heading;
-      });
-      assert.equal(outs[0]?.move, 'rebound', `${modelStyle} @${hz}: the rope rebound plays`);
-      assert.ok(nearest < 0.6, `${modelStyle} @${hz}: he reaches the ropes (${nearest.toFixed(2)} inside)`);
-      // At most 400 degrees a second: a quick turn, never a snap from one update to the next.
-      assert.ok(worst.turn <= 400 / hz, `${modelStyle} @${hz}: turns ${worst.turn.toFixed(1)} degrees in one update, ${worst.at}s in`);
+        assert.ok(outs.some((e) => e.move === 'rebound'), `${label}: a rope rebound plays`);
+        // At most 400 degrees a second: a quick turn, never a snap from one update to the next.
+        assert.ok(worst.turn <= 400 / hz, `${label}: ${worst.at} turns ${worst.turn.toFixed(1)} degrees in one update`);
+      }
     }
   }
 });

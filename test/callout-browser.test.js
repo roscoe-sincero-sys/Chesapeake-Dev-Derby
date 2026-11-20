@@ -140,6 +140,13 @@ test('paired ring-out callouts with long names stay on screen, off the roster an
       const apart = c.right <= r.left || c.left >= r.right || c.bottom <= r.top || c.top >= r.bottom;
       assert.ok(apart, `${label}: callout ${JSON.stringify(c)} clear of #${r.id} ${JSON.stringify(r)}`);
     }
+    // The roster's button, where it shows, clear of Mute and Quit too (so a tap on it reaches it).
+    const button = s.shown.find((r) => r.id === 'ring-toggle');
+    for (const r of s.shown.filter((x) => x.id === 'mute' || x.id === 'quit')) {
+      if (!button) break;
+      const apart = button.right <= r.left || button.left >= r.right || button.bottom <= r.top || button.top >= r.bottom;
+      assert.ok(apart, `${label}: the roster button ${JSON.stringify(button)} clear of #${r.id} ${JSON.stringify(r)}`);
+    }
     // Where there's room for it, a wide banner, not the names broken up down a narrow strip.
     if (wide) assert.ok(c.right - c.left >= 0.85 * s.view.width, `${label}: ${Math.round(c.right - c.left)} px wide of ${s.view.width}`);
   };
@@ -163,6 +170,10 @@ test('paired ring-out callouts with long names stay on screen, off the roster an
   await check('portrait, roster folded again', { wide: true });
   await screen(1280, 800); // a laptop: the whole roster shows
   await check('laptop');
+  await screen(320, 568); // a small phone: no room for the roster's button beside Mute and Quit
+  await check('320 px phone, roster folded');
+  await toggle();
+  await check('320 px phone, roster open');
 });
 
 /** Serves the app from a temporary data folder holding `names`; returns its address. */
@@ -244,12 +255,11 @@ const STEPPED_CLOCK = `(() => {
 })()`;
 
 /**
- * Plays the seed-17 HD match in headless Chrome on a `width` x `height` screen, on the stepped clock at
- * 60 frames a second, up to its first paired ring-out, and follows that callout while it's up. Each
- * frame: the callout, the controls, and each body it names, measured from the 3D scene (its mesh
- * projected through the match camera).
+ * Opens the app in headless Chrome on a `width` x `height` screen with the twelve long names, on the
+ * stepped clock (still running in real time until `steppedClock.start()`), and starts the seed-17 HD
+ * match. Returns the DevTools session and `evaluate(expression)`.
  */
-async function liveCallout(t, width, height, { mobile = false, openRoster = false } = {}) {
+async function startMatch(t, width, height, { mobile = false } = {}) {
   const base = await startServer(t, LONG_NAMES);
   // The GPU where there is one, only to draw faster: the stepped clock keeps the match the same without.
   const send = await openBrowser(t, ['--autoplay-policy=no-user-gesture-required']);
@@ -272,6 +282,17 @@ async function liveCallout(t, width, height, { mobile = false, openRoster = fals
   await until(`document.getElementById('wrestle-hd')?.getAttribute('aria-disabled') === 'false' && !!window.derbyTest?.game`, 60000, 'the HD match button');
   await evaluate("document.getElementById('wrestle-hd').click()");
   await until('!!window.derbyTest.game.wrestle', 120000, 'the HD match');
+  return { send, evaluate };
+}
+
+/**
+ * Plays the seed-17 HD match in headless Chrome on a `width` x `height` screen, on the stepped clock at
+ * 60 frames a second, up to its first paired ring-out, and follows that callout while it's up. Each
+ * frame: the callout, the controls, and each body it names, measured from the 3D scene (its mesh
+ * projected through the match camera).
+ */
+async function liveCallout(t, width, height, { mobile = false, openRoster = false } = {}) {
+  const { evaluate } = await startMatch(t, width, height, { mobile });
   if (openRoster) await evaluate("document.getElementById('ring-toggle').click()");
   // Step through the match to the first callout naming two wrestlers, and follow it every frame while it's up.
   return evaluate(`(async () => {
@@ -365,3 +386,51 @@ for (const [label, width, height, options] of [
     assert.equal(worst.share, 0, `${label}: the callout covers ${(worst.share * 100).toFixed(0)}% of ${worst.name} at ${worst.t}s (${JSON.stringify(worst)})`);
   });
 }
+
+test('live HD match on a 320 x 568 phone: the roster button clears Mute and Quit, and a tap opens and closes the list', { skip, timeout: 300000 }, async (t) => {
+  const { send, evaluate } = await startMatch(t, 320, 568, { mobile: true });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  const state = () => evaluate(`(() => {
+    const box = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
+    const toggle = document.getElementById('ring-toggle');
+    const roster = document.getElementById('ring-roster');
+    return {
+      toggle: box(toggle), label: toggle.textContent, expanded: toggle.getAttribute('aria-expanded'),
+      rosterShown: roster.offsetHeight > 0, roster: box(roster),
+      controls: ['mute', 'quit'].map((id) => document.getElementById(id)).filter((el) => el.offsetHeight > 0).map((el) => ({ id: el.id, ...box(el) })),
+    };
+  })()`);
+  const tap = async (x, y) => {
+    await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
+  };
+  const s0 = await state();
+  assert.match(s0.label, /in the ring$/, 'the roster is folded into its button');
+  assert.equal(s0.controls.length, 2, 'Mute and Quit are showing');
+  for (const r of s0.controls) {
+    const apart = s0.toggle.right <= r.left || s0.toggle.left >= r.right || s0.toggle.bottom <= r.top || s0.toggle.top >= r.bottom;
+    assert.ok(apart, `the roster button ${JSON.stringify(s0.toggle)} clear of #${r.id} ${JSON.stringify(r)}`);
+  }
+  // Tap where the button shows, anywhere along it: each point must reach the button, not Mute or Quit.
+  const y = (s0.toggle.top + s0.toggle.bottom) / 2;
+  for (const share of [0.1, 0.5, 0.9]) {
+    const x = s0.toggle.left + (s0.toggle.right - s0.toggle.left) * share;
+    const hit = await evaluate(`document.elementFromPoint(${x}, ${y})?.closest('button')?.id ?? null`);
+    assert.equal(hit, 'ring-toggle', `a tap at (${Math.round(x)}, ${Math.round(y)}) reaches the roster button`);
+  }
+  const mute = await evaluate("document.getElementById('mute').textContent");
+  const x = s0.toggle.left + (s0.toggle.right - s0.toggle.left) * 0.75;
+  await tap(x, y);
+  const opened = await state();
+  assert.ok(opened.rosterShown && opened.expanded === 'true', `a tap opens the list: ${JSON.stringify(opened)}`);
+  assert.ok(opened.roster.top >= opened.toggle.bottom, 'the list opens below its button');
+  for (const r of opened.controls) {
+    const apart = opened.roster.right <= r.left || opened.roster.left >= r.right || opened.roster.bottom <= r.top || opened.roster.top >= r.bottom;
+    assert.ok(apart, `the open list clear of #${r.id}`);
+  }
+  await tap(x, y);
+  const closed = await state();
+  assert.ok(!closed.rosterShown && closed.expanded === 'false', `a second tap closes it: ${JSON.stringify(closed)}`);
+  assert.equal(await evaluate("document.getElementById('mute').textContent"), mute, 'neither tap reached Mute');
+});

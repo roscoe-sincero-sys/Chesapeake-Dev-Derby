@@ -933,7 +933,7 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
 }
 /* On a wide screen the whole roster shows; on a narrow or short one it folds into a count you can open. */
 #ring-toggle {
-  display: none; position: absolute; top: 12px; left: 12px; pointer-events: auto;
+  display: none; position: absolute; top: var(--ring-top, 12px); left: 12px; pointer-events: auto;
   padding: 6px 12px; border-radius: 999px; font: 700 13px var(--ui);
   color: var(--text); background: var(--panel); border: 1px solid var(--panel-border);
 }
@@ -945,7 +945,8 @@ button.wrestle[aria-disabled="true"] { color: var(--muted); background: #1c2433;
   #hud.wrestling.results-open #ring-toggle { display: none; }
   #hud.wrestling:not(.roster-open) #ring-roster { display: none; }
   #hud.wrestling.roster-open #ring-roster {
-    top: 52px; left: 12px; max-height: calc(100vh - 150px); overflow-y: auto; pointer-events: auto;
+    top: calc(var(--ring-top, 12px) + 40px); left: 12px; max-height: calc(100vh - 138px - var(--ring-top, 12px));
+    overflow-y: auto; pointer-events: auto;
   }
   #countdown.callout { --callout-font: min(8vw, 64px, 9vh); }
 }

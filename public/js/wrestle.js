@@ -21,7 +21,9 @@ const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
 const ease = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k));
 const clamp01 = (k) => Math.max(0, Math.min(1, k));
 const headingTo = (fromX, fromZ, toX, toZ) => Math.atan2(-(toX - fromX), -(toZ - fromZ));
-const lerpAngle = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+/** The turn from heading `a` to `b`, the short way round (-PI to PI). */
+const turnBy = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+const lerpAngle = (a, b, k) => a + turnBy(a, b) * k;
 
 // A thrown wrestler lands flat on the back (pitch +π/2: face up), then bounces twice.
 const ON_BACK = Math.PI / 2;
@@ -1401,15 +1403,22 @@ export class WrestleMatch {
     step(v, av.x + (at.x - av.x) * k, av.z + (at.z - av.z) * k);
     v.ropeBack = 0;
     const brace = ease((t - (b.throwAt - 0.6)) / 0.5);
-    v.heading = lerpAngle(lerpAngle(av.heading, headingTo(v.x, v.z, h.x, h.z), k), intoRing(v), brace);
+    // Each turn is followed on from the last update, never re-chosen the short way round from a heading
+    // that is itself turning: that flips direction as the two pass opposite each other.
+    const toward = headingTo(v.x, v.z, h.x, h.z);
+    run.toward = run.toward === undefined ? av.heading + turnBy(av.heading, toward) : run.toward + turnBy(run.toward, toward);
+    const facing = av.heading + (run.toward - av.heading) * k;
+    if (brace > 0 && run.braceTo === undefined) run.braceTo = facing + turnBy(facing, intoRing(v));
+    v.heading = brace > 0 ? facing + (run.braceTo - facing) * brace : facing;
     if (since < PACE.approach) this.act(v, 'run:back', { walk: v.walk, stride: 0.35 * (1 - k), guard: 0.6, crouch: 0.2, lean: -0.15 });
     else this.act(v, 'run:dazed', { guard: 0.4 + 0.5 * brace, crouch: 0.2 + 0.1 * brace, look: -0.3 * (1 - brace), tilt: 0.15 * Math.sin(t * 3) * (1 - brace), lean: -0.1 });
     // Satyaki: out to the ropes, off them, and back at full speed. His facing is set by time alone:
-    // towards the ropes he runs to, then round to the charge as he reaches them.
+    // towards the ropes he runs to, then round to the charge as he reaches them. Each leg is a fixed
+    // turn between fixed headings, so overlapping legs never change his direction of turn.
     const ah = this.anchor(b, h);
     const outH = headingTo(ah.x, ah.z, run.rope.x, run.rope.z);
     const turn = ease((since - run.t1 + RUN.early) / RUN.turn);
-    h.heading = lerpAngle(lerpAngle(ah.heading, outH, ease(since / RUN.start)), run.charge, turn);
+    h.heading = ah.heading + turnBy(ah.heading, outH) * ease(since / RUN.start) + turnBy(outH, run.charge) * turn;
     if (since < run.t1) {
       const q = (since / run.t1) ** 1.5; // building speed into the ropes
       step(h, ah.x + (run.rope.x - ah.x) * q, ah.z + (run.rope.z - ah.z) * q);

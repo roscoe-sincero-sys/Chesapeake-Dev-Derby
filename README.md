@@ -310,18 +310,20 @@ Uses Node's built-in test runner — no extra packages. Covers:
   loads the HD bodies without a browser): the camera's orbit and framing in wide and portrait views, HD
   limbs that never snap between moves, the same pacing at 30, 60 and 120 updates per second, room between
   fights, and every brawling move in use; thrown bodies clearing the top rope, body slams held in the hands
-  and dropped from there, and Satyaki's rope rebound turning smoothly.
+  and dropped from there, and Satyaki's rope rebound with him and his victim turning smoothly.
 - **`test/callout-browser.test.js`** — ring-out messages with two 34-character names in headless Chrome,
   on a phone held upright and sideways, with the wrestler list folded and open, and turned while the
   message is up: all of it on screen, none of it cut off, clear of the list and the Mute and Quit
-  buttons, and a wide banner when the list is folded. Then the live seed-17 HD match at 1280 × 800 and
+  buttons, and a wide banner when the list is folded; on a 320 px phone the list's button moves below Mute
+  and Quit. Then the live seed-17 HD match at 1280 × 800 and
   at 844 × 390 with the list open: every frame the first paired message is up, none of either thrown body
   (measured from the 3D scene) is under it. The match runs on a stepped clock, 60 frames for each second
   of match time however long they take to draw, so it plays the same with or without a GPU (a GPU only
   makes it quicker). Nothing checks pixels, so until a message is up it draws one frame in ten. Skipped when Chrome isn't installed (or `CHROME_PATH` doesn't point to it) or Node is
   older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
   a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
-  checks that all of them ran.
+  checks that all of them ran. A last live match on a 320 × 568 phone taps the list's button to open and
+  close it, and checks every tap on it reaches it rather than Mute or Quit.
 
 ## How it's put together
 

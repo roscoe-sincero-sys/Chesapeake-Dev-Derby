@@ -17,10 +17,11 @@ to release.
   body itself as a last resort. Grappled wrestlers back up against the ropes without going into them.
 - **Satyaki's ring-outs (#106):** with room for it, he now runs to the ropes on another side, bounces off
   them and tackles his opponent over the top rope, as the feed says. He turns smoothly into the ropes,
-  off them and through the tackle, at any frame rate. When there's no clear run (for example, during two
+  off them and through the tackle, at any frame rate, and his opponent turns smoothly to face him. When there's no clear run (for example, during two
   ring-outs at once), he uses the standard throw and the feed says he drove them over.
 - **Phone layout (#107):** on narrow or short screens the wrestler list folds into a count ("🤼 8 of 12 in
-  the ring") that opens the full list. A ring-out message keeps clear of the list, the Mute and Quit
+  the ring") that opens the full list; on a phone too narrow for it beside Mute and Quit (320 px), it
+  moves below them. A ring-out message keeps clear of the list, the Mute and Quit
   buttons and the landings it announces: it goes beside, above or below them, high on the screen as a
   short, wide banner (two long names aren't broken up down a narrow strip), smaller rather than over a
   landing. Long messages wrap on every screen and always fit on it, and are placed again when the list
