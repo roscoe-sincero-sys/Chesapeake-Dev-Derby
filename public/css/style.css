@@ -1003,7 +1003,7 @@ button.exit { padding: 8px 14px; }
 /* Edit team list leaves the lobby: set it apart from Select all / Clear all. */
 #team-body .roster-actions a.link { margin-left: auto; }
 
-/* Mode cards: native radios (one tab stop, arrow keys), drawn as cards. */
+/* Mode cards: one button each, pressed when selected, so Tab reaches every card. */
 .mode-picker { margin: 0; padding: 0; border: none; min-width: 0; }
 .mode-picker legend { margin-bottom: 10px; }
 .mode-cards {
@@ -1022,23 +1022,20 @@ button.exit { padding: 8px 14px; }
   background: #1e222d;
   border: 1px solid #3b4557;
   color: var(--text);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 .mode-card:hover { background: #2a2e39; }
-.mode-card:has(input:checked) { background: #27241f; border-color: var(--gold); }
-.mode-card:has(input:focus-visible) { outline: 2px solid #8ab4f8; outline-offset: 2px; }
-/* The radio itself stays focusable and announced, but out of sight. */
-.mode-card input, .segment input {
-  position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
-}
+.mode-card[aria-pressed="true"] { background: #27241f; border-color: var(--gold); }
 .mode-icon { font-size: 28px; line-height: 1; }
 .mode-name { font-weight: 650; font-size: 15px; padding-right: 18px; }
 .mode-players { font-size: 13px; color: var(--muted); }
 /* Doesn't fit the headcount: still selectable, and the range line says why ("· 14 checked"). */
 .mode-card.misfit .mode-players { color: #ffa8a8; }
 .mode-check { position: absolute; top: 8px; right: 10px; color: var(--gold); font-weight: 750; visibility: hidden; }
-.mode-card:has(input:checked) .mode-check { visibility: visible; }
+.mode-card[aria-pressed="true"] .mode-check { visibility: visible; }
 
 /* The selected mode's options. Every panel shares one grid cell, so the area is as tall as the tallest
    panel and Start doesn't move when the mode changes; the others are hidden with visibility. */
@@ -1049,9 +1046,10 @@ button.exit { padding: 8px 14px; }
   flex-direction: column;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #67758d;
+  border: 1px solid #3b4557;
   border-radius: 12px;
-  background: #1b2639;
+  /* Quieter than the cards above it, so Pick a game reads first. */
+  background: #161c2a;
   color: var(--text);
   transition: opacity 0.12s, visibility 0.12s;
 }
@@ -1083,6 +1081,7 @@ button.exit { padding: 8px 14px; }
   min-width: 76px;
   min-height: 40px;
   padding: 6px 16px;
+  border: none;
   border-radius: 999px;
   background: #101420;
   color: var(--text);
@@ -1091,9 +1090,9 @@ button.exit { padding: 8px 14px; }
   cursor: pointer;
 }
 .segment:hover { background: #26364a; }
-.segment:has(input:checked) { background: #f2b817; color: #1b0f00; }
-.segment:has(input:checked)::before { content: '✓'; margin-right: 6px; }
-.segment:has(input:focus-visible) { outline: 2px solid #8ab4f8; outline-offset: 2px; }
+.segment[aria-pressed="true"] { background: #f2b817; color: #1b0f00; }
+.segment .tick { display: none; margin-right: 6px; }
+.segment[aria-pressed="true"] .tick { display: inline; }
 .option-link { align-self: flex-start; font-size: 14px; }
 
 /* Action bar: what the selected game needs, then Just pick someone and Start. */

@@ -16,6 +16,10 @@ to release.
 - README: screenshots of the lobby on a laptop and a phone, and **Adding a game**.
 
 ### Fixed
+- **Lobby keyboard (#117):** **Tab** now reaches every game card. The cards (and the Classic | HD choices)
+  were one radio group, so Tab stopped only on the selected card and another game could be chosen only with
+  the arrow keys. Each is now a button that reads as pressed when selected; **Space** or **Enter** selects
+  it, and **Enter** on Start or a slider starts the game.
 - **Lobby:** a toggle with more choices than fit now wraps, instead of widening every game's options past
   a small phone's screen. After **Reset** on a phone, focus moves to Start rather than into the folded team
   list.
@@ -23,6 +27,13 @@ to release.
   ("Changes apply to the next pick").
 
 ### Changed
+- **The lobby remembers your game from one meeting to the next:** the selected game and each game's
+  options (race length, Classic or HD) are kept in this browser (`localStorage`), so tomorrow's new tab
+  opens on HD Rumble if that's what you played. Attendance is still kept for the tab only, so each meeting
+  starts with everyone present. Choices saved in the tab by earlier versions carry over.
+- **Quieter options panel:** the selected game's options sit on `#161c2a` with a `#3b4557` border, so the
+  game cards above them stand out first.
+- **Edit team list** sits apart from Select all / Clear all, since it leaves the lobby.
 - The model notes, base character notes and security reviews moved into `docs/`.
 - **A new lobby (#117, phase 3):** three questions in order, then one button. **Who's here** (the team
   list), **Pick a game** (a card per game: 🏁 Derby Race, 2+ players; 🤼 Let’s Rumble, 2–12) and that
@@ -43,9 +54,9 @@ to release.
   registry (`public/js/modes.js`): name, player range, options and how each starts. The lobby's buttons
   start them through it and look the same as before. This prepares the lobby redesign and makes a new
   mode an entry plus a game module.
-- **The lobby remembers the game, not just the race length:** the tab keeps the last game started (race or
-  Rumble, Classic or HD) with each game's options. When the lobby opens, focus is on that game's button,
-  and **Enter** starts it. Settings saved by 1.6 are kept. New `?mode=race|rumble` URL switch.
+- **The lobby remembers the game, not just the race length:** the selected game (race or Rumble) and each
+  game's options are saved (in this browser, see above). When the lobby opens, focus is on Start, and
+  **Enter** starts the selected game. Settings saved by 1.6 are kept. New `?mode=race|rumble` URL switch.
 - The server's error for an unknown result type and the Full history summary are built from the list of
   modes, instead of naming each one.
 

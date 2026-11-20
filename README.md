@@ -71,11 +71,12 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
      full entry. Hover a name to see it in full.
-   - **Uncheck** anyone who is absent today. Attendance, the selected game and each game's options are
-     kept in this browser tab through reloads, games and visits to **Edit team list**. Removed names are
-     dropped from saved attendance; new names start checked. Settings are scoped to the tab's browser
-     session; a new tab starts on the race. An explicit `?speed=` or `?mode=` URL setting overrides the
-     saved race length or game. A length saved by an older version of the slider moves to the nearest of
+   - **Uncheck** anyone who is absent today. Attendance is kept in this browser tab through reloads, games
+     and visits to **Edit team list**; a new tab (the next meeting) starts with everyone present. Removed
+     names are dropped from saved attendance; new names start checked. The selected game and each game's
+     options (race length, Classic or HD) are kept in this browser from one meeting to the next
+     (`localStorage`); a browser that has never chosen starts on the race. An explicit `?speed=` or
+     `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves to the nearest of
      the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears at the end
      of the hint line under **Who's here**.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
@@ -324,9 +325,10 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/sim.test.js`** — the race itself: every race finishes with one winner, a typical race at 1x lasts
   about two minutes, every obstacle and item comes into play, firewalls block exactly one hit, races replay
   from a seed, and outcomes are unbiased.
-- **`test/lobby-settings.test.js`** — saved attendance, game and options, the five slider lengths,
-  snapping older or typed-in speeds to the nearest length, upgrading settings saved by 1.6 and earlier, and
-  falling back to the race and to default options for unknown or invalid values.
+- **`test/lobby-settings.test.js`** — attendance kept for the tab and the game and its options for the
+  browser (a new tab keeps the game, with everyone present), the five slider lengths, snapping older or
+  typed-in speeds to the nearest length, upgrading settings saved in the tab by earlier versions, falling
+  back to the race and to default options for unknown or invalid values, and blocked storage.
 - **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
@@ -356,11 +358,13 @@ Uses Node's built-in test runner — no extra packages. Covers:
   the page's scripts run, the test adds stand-in modes through `?test`, with a stub start that records
   what it was given:
   - **a third mode** (Arena, 2–4 players, a three-way toggle and a slider, its own How to play): it appears
-    as one more card; the arrow keys select it without starting it; six checked are refused in text
-    beside a disabled Start and Enter does nothing; **Review team list** goes to the list; once it fits,
-    **Enter** on its card, or on one of its options, starts it with its options; Quit returns focus to
-    Start; a reload keeps the mode, its options and attendance; and an open **How to play** closes when
-    another game is chosen, so the options area shrinks back;
+    as one more card; **Tab** reaches every card and **Enter** on one selects it without starting it;
+    six checked are refused in text beside a disabled Start, which Enter can't get round; **Review team
+    list** goes to the list; once it fits, Tab goes on through the toggle's choices (**Space** picks one) to
+    the slider (the arrow keys move it), and **Enter** there starts it with its options; Quit returns focus
+    to Start; a reload keeps the mode, its options and attendance, and Enter on Start starts it again; a new
+    tab keeps the mode and options with everyone present; and an open **How to play** closes when another
+    game is chosen, so the options area shrinks back;
   - **the phone's Who's here row**: a tap anywhere on it, the count included, unfolds the team list, it
     shows who's absent ("5 playing · 1 absent"), and a tap by the arrow folds it again;
   - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568 (with reduced motion,
@@ -396,7 +400,7 @@ public/
   js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
   js/demo-api.js     The online demo's in-browser store (localStorage)
   js/eligibility.js  Who may race (last three winners sit out)
-  js/lobby-settings.js  Attendance, game and options kept for the browser tab
+  js/lobby-settings.js  Attendance kept for the tab; the game and its options kept for the browser
   js/race-lengths.js    Race lengths offered, and the slider's steps
   js/sim.js          The race simulation — pure logic, no graphics
   js/game.js         Three.js scene, camera, and syncing models to the simulation
@@ -450,10 +454,10 @@ The online demo uses the same pages.
 
 - **Keyboard:**
   - every control can be reached with **Tab** and used with **Enter** or **Space**;
-  - mode cards and the **Classic | HD** toggle are radio groups: one **Tab** stop each, and the arrow keys
-    change the selection without starting anything;
-  - in the lobby, **Enter** starts the selected game, from a game card, one of its options, or anywhere
-    that isn't a button, link, checkbox or text field;
+  - every game card, and each **Classic | HD** choice, is its own **Tab** stop, a button that reads as
+    pressed when selected; **Space** or **Enter** selects it without starting anything;
+  - in the lobby, **Enter** on Start, on a slider, or anywhere that isn't a control starts the selected
+    game;
   - **M** turns sound on or off;
   - **Escape** closes the reset dialog.
 - **Focus:**
@@ -520,8 +524,8 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    `color` in the **Styles** pane; the colour picker shows the contrast ratio and whether it passes AA.
 5. **Keyboard:** put the mouse aside.
    1. Press **Tab** through the lobby: every control should get a visible outline.
-   2. Move between the game cards with the arrow keys (nothing starts), then start the selected game
-      with **Enter**; after **Quit**, focus is back on Start. Toggle sound with **M**.
+   2. **Tab** to each game card and select one with **Space** or **Enter** (nothing starts), then Tab on
+      to Start and press **Enter**; after **Quit**, focus is back on Start. Toggle sound with **M**.
    3. Open **Reset list** and close it with **Escape**.
 6. **Screen reader:**
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown

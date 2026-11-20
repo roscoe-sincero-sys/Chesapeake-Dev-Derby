@@ -4,48 +4,72 @@ import { readLobbySettings, writeLobbySettings, retainRosterAbsences, defaultLob
 import { normalizeSpeed, speedToStep, stepToSpeed, RACE_LENGTHS } from '../public/js/race-lengths.js';
 import { buildRoster, selectRacers } from '../public/js/eligibility.js';
 
-function storage(initial = null) {
-  let value = initial;
-  return () => ({ getItem: () => value, setItem: (_key, next) => { value = next; } });
+/** A fake storage holding one saved text (`initial`). */
+function store(initial = null) {
+  const s = { value: initial, getItem: () => s.value, setItem: (_key, next) => { s.value = next; } };
+  return s;
 }
+
+/** The two storages the lobby uses: `session` for this tab, `local` for this browser. */
+const browser = (session = store(), local = store()) => ({ session: () => session, local: () => local, tab: session, kept: local });
 
 /** Settings with every option at its default, except those given. */
 function settings({ absent = [], mode = 'race', speed = 2, models = 'classic' } = {}) {
   return { absent: new Set(absent), mode, options: { race: { speed }, rumble: { models } } };
 }
 
-test('attendance, mode and options survive a settings round trip', () => {
-  const getStorage = storage();
-  assert.equal(writeLobbySettings(settings({ absent: ['ada', 'grace'], mode: 'rumble', speed: 8, models: 'hd' }), getStorage), true);
-  const restored = readLobbySettings(getStorage);
+test('attendance is kept for the tab, and the game and its options for the browser', () => {
+  const b = browser();
+  assert.equal(writeLobbySettings(settings({ absent: ['ada', 'grace'], mode: 'rumble', speed: 8, models: 'hd' }), b), true);
+  const restored = readLobbySettings(b);
   assert.deepEqual(restored, settings({ absent: ['ada', 'grace'], mode: 'rumble', speed: 8, models: 'hd' }));
   assert.deepEqual(selectRacers(buildRoster(['Ada', 'Grace', 'Linus', 'Hedy'], []), restored.absent), ['Linus', 'Hedy']);
-  assert.deepEqual(JSON.parse(getStorage().getItem()), { absent: ['ada', 'grace'], mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' } } });
+  assert.deepEqual(JSON.parse(b.tab.value), { absent: ['ada', 'grace'] });
+  assert.deepEqual(JSON.parse(b.kept.value), { mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' } } });
 });
 
-test('a new tab starts on Race, with every option at its default', () => {
+test('a new tab (tomorrow’s meeting) keeps the game and its options, with everyone present again', () => {
+  const kept = store();
+  writeLobbySettings(settings({ absent: ['ada'], mode: 'rumble', models: 'hd', speed: 4 }), browser(store(), kept));
+  assert.deepEqual(readLobbySettings(browser(store(), kept)), settings({ mode: 'rumble', models: 'hd', speed: 4 }));
+});
+
+test('a browser that has never chosen starts on Race, with every option at its default', () => {
   assert.deepEqual(defaultLobbySettings(), settings());
-  assert.deepEqual(readLobbySettings(storage()), settings());
+  assert.deepEqual(readLobbySettings(browser()), settings());
 });
 
-test('settings saved by 1.6 and earlier keep their attendance and race length', () => {
-  assert.deepEqual(readLobbySettings(storage('{"absent":["ada"],"speed":8}')), settings({ absent: ['ada'], speed: 8 }));
+test('settings saved in the tab by 1.6 keep their attendance and race length', () => {
+  const read = (raw) => readLobbySettings(browser(store(raw)));
+  assert.deepEqual(read('{"absent":["ada"],"speed":8}'), settings({ absent: ['ada'], speed: 8 }));
   // An old speed snaps to the nearest offered length, as before.
-  assert.equal(readLobbySettings(storage('{"absent":[],"speed":3}')).options.race.speed, 4);
-  // If both shapes are present, the new one wins.
-  assert.equal(readLobbySettings(storage('{"speed":8,"options":{"race":{"speed":1}}}')).options.race.speed, 1);
-  assert.equal(readLobbySettings(storage('{"speed":8,"options":{"race":{}}}')).options.race.speed, 8);
+  assert.equal(read('{"absent":[],"speed":3}').options.race.speed, 4);
+  // If both shapes are present, the newer one wins.
+  assert.equal(read('{"speed":8,"options":{"race":{"speed":1}}}').options.race.speed, 1);
+  assert.equal(read('{"speed":8,"options":{"race":{}}}').options.race.speed, 8);
 });
 
-test('an unknown or missing mode falls back to Race and keeps the rest', () => {
+test('a game saved in the tab before 1.7 is used until the browser has its own, and then the browser’s wins', () => {
+  const tab = '{"absent":["ada"],"mode":"rumble","options":{"rumble":{"models":"hd"}}}';
+  assert.deepEqual(readLobbySettings(browser(store(tab))), settings({ absent: ['ada'], mode: 'rumble', models: 'hd' }));
+  const kept = store('{"mode":"race","options":{"race":{"speed":12}}}');
+  assert.deepEqual(readLobbySettings(browser(store(tab), kept)), settings({ absent: ['ada'], speed: 12 }));
+  // Saving moves it: the tab then holds attendance only.
+  const b = browser(store(tab));
+  writeLobbySettings(readLobbySettings(b), b);
+  assert.deepEqual(JSON.parse(b.tab.value), { absent: ['ada'] });
+  assert.deepEqual(JSON.parse(b.kept.value).mode, 'rumble');
+});
+
+test('an unknown or missing game falls back to Race and keeps the rest', () => {
   for (const mode of ['arena', '', 42, null, ['rumble'], { id: 'rumble' }]) {
-    const raw = JSON.stringify({ absent: ['ada'], mode, options: { rumble: { models: 'hd' } } });
-    assert.deepEqual(readLobbySettings(storage(raw)), settings({ absent: ['ada'], models: 'hd' }), JSON.stringify(mode));
+    const kept = store(JSON.stringify({ mode, options: { rumble: { models: 'hd' } } }));
+    assert.deepEqual(readLobbySettings(browser(store('{"absent":["ada"]}'), kept)), settings({ absent: ['ada'], models: 'hd' }), JSON.stringify(mode));
   }
-  // Writing an unknown mode saves Race instead.
-  const getStorage = storage();
-  writeLobbySettings(settings({ mode: 'arena' }), getStorage);
-  assert.equal(readLobbySettings(getStorage).mode, 'race');
+  // Writing an unknown game saves Race instead.
+  const b = browser();
+  writeLobbySettings(settings({ mode: 'arena' }), b);
+  assert.equal(readLobbySettings(b).mode, 'race');
 });
 
 test('invalid option values fall back to their defaults', () => {
@@ -56,7 +80,7 @@ test('invalid option values fall back to their defaults', () => {
     ['{"options":[1,2]}', settings()],
     ['{"options":{"race":{"speed":99},"arena":{"lives":3}}}', settings({ speed: 12 })],
   ];
-  for (const [raw, expected] of cases) assert.deepEqual(readLobbySettings(storage(raw)), expected, raw);
+  for (const [raw, expected] of cases) assert.deepEqual(readLobbySettings(browser(store(), store(raw))), expected, raw);
 });
 
 test('the slider offers 120, 60, 30, 15 and 10 second races', () => {
@@ -87,25 +111,30 @@ test('recent-winner exclusion is independent of saved attendance', () => {
   assert.deepEqual(selectRacers(roster, new Set(['ada'])), ['Linus', 'Hedy']);
 });
 
+
 test('corrupt saved settings fall back safely and normalize valid names and speeds', () => {
   for (const raw of ['not json', 'null', '[]', '"race"', '{"absent":42,"speed":"bad"}']) {
-    assert.deepEqual(readLobbySettings(storage(raw)), settings(), raw);
+    assert.deepEqual(readLobbySettings(browser(store(raw), store(raw))), settings(), raw);
   }
-  const restored = readLobbySettings(storage('{"absent":[" Ada ","ADA",null,42,""],"speed":99}'));
+  const restored = readLobbySettings(browser(store('{"absent":[" Ada ","ADA",null,42,""],"speed":99}')));
   assert.deepEqual([...restored.absent], ['ada']);
   assert.equal(restored.options.race.speed, 12);
-  assert.equal(readLobbySettings(storage('{"speed":-5}')).options.race.speed, 1);
+  assert.equal(readLobbySettings(browser(store('{"speed":-5}'))).options.race.speed, 1);
 });
 
 test('clearing attendance persists and unavailable storage does not throw', () => {
-  const getStorage = storage('{"absent":["ada"],"speed":8}');
-  writeLobbySettings(settings({ speed: 8 }), getStorage);
-  assert.equal(readLobbySettings(getStorage).absent.size, 0);
+  const b = browser(store('{"absent":["ada"]}'), store('{"mode":"race","options":{"race":{"speed":8}}}'));
+  writeLobbySettings(settings({ speed: 8 }), b);
+  assert.equal(readLobbySettings(b).absent.size, 0);
   const blocked = () => { throw new Error('Storage disabled'); };
-  assert.deepEqual(readLobbySettings(blocked), settings());
-  assert.equal(writeLobbySettings(settings({ mode: 'rumble', speed: 8 }), blocked), false);
+  assert.deepEqual(readLobbySettings({ session: blocked, local: blocked }), settings());
+  assert.equal(writeLobbySettings(settings({ mode: 'rumble', speed: 8 }), { session: blocked, local: blocked }), false);
   // A storage that throws only on writing (quota full, Safari private mode) also reports failure.
   const readOnly = () => ({ getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); } });
-  assert.equal(writeLobbySettings(settings(), readOnly), false);
-  assert.deepEqual(readLobbySettings(readOnly), settings());
+  assert.equal(writeLobbySettings(settings(), { session: readOnly, local: readOnly }), false);
+  assert.deepEqual(readLobbySettings({ session: readOnly, local: readOnly }), settings());
+  // With only the browser's storage blocked, attendance is still kept for the tab, and the failure is reported.
+  const tab = store();
+  assert.equal(writeLobbySettings(settings({ absent: ['ada'], mode: 'rumble' }), { session: () => tab, local: blocked }), false);
+  assert.deepEqual(readLobbySettings({ session: () => tab, local: blocked }), settings({ absent: ['ada'] }));
 });

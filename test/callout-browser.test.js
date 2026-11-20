@@ -192,7 +192,7 @@ async function startMatch(t, width, height, { mobile = false } = {}) {
   };
   // Rumble is selected by the URL; choose HD models, then Start.
   await until(`document.getElementById('start')?.disabled === false && !!window.derbyTest?.game`, 60000, 'the Start rumble button');
-  await evaluate(`document.querySelector('input[name="opt-rumble-models"][value="hd"]').click()`);
+  await evaluate(`document.querySelector('[data-option="rumble-models"] [data-value="hd"]').click()`);
   assert.equal(await evaluate(`document.getElementById('start').textContent`), '▶ Start rumble');
   await evaluate("document.getElementById('start').click()");
   await until('!!window.derbyTest.game.wrestle', 120000, 'the HD match');
