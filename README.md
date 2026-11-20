@@ -63,16 +63,20 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    the game on the right; on a narrower one they stack. On a phone the team list folds into a
    **Who's here · 12 playing** row: tap it to open the list (it starts open when fewer than two people are
    ready). Everyone is listed with a checkbox. A ticked box means that person is playing.
+
+   <img src="docs/lobby-wide.png" alt="The lobby on a laptop: Who's here with the team list on the left; Pick a game with the Derby Race card selected and its Race length slider on the right; Just pick someone and Start race at the bottom." width="640">
+   <img src="docs/lobby-phone.png" alt="The lobby on a phone: the team list folded into a Who's here row, the Let's Rumble card selected with its Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
    - The list is in **alphabetical order**. A name that is an email address is shown without the
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
      full entry. Hover a name to see it in full.
-   - **Uncheck** anyone who is absent today. Attendance, the selected game and each game's options are
-     kept in this browser tab through reloads, games and visits to **Edit team list**. Removed names are
-     dropped from saved attendance; new names start checked. Settings are scoped to the tab's browser
-     session; a new tab starts on the race. An explicit `?speed=` or `?mode=` URL setting overrides the
-     saved race length or game. A length saved by an older version of the slider moves to the nearest of
+   - **Uncheck** anyone who is absent today. Attendance is kept in this browser tab through reloads, games
+     and visits to **Edit team list**; a new tab (the next meeting) starts with everyone present. Removed
+     names are dropped from saved attendance; new names start checked. The selected game and each game's
+     options (race length, Classic or HD) are kept in this browser from one meeting to the next
+     (`localStorage`); a browser that has never chosen starts on the race. An explicit `?speed=` or
+     `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves to the nearest of
      the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears at the end
      of the hint line under **Who's here**.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
@@ -129,7 +133,7 @@ warriors. Choose poses, orbit/zoom, inspect equipment from behind, compare the o
 or watch a match with reversible roles. Preview matches never save meeting results. Original
 models remain the HD fallback if assets cannot load; **Classic** always selects the originals, even
 after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
-and [models.md](models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
+and [docs/models.md](docs/models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
 
 **Performance test:** open [`wrestling-performance.html`](public/wrestling-performance.html) or use
 **Run all 12 · performance test** in the studio. It runs a complete match with all twelve models,
@@ -304,7 +308,7 @@ Handy for demos and testing:
 | `?speed=4`  | Initial race speed: 1, 2, 4, 8 or 12 (120 to 10 seconds; default 2). Other values snap to the nearest. |
 | `?mode=rumble` | Initial game: `race` or `rumble`. An unknown name is ignored. |
 | `?seed=123` | Replay the exact same race every time (not for real picks) |
-| `?test`     | Expose the game and HUD as `window.derbyTest`, for the browser tests |
+| `?test`     | Expose the game and HUD as `window.derbyTest`, and add stand-in modes from `window.derbyTestModes`, for the browser tests |
 
 ## Tests
 
@@ -321,9 +325,12 @@ Uses Node's built-in test runner — no extra packages. Covers:
 - **`test/sim.test.js`** — the race itself: every race finishes with one winner, a typical race at 1x lasts
   about two minutes, every obstacle and item comes into play, firewalls block exactly one hit, races replay
   from a seed, and outcomes are unbiased.
-- **`test/lobby-settings.test.js`** — saved attendance, game and options, the five slider lengths,
-  snapping older or typed-in speeds to the nearest length, upgrading settings saved by 1.6 and earlier, and
-  falling back to the race and to default options for unknown or invalid values.
+- **`test/lobby-settings.test.js`** — attendance kept for the tab and the game and its options for the
+  browser (a new tab keeps the game, with everyone present), the five slider lengths, snapping older or
+  typed-in speeds to the nearest length, upgrading settings saved in the tab by earlier versions, falling
+  back to the race and to default options for unknown or invalid values, and blocked storage.
+- **`test/markup.test.js`** — every button on every page has text or a label, so checkers like WAVE find
+  no empty button, even on one that stays hidden until needed (the wrestler list's button in a match).
 - **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
@@ -347,7 +354,28 @@ Uses Node's built-in test runner — no extra packages. Covers:
   older than 22, unless `DERBY_BROWSER_TESTS=required`, when they fail instead. GitHub Actions runs them in
   a **Browser tests** job (Node 22, Chrome, software WebGL) on every pull request and push to `main`, and
   checks that all of them ran. A last live match on a 320 × 568 phone taps the list's button to open and
-  close it, and checks every tap on it reaches it rather than Mute or Quit.
+  close it, and checks every tap on it reaches it rather than Mute or Quit. The HD match is started the way
+  a person would: the Rumble card, **HD**, then **Start rumble**.
+- **`test/lobby-browser.test.js`** — the lobby takes more games without changing its markup or CSS. Before
+  the page's scripts run, the test adds stand-in modes through `?test`, with a stub start that records
+  what it was given:
+  - **a third mode** (Arena, 2–4 players, a three-way toggle and a slider, its own How to play): it appears
+    as one more card; **Tab** reaches every card and **Enter** on one selects it without starting it;
+    six checked are refused in text beside a disabled Start, which Enter can't get round; **Review team
+    list** goes to the list; once it fits, Tab goes on through the toggle's choices (**Space** picks one) to
+    the slider (the arrow keys move it), and **Enter** there starts it with its options; Quit returns focus
+    to Start; a reload keeps the mode, its options and attendance, and Enter on Start starts it again; a new
+    tab keeps the mode and options with everyone present; and an open **How to play** closes when another
+    game is chosen, so the options area shrinks back;
+  - **the phone's Who's here row**: a tap anywhere on it, the count included, unfolds the team list, it
+    shows who's absent ("5 playing · 1 absent"), and a tap by the arrow folds it again;
+  - **six modes, one with a very long name**, at 1366 × 768, 390 × 844 and 320 × 568 (with reduced motion,
+    so nothing is caught mid-fade): no sideways
+    scrolling, cards and buttons at least 44 px, names wrapped rather than cut off, only the selected
+    mode's options showing, and Start in exactly the same place for every mode.
+
+  `test/browser.js` holds what both browser tests share: starting Chrome and the app on a temporary data
+  folder.
 
 ## How it's put together
 
@@ -374,7 +402,7 @@ public/
   js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
   js/demo-api.js     The online demo's in-browser store (localStorage)
   js/eligibility.js  Who may race (last three winners sit out)
-  js/lobby-settings.js  Attendance, game and options kept for the browser tab
+  js/lobby-settings.js  Attendance kept for the tab; the game and its options kept for the browser
   js/race-lengths.js    Race lengths offered, and the slider's steps
   js/sim.js          The race simulation — pure logic, no graphics
   js/game.js         Three.js scene, camera, and syncing models to the simulation
@@ -401,6 +429,22 @@ The simulation (`sim.js`) works in simple track coordinates — distance along t
 offset — and knows nothing about 3D. `game.js` advances it at a fixed 60 steps per second and positions
 the models to match, so the outcome is the same on a fast or slow machine.
 
+### Adding a game
+
+The lobby is built from the list of games in `public/js/modes.js`. Each entry gives a game's icon, name,
+player range, options, the line shown beside Start when it's ready, and a `start(ctx, options)` function.
+The lobby draws the cards, options and Start button from that list, so adding a game (a third-person
+arena, say) doesn't touch the lobby's markup or CSS:
+
+1. Write the game module, split like `wrestle.js` (3D) and `wrestle-sim.js` (rules, no graphics).
+2. Add one entry to `MODES` in `modes.js`. Options can be a `range` (a stepped slider), a `segmented`
+   toggle, or a `link`.
+3. Add its `winMode` to `WIN_MODES` (`data-rules.js`), and a label to `MODE` and wording to `MODE_COUNT`
+   (`page-common.js`) for the history pages. `test/modes.test.js` fails if any of these is missing.
+4. Add `<template id="guide-‹its guide›">` to `index.html` with its How to play.
+
+`test/lobby-browser.test.js` checks this with a stand-in third game, and with six games.
+
 ## Accessibility
 
 The derby aims to meet **WCAG 2.2 level AA** on every screen it shows: the lobby, the race and wrestling
@@ -412,10 +456,10 @@ The online demo uses the same pages.
 
 - **Keyboard:**
   - every control can be reached with **Tab** and used with **Enter** or **Space**;
-  - mode cards and the **Classic | HD** toggle are radio groups: one **Tab** stop each, and the arrow keys
-    change the selection without starting anything;
-  - in the lobby, **Enter** starts the selected game, from a game card, one of its options, or anywhere
-    that isn't a button, link, checkbox or text field;
+  - every game card, and each **Classic | HD** choice, is its own **Tab** stop, a button that reads as
+    pressed when selected; **Space** or **Enter** selects it without starting anything;
+  - in the lobby, **Enter** on Start, on a slider, or anywhere that isn't a control starts the selected
+    game;
   - **M** turns sound on or off;
   - **Escape** closes the reset dialog.
 - **Focus:**
@@ -482,7 +526,8 @@ Start the derby (`npm start`) and open it in Chrome or Edge, then:
    `color` in the **Styles** pane; the colour picker shows the contrast ratio and whether it passes AA.
 5. **Keyboard:** put the mouse aside.
    1. Press **Tab** through the lobby: every control should get a visible outline.
-   2. Start a race with **Enter**, and toggle sound with **M**.
+   2. **Tab** to each game card and select one with **Space** or **Enter** (nothing starts), then Tab on
+      to Start and press **Enter**; after **Quit**, focus is back on Start. Toggle sound with **M**.
    3. Open **Reset list** and close it with **Escape**.
 6. **Screen reader:**
    - with NVDA or Narrator (Windows) or VoiceOver (Mac), check that the status messages, the countdown
@@ -533,7 +578,8 @@ A public, browser-only demo runs on GitHub Pages at
 **How it is published:** `.github/workflows/pages.yml` runs on every push to `main`. It installs with
 `npm ci`, runs `npm test`, builds the demo and deploys it to GitHub Pages; each run is listed under the
 repository's **Deployments → github-pages**. A separate **Browser tests** job runs
-`test/callout-browser.test.js` in headless Chrome on Node 22, and the deploy waits for it too. Pull
+`test/callout-browser.test.js` and `test/lobby-browser.test.js` in headless Chrome on Node 22, and the
+deploy waits for it too. Pull
 requests run the tests, the browser tests and the build without deploying.
 The repository's Pages source is set to **GitHub Actions** (Settings → Pages).
 

@@ -49,12 +49,12 @@ const SURFACES = [
   // Mode cards: unselected, hovered and selected, each with the red "doesn't fit" range line.
   ['.mode-card', ['var(--text)', 'var(--muted)', '#ffa8a8']],
   ['.mode-card:hover', ['var(--text)', 'var(--muted)', '#ffa8a8']],
-  ['.mode-card:has(input:checked)', ['var(--text)', 'var(--muted)', '#ffa8a8', 'var(--gold)']],
+  ['.mode-card[aria-pressed="true"]', ['var(--text)', 'var(--muted)', '#ffa8a8', 'var(--gold)']],
   // The selected mode's options panel, and the Classic | HD toggle in it.
   ['.mode-config', ['var(--text)', 'var(--muted)', 'var(--gold)', '#8ab4f8']],
   ['.segment', ['var(--text)']],
   ['.segment:hover', ['var(--text)']],
-  ['.segment:has(input:checked)', ['#1b0f00']],
+  ['.segment[aria-pressed="true"]', ['#1b0f00']],
   ['#ring-toggle', ['var(--text)']],
   ['code', ['var(--text)', 'var(--muted)']],
   ['#retry-save', ['var(--text)']],

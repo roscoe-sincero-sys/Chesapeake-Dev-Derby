@@ -47,11 +47,11 @@ textures at 1024 pixels, and saves the original license and a file manifest.
 
 The checked-in assets are already prepared, so someone only changing a costume can skip this
 step. It is included here so the character can be rebuilt starting from the original download.
-The tested archive is identified in [the manifest](public/assets/wrestlers/manifest.json).
+The tested archive is identified in [the manifest](../public/assets/wrestlers/manifest.json).
 
 ## 3. Give Arjuna his own recipe
 
-Open [public/js/wrestler-looks.js](public/js/wrestler-looks.js). Find the `arjuna` entry in
+Open [public/js/wrestler-looks.js](../public/js/wrestler-looks.js). Find the `arjuna` entry in
 `WRESTLER_LOOKS`. To recreate it from a blank recipe, use this entry; replace the existing entry
 rather than adding a second `arjuna`:
 
@@ -79,7 +79,7 @@ For a quick first experiment, change only the sash color, reload the preview, th
 
 ## 4. Assemble his costume
 
-Open [public/js/wrestler-models.js](public/js/wrestler-models.js). The function
+Open [public/js/wrestler-models.js](../public/js/wrestler-models.js). The function
 `createWrestlerRig()` reads the recipe and does the construction. Arjuna uses these pieces:
 
 | Piece | How the code makes it |
@@ -135,8 +135,8 @@ You can also open the preview from the lobby and choose **Arjuna** in either cha
 For a normal match, choose the lobby's **HD** button to use this model. **Let’s Rumble** uses
 the original models instead; both buttons use the same rules and support twelve participants.
 
-Compare your result with the [front view](docs/wrestling-prototype.png) and
-[back view showing the bow and quiver](docs/arjuna-back.png).
+Compare your result with the [front view](wrestling-prototype.png) and
+[back view showing the bow and quiver](arjuna-back.png).
 
 - Use **Front**, **Back & gear** and **Close-up** to inspect the outfit.
 - Drag to rotate the camera; scroll or pinch to zoom.
@@ -165,7 +165,7 @@ the bow follows the torso, and the character can lie down without hovering on th
 Deep bends can still need costume-fitting work; these garments use skin weights, not cloth physics.
 
 To check the complete roster under load, open `wrestling-performance.html` and compare twelve
-characters against ten. See the [performance results and method](docs/wrestling-performance.md).
+characters against ten. See the [performance results and method](wrestling-performance.md).
 
 Keep the files in `public/assets/wrestlers/`, the recipe, the model builder, and the attribution in
 `NOTICE` with the app. The downloaded assets are [CC0](https://creativecommons.org/publicdomain/zero/1.0/),

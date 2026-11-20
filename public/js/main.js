@@ -19,9 +19,11 @@ const $ = (id) => document.getElementById(id);
 //   ?seed=123     replay the same race every time
 //   ?speed=4      starting race speed: 1, 2, 4, 8 or 12 (other values snap to the nearest)
 //   ?mode=rumble  starting game mode: race or rumble (an unknown mode is ignored)
-//   ?test         expose the game and HUD as window.derbyTest (the browser tests use it)
+//   ?test         expose the game and HUD as window.derbyTest (the browser tests use it), and add any
+//                 stand-in modes the tests put in window.derbyTestModes (see test/lobby-browser.test.js)
 const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
+if (params.has('test') && Array.isArray(window.derbyTestModes)) MODES.push(...window.derbyTestModes);
 const savedSettings = readLobbySettings();
 if (params.has('speed')) savedSettings.options.race.speed = normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED);
 if (MODES.some((mode) => mode.id === params.get('mode'))) savedSettings.mode = params.get('mode');
@@ -36,10 +38,10 @@ const state = {
   winners: [],
   roster: [],
   shown: new Map(), // nameKey -> on-screen name (email addresses shortened when unambiguous)
-  raceNames: new Map(), // on-screen name -> stored name, for the race in progress
+  raceNames: new Map(), // on-screen name -> stored name, for the game in progress
   absent: savedSettings.absent, // unticked nameKeys, retained within this browser tab
-  mode: savedSettings.mode, // the selected mode's id, retained within this browser tab
-  options: savedSettings.options, // each mode's option values: { race: { speed }, rumble: { models } }
+  mode: savedSettings.mode, // the selected mode's id, kept in this browser
+  options: savedSettings.options, // each mode's option values, kept in this browser: { race: { speed }, rumble: { models } }
   phase: 'lobby', // lobby | loading | race | results | exiting
   loaded: false, // the team list has arrived from the server
   progress: '', // what a loading mode is doing ("Preparing HD characters…"), shown beside Start
@@ -48,7 +50,7 @@ const state = {
 
 /** The on-screen form of a stored name. */
 const show = (name) => state.shown.get(nameKey(name)) ?? name;
-/** The stored name behind a name shown in the race. */
+/** The stored name behind a name shown in the game. */
 const stored = (name) => state.raceNames.get(name) ?? name;
 
 const sfx = new Sfx();
@@ -89,7 +91,7 @@ async function loadState() {
     status.className = '';
     status.replaceChildren();
     const notes = [...data.warnings];
-    if (!game) notes.unshift('3D is not available in this browser, so the race will be run off-screen and the winner shown straight away.');
+    if (!game) notes.unshift('3D is not available in this browser, so games are decided off-screen and the winner shown straight away.');
     if (!state.names.length) notes.unshift('The team list is empty. Use Edit team list to add names.');
     if (notes.length) {
       status.className = 'warn';
@@ -257,7 +259,9 @@ async function resetWinners() {
     state.roster = buildRoster(state.names, state.winners);
     renderLobby();
     status.textContent = 'List reset. Everyone can play again.';
-    $('check-all').focus({ preventScroll: true });
+    // Reset has gone (there are no winners now): focus the team list, or Start where it's folded away.
+    if ($('check-all').getClientRects().length) $('check-all').focus({ preventScroll: true });
+    else focusSetup();
   } catch (err) {
     status.className = 'hint error-text';
     status.textContent = `Could not reset the list: ${err.message}`;
@@ -276,7 +280,7 @@ function firstUsableControl() {
  */
 function focusSetup() {
   const start = $('start');
-  const target = !start.disabled ? start : document.querySelector('input[name="mode"]:checked') ?? firstUsableControl();
+  const target = !start.disabled ? start : document.querySelector('.mode-card[aria-pressed="true"]') ?? firstUsableControl();
   // Start is always on screen (in the sticky action bar on phones); a card may need scrolling to.
   target?.focus({ preventScroll: target === start });
 }
@@ -374,6 +378,7 @@ function el(tag, className, text) {
 function selectMode(id) {
   state.mode = findMode(id).id;
   saveLobbySettings();
+  for (const card of $('mode-cards').children) card.setAttribute('aria-pressed', String(card.dataset.mode === state.mode));
   for (const panel of $('mode-options').children) {
     const inactive = panel.dataset.mode !== state.mode;
     panel.classList.toggle('inactive', inactive);
@@ -428,24 +433,31 @@ const OPTION_CONTROLS = {
     return wrap;
   },
 
-  /** A pill toggle made of native radios (Classic | HD). */
+  /**
+   * A pill toggle (Classic | HD): one button per choice, the chosen one pressed. Every choice is its own
+   * Tab stop; Space or Enter chooses it.
+   */
   segmented(mode, option) {
     const name = `opt-${mode.id}-${option.id}`;
     const wrap = el('div', 'option segmented-option');
     const label = el('span', 'option-label', option.label);
     label.id = `${name}-label`;
     const group = el('div', 'segments');
-    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('role', 'group');
     group.setAttribute('aria-labelledby', label.id);
+    group.dataset.option = `${mode.id}-${option.id}`;
     for (const choice of option.choices) {
-      const segment = el('label', 'segment');
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = name;
-      radio.value = choice.value;
-      radio.checked = state.options[mode.id][option.id] === choice.value;
-      radio.addEventListener('change', () => setOption(mode, option.id, choice.value));
-      segment.append(radio, el('span', null, choice.label));
+      const segment = el('button', 'segment');
+      segment.type = 'button';
+      segment.dataset.value = choice.value;
+      segment.setAttribute('aria-pressed', String(state.options[mode.id][option.id] === choice.value));
+      const tick = el('span', 'tick', '✓');
+      tick.setAttribute('aria-hidden', 'true');
+      segment.append(tick, el('span', null, choice.label));
+      segment.addEventListener('click', () => {
+        setOption(mode, option.id, choice.value);
+        for (const other of group.children) other.setAttribute('aria-pressed', String(other === segment));
+      });
       group.append(segment);
     }
     wrap.append(label, group);
@@ -489,20 +501,18 @@ function renderOptions(mode) {
 /** The mode cards and every mode's options panel, built once from the registry (modes.js). */
 function renderModes() {
   for (const mode of MODES) {
-    const card = el('label', 'mode-card');
+    // One button per game, pressed when selected: every card is a Tab stop, and Space or Enter (or a
+    // click) selects it. Selecting only selects; Start launches.
+    const card = el('button', 'mode-card');
+    card.type = 'button';
     card.dataset.mode = mode.id;
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = 'mode';
-    radio.value = mode.id;
-    radio.checked = mode.id === state.mode;
-    // Choosing a card only selects it; Start launches.
-    radio.addEventListener('change', () => selectMode(mode.id));
+    card.setAttribute('aria-pressed', String(mode.id === state.mode));
+    card.addEventListener('click', () => selectMode(mode.id));
     const icon = el('span', 'mode-icon', mode.icon);
     const check = el('span', 'mode-check', '✓');
     icon.setAttribute('aria-hidden', 'true');
     check.setAttribute('aria-hidden', 'true');
-    card.append(radio, icon, el('span', 'mode-name', mode.name), el('span', 'mode-players', playersText(mode)), check);
+    card.append(icon, el('span', 'mode-name', mode.name), el('span', 'mode-players', playersText(mode)), check);
     $('mode-cards').append(card);
     $('mode-options').append(renderOptions(mode));
   }
@@ -695,8 +705,8 @@ function init() {
 
   document.addEventListener('keydown', (e) => {
     // Enter starts the selected game (if the headcount fits it) from anywhere in the lobby, including a
-    // game card or one of its options, but not from a button, link, checkbox or text field.
-    const choice = e.target.matches?.('#lobby input[type="radio"], #lobby input[type="range"]');
+    // slider, but not from a button (a game card or choice, which Enter selects), link, checkbox or text field.
+    const choice = e.target.matches?.('#lobby input[type="range"]');
     if (e.key === 'Enter' && state.phase === 'lobby' && (choice || !e.target.closest('button, summary, a, input, textarea, select'))) {
       e.preventDefault();
       startSelected();
