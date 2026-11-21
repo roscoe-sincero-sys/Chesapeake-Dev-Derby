@@ -7,15 +7,26 @@ to release.
 
 ## [Unreleased]
 
+Accessibility work for a WAVE AIM score of 10/10 (#129), by Google Gemini 4 Neon in Antigravity.
+
+### Changed
+- **The top bar no longer has History and Team links.** They went to the same pages as **Full
+  history** and **Edit team list** in the Who's here drawer, which stay. **Edit team list**, **Full
+  history** and the **Absentee list** likewise lose the **Return to lobby** link at the bottom; **Back
+  to lobby** at the top stays.
+- Hover tips are gone from the mute button, the version, the Demo label, the drawer's `◂` button and
+  **Surprise me**, and from a recent winner in the team list ("won recently — eligible again in…"); the
+  same words are shown on screen or read out by screen readers. A name in the team list, Full history
+  or the Absentee list shows a hover tip only when it is a shortened email address.
+
 ### Fixed
-- **Accessibility / WAVE 10/10 (#129):** eliminated redundant `title` attributes across the lobby,
-  **Winner history**, and **Absentee list** (only setting hover `title` when an email address is
-  actually shortened), removed redundant duplicate links across all four pages (`index.html`,
-  `roster.html`, `history.html`, `absences.html`), fixed skipped `h2 → h4` heading levels inside
-  the **How to play** templates, bumped `11px` pill/badge text to `12px`, and added
-  `test/wave-alerts.test.js` to guard against regressions.
-- **README screenshots (#129):** regenerated `docs/lobby-wide.png` and `docs/lobby-phone.png` for
-  **v1.8.0**.
+- WAVE alerts: one "Redundant title text" alert per name (61 on a 61-entry history), "Redundant link"
+  for the links above, "Skipped heading level" in **How to play**, and "Very small text" on the `LIVE`
+  label, the team list's badges and the chyron's tag, now 12 px instead of 11 px.
+- README: the lobby screenshots show the current version.
+
+### Added
+- **Tests:** `test/wave-alerts.test.js` fails on anything that would bring those alerts back.
 
 ## [1.8.0] - 2026-11-20
 
