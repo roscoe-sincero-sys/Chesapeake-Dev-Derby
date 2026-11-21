@@ -12,6 +12,13 @@ import { prepareWrestlerModels } from './wrestlers.js';
 import { planMatch, MIN_WRESTLERS, MAX_WRESTLERS, WRESTLER_KINDS } from './wrestle-sim.js';
 import { RACER_KINDS } from './racers.js';
 import { RACE_LENGTHS, DEFAULT_SPEED, normalizeSpeed } from './race-lengths.js';
+import {
+  planDeathmatch,
+  MIN_DEATHMATCH_PLAYERS,
+  MAX_DEATHMATCH_PLAYERS,
+  DEVELOPER_KINDS,
+  DM_POWERUPS,
+} from './deathmatch-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -88,6 +95,28 @@ export const MODES = [
     ready: (n) => `${n} wrestlers ready — last one in the ring leads standup.`,
     stagePreview: (stage, { names, options }) => stage.showWrestleRing(names, { modelStyle: options.models }),
     start: startRumble,
+  },
+  {
+    id: 'deathmatch',
+    winMode: 'deathmatch',
+    icon: '🔫',
+    name: 'Standup Deathmatch',
+    verb: 'deathmatch',
+    tagline: 'QuakeWorld in a Google Meet — most frags at 0:00 leads standup.',
+    players: { min: MIN_DEATHMATCH_PLAYERS, max: MAX_DEATHMATCH_PLAYERS },
+    options: [],
+    guide: 'deathmatch',
+    fillGuide: (root) => {
+      for (const el of root.querySelectorAll('[data-list="developers"]')) {
+        el.textContent = DEVELOPER_KINDS.map((k) => `${k.label} (${k.weapon.short})`).join(' · ');
+      }
+      for (const el of root.querySelectorAll('[data-list="powerups"]')) {
+        el.textContent = DM_POWERUPS.map((p) => `${p.emoji} ${p.name}`).join(' · ');
+      }
+    },
+    ready: (n) => `${n} developers in the Meet call — most frags at 0:00 leads standup.`,
+    stagePreview: (stage, { names }) => stage.showDeathmatchArena(names),
+    start: startDeathmatch,
   },
 ];
 
@@ -251,4 +280,51 @@ async function startRumble(ctx, { models }) {
   hud.sceneBlocks = (width, height) => game.wrestle?.landingRects(width, height) ?? [];
   if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
   ctx.showQuit('✕ Quit match');
+}
+
+// ------------------------------------------------------------------ standup deathmatch
+
+function startDeathmatch(ctx) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    // No WebGL: run the deathmatch simulation headlessly and announce the top-fragging invitee.
+    const plan = planDeathmatch(ctx.names, ctx.rng);
+    const winner = plan.leaderboard[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      null,
+      0,
+      `Topped Standup Deathmatch with ${winner.kills} frags as ${winner.kind.label} (${winner.kind.weapon.short}).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const dmParams = new URLSearchParams(location.search);
+  const dmSpeed = dmParams.has('dmSpeed') ? Number(dmParams.get('dmSpeed')) || 1 : 1;
+
+  ctx.game.startDeathmatch(ctx.names, {
+    rng: ctx.rng,
+    timeScale: dmSpeed,
+    onQuit: () => ctx.quit?.(),
+    onWinner: (leader, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      ctx.hud.showWinner(
+        leader.name,
+        null,
+        null,
+        0,
+        `Topped Standup Deathmatch with ${leader.kills} frags as ${leader.kind.label} (${leader.kind.weapon.short})`,
+        { kicker: 'Leads today’s standup' },
+      );
+      plan.leaderboard.slice(1, 3).forEach((row, i) => ctx.hud.podium(i + 2, `${row.name} (${row.kills} frags)`));
+      ctx.saveWinner(leader.name);
+    },
+  });
 }

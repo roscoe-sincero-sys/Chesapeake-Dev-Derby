@@ -43,12 +43,14 @@ export const MODE = {
   race: '🏁 Race',
   skip: '🎲 Skip',
   wrestle: '🤼 Wrestle',
+  deathmatch: '🔫 Deathmatch',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
 export const MODE_COUNT = {
   race: 'by race',
   wrestle: 'by wrestling',
+  deathmatch: 'by deathmatch',
   skip: 'skipped',
 };
 

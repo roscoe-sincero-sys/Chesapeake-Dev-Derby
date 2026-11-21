@@ -46,7 +46,10 @@ test('race and rumble keep their player ranges and defaults', () => {
   assert.deepEqual(rumble.players, { min: MIN_WRESTLERS, max: MAX_WRESTLERS });
   assert.deepEqual([0, 1, 2, 30].map((n) => fitsPlayers(race, n)), [false, false, true, true]);
   assert.deepEqual([1, 2, 12, 13].map((n) => fitsPlayers(rumble, n)), [false, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' } });
+  const dm = findMode('deathmatch');
+  assert.equal(dm.winMode, 'deathmatch');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(dm, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {} });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {

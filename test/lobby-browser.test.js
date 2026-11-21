@@ -128,8 +128,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 3);
-  assert.deepEqual(lobby.cards[2], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 4);
+  assert.deepEqual(lobby.cards[3], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
@@ -140,6 +140,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').focus()`);
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'rumble');
+  await tab();
+  assert.equal((await evaluate(LOBBY)).focus, 'deathmatch');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'arena');
   await enter();
@@ -176,7 +178,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[2], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[3], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -356,6 +358,12 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);
   assert.deepEqual(await stage(), { mode: 'flyover', count: 0 });
 
+  // Standup Deathmatch stages its QuakeWorld 3D arena and opens the live lobby In-call messages preview.
+  await evaluate(`document.querySelector('.mode-card[data-mode="deathmatch"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'deathmatch-arena', count: 4 });
+  assert.equal(await evaluate(`document.getElementById('dm-lobby-chat').hidden`), false, 'lobby preview chat shows for Standup Deathmatch');
+  assert.ok(await evaluate(`document.querySelectorAll('#dm-lobby-chat-list .dm-msg').length >= 1`), 'lobby preview chat streams messages');
+
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
   assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
@@ -364,6 +372,37 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.getElementById('surprise-mode').click()`);
   const afterSurprise = await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').dataset.mode`);
   assert.notEqual(afterSurprise, beforeSurprise, 'Surprise me picks a different eligible mode');
+});
+
+test('Standup Deathmatch runs Google Meet shared-screen match, rolls back clock to 0:45, and crowns invitee at 0:00', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=deathmatch&seed=77&dmSpeed=25');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('dm-meet').hidden`, 10000, 'Google Meet deathmatch overlay');
+  await until(`document.querySelectorAll('#dm-console .dm-con-line').length > 0`, 10000, 'Quake obituary console');
+  await until(`document.getElementById('dm-clock').classList.contains('rolled-back')`, 15000, 'clock rollback to 0:45');
+  await until(`!document.getElementById('dm-leaderboard').hidden`, 20000, '0:00 frag leaderboard');
+
+  const board = await evaluate(`(() => ({
+    cols: document.getElementById('dm-leaderboard-grid').classList.contains('dm-lb-one-col') ? 1 : 2,
+    rows: document.querySelectorAll('#dm-leaderboard-grid .dm-lb-row').length,
+    chatCount: document.querySelectorAll('#dm-chat-list .dm-msg').length,
+    consoleLines: document.querySelectorAll('#dm-console .dm-con-line').length,
+    chatText: document.getElementById('dm-chat-list').textContent,
+  }))()`);
+  assert.equal(board.cols, 1, '6 invitees (< 16) uses single-column leaderboard');
+  assert.equal(board.rows, NAMES.length, 'leaderboard includes invitees only (excludes NPCs)');
+  assert.ok(board.consoleLines <= 4 && board.consoleLines >= 1, 'Quake console caps at 4 visible lines');
+  assert.ok(board.chatCount >= 10, 'In-call messages populated during match');
+  assert.match(board.chatText, /Who rolled back the server clock\?/);
+  assert.match(board.chatText, /Time travel as a service/);
+
+  // Clicking Announce Meeting Leader transitions cleanly to the winner card.
+  await evaluate(`document.getElementById('dm-continue').click()`);
+  await until(`!document.getElementById('results').hidden`, 10000, 'winner card after leaderboard');
 });
 
 test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
@@ -436,9 +475,9 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
-    const { evaluate } = await openLobby(t, { extra: 4, names, width, height, mobile, reducedMotion: true });
+    const { evaluate } = await openLobby(t, { extra: 3, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'arena', 'quiz', 'relay', 'regatta']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'arena', 'quiz', 'relay']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`document.querySelector('.mode-card[data-mode="${id}"]').click()`);

@@ -11,6 +11,7 @@ import { emojiTexture } from './util3d.js';
 import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
 import { WrestleMatch } from './wrestle.js';
 import { WrestleStage } from './wrestle-stage.js';
+import { DeathmatchMatch, DeathmatchStage } from './deathmatch.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -123,6 +124,8 @@ export class Game {
     this.savedWrestleOrbit = null;
     this.savedWrestleT = null;
     this.wrestleStage = null;
+    this.deathmatchStage = null;
+    this.deathmatch = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -170,6 +173,8 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.wrestle?.resize(w / h);
     this.wrestleStage?.resize(w / h);
+    this.deathmatch?.resize(w, h);
+    this.deathmatchStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -179,6 +184,10 @@ export class Game {
     if (this.wrestleStage) {
       this.wrestleStage.dispose();
       this.wrestleStage = null;
+    }
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -203,6 +212,10 @@ export class Game {
     if (this.wrestleStage) {
       this.wrestleStage.dispose();
       this.wrestleStage = null;
+    }
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -257,6 +270,10 @@ export class Game {
 
   /** Stages the checked-in teammates warming up in the spotlighted Mahabharata wrestling ring. */
   showWrestleRing(names, { modelStyle = 'classic' } = {}) {
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -276,6 +293,26 @@ export class Game {
     this.wrestleStage.setLineup(names, { modelStyle });
   }
 
+  /** Stages the checked-in teammates inside the modernized QuakeWorld Standup Deathmatch arena. */
+  showDeathmatchArena(names) {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'deathmatch-arena';
+    if (!this.deathmatchStage) {
+      this.deathmatchStage = new DeathmatchStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.deathmatchStage.setLineup(names);
+  }
+
   /** Current live lobby stage summary (used by browser tests under ?test). */
   stageState() {
     if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -286,10 +323,27 @@ export class Game {
         requestedStyle: this.wrestleStage.requestedStyle,
       };
     }
+    if (this.stageMode === 'deathmatch-arena' && this.deathmatchStage) {
+      return {
+        mode: 'deathmatch-arena',
+        count: this.deathmatchStage.models.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts Standup Deathmatch in its own QuakeWorld arena + Google Meet overlay. */
+  startDeathmatch(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.deathmatch = new DeathmatchMatch(names, { ...options, sfx: this.sfx });
+    this.deathmatch.resize(window.innerWidth, window.innerHeight);
+    this.phase = 'deathmatch';
+    return this.deathmatch.plan;
   }
 
   /**
@@ -397,6 +451,10 @@ export class Game {
       this.wrestle.dispose();
       this.wrestle = null;
     }
+    if (this.deathmatch) {
+      this.deathmatch.dispose();
+      this.deathmatch = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -461,11 +519,22 @@ export class Game {
       return;
     }
 
+    if (this.deathmatch) {
+      this.deathmatch.update(real);
+      this.renderer.render(this.deathmatch.scene, this.deathmatch.camera);
+      return;
+    }
+
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
       if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
         this.wrestleStage.update(real, reduced);
         this.renderer.render(this.wrestleStage.scene, this.wrestleStage.camera);
+        return;
+      }
+      if (this.stageMode === 'deathmatch-arena' && this.deathmatchStage) {
+        this.deathmatchStage.update(real, reduced);
+        this.renderer.render(this.deathmatchStage.scene, this.deathmatchStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;
