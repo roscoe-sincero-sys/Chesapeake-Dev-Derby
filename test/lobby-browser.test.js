@@ -315,7 +315,7 @@ test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, a
 });
 
 test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Classic/HD, and fallback modes', { skip, timeout: 120000 }, async (t) => {
-  const { evaluate, until } = await openLobby(t, { extra: 1, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const { evaluate, until, leave, load } = await openLobby(t, { extra: 1, width: 1366, height: 768, mobile: false, reducedMotion: true });
   const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
   if (!hasWebgl) return; // Software WebGL is expected in CI; skip stage assertions only if WebGL is disabled.
 
@@ -335,6 +335,13 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.querySelector('[data-option="rumble-models"] .segment[data-value="hd"]').click()`);
   await until(`window.derbyTest.game.stageState().modelStyle === 'hd'`, 20000, 'HD models to swap in on stage');
   assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
+
+  // Edit team list and Full history share the same mode-reactive 3D background (wrestle-ring here).
+  for (const subpage of ['roster.html', 'history.html']) {
+    await leave(subpage);
+    await until(`window.derby?.stageState?.().mode === 'wrestle-ring' && window.derby.stageState().count === 4`, 15000, `${subpage} to show wrestling ring`);
+  }
+  await load();
 
   // A third mode without a stagePreview hook (Arena) falls back cleanly to the Chesapeake Bay fly-over.
   await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);

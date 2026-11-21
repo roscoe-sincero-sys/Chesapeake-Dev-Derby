@@ -2,6 +2,7 @@
 document.getElementById('back-to-lobby').focus();
 
 import { apiFetch } from './api.js';
+import { startBackground } from './page-common.js';
 
 const form = document.getElementById('roster-form');
 const names = document.getElementById('names');
@@ -73,12 +74,5 @@ form.addEventListener('submit', async (event) => {
 });
 load();
 
-// Reuse the lobby scenery without making roster editing depend on WebGL.
-Promise.all([import('./game.js'), import('./audio.js')])
-  .then(([{ Game }, { Sfx }]) => {
-    new Game(document.getElementById('scene'), {}, new Sfx());
-  })
-  .catch((err) => {
-    document.getElementById('scene').hidden = true;
-    console.warn('3D background is unavailable.', err);
-  });
+// Reuse the lobby's live 3D stage background without making roster editing depend on WebGL.
+startBackground();

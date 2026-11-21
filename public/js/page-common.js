@@ -53,13 +53,38 @@ export const MODE_COUNT = {
 };
 
 /**
- * The same slow fly-over of the course as the lobby (carrying on where the last page left it),
- * without making the page depend on WebGL: if 3D is unavailable it keeps its plain background.
+ * The same live 3D stage background as the lobby (Derby Race bridge or Let's Rumble wrestling ring,
+ * matching the selected mode and options), without making the page depend on WebGL: if 3D is
+ * unavailable it keeps its plain background.
  */
 export function startBackground() {
-  Promise.all([import('./game.js'), import('./audio.js')])
-    .then(([{ Game }, { Sfx }]) => {
-      new Game(document.getElementById('scene'), {}, new Sfx());
+  Promise.all([
+    import('./game.js'),
+    import('./audio.js'),
+    import('./lobby-settings.js'),
+    import('./modes.js'),
+    import('./eligibility.js'),
+  ])
+    .then(async ([{ Game }, { Sfx }, { readLobbySettings }, { findMode }, { buildRoster, selectRacers, displayNames, nameKey }]) => {
+      const game = new Game(document.getElementById('scene'), {}, new Sfx());
+      window.derby = game;
+      const saved = readLobbySettings();
+      const mode = findMode(saved.mode);
+      if (!mode.stagePreview) return;
+      const options = saved.options[mode.id];
+      // Switch to the selected mode's stage immediately (avoids flashing the bridge when Rumble is active).
+      if (mode.id !== 'race') mode.stagePreview(game, { names: [], options });
+      try {
+        const res = await apiFetch('/api/state');
+        if (!res.ok) return;
+        const data = await res.json();
+        const roster = buildRoster(data.names ?? [], data.winners ?? []);
+        const shown = displayNames(data.names ?? []);
+        const names = selectRacers(roster, saved.absent).map((n) => shown.get(nameKey(n)) ?? n);
+        mode.stagePreview(game, { names, options });
+      } catch {
+        /* Keep the empty stage or fly-over if /api/state is unavailable. */
+      }
     })
     .catch((err) => {
       document.getElementById('scene').hidden = true;

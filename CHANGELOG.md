@@ -17,7 +17,9 @@ to release.
     teammates flexing inside, and toggling **Classic | HD** swaps their 3D models live on stage;
   - checking or unchecking a teammate adds/removes them on the 3D stage in real time;
   - modes can declare an optional `stagePreview(stage, { names, options })` hook in `modes.js`,
-    falling back to the Bay Bridge fly-over when omitted.
+    falling back to the Bay Bridge fly-over when omitted;
+  - **Edit team list**, **Full history**, and **Absentee list** share the same mode-reactive 3D
+    background (`startBackground()` in `page-common.js`).
 
 ### Fixed
 - **Lobby modals & links:** moved `#reset-dialog` outside the `pointer-events: none` open 3D stage so
