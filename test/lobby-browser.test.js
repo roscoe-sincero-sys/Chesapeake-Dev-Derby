@@ -307,10 +307,13 @@ test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, a
 
   // Switching to Rumble (2–12 players) with 29 checked and clicking Review team list auto-expands & highlights the drawer.
   await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
-  await evaluate(`document.querySelector('#readiness button').click()`);
+  const highlighted = await evaluate(`(() => {
+    document.querySelector('#readiness button').click();
+    return document.getElementById('roster-section').classList.contains('attention');
+  })()`);
+  assert.equal(highlighted, true, 'Review team list highlights the drawer');
   const reopened = await measure();
   assert.equal(reopened.collapsed, false, 'Review team list reopens the collapsed drawer');
-  assert.equal(await evaluate(`document.getElementById('roster-section').classList.contains('attention')`), true, 'Review team list highlights the drawer');
   assert.ok(await evaluate(`!!document.activeElement.closest('#roster')`), 'focus is inside the roster');
 });
 
