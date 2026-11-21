@@ -22,6 +22,10 @@ test('no HTML page uses redundant title attributes or skipped heading levels', a
     for (let i = 1; i < levels.length; i++) {
       assert.ok(levels[i] <= levels[i - 1] + 1, `${page}: skipped heading level h${levels[i - 1]} -> h${levels[i]}`);
     }
+
+    // No redundant links pointing to the same URL on the same page.
+    const hrefs = [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((m) => m[1]);
+    assert.equal(new Set(hrefs).size, hrefs.length, `${page} has redundant links: ${hrefs.join(', ')}`);
   }
 });
 

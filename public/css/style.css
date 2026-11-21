@@ -141,30 +141,6 @@ h1 {
   vertical-align: middle;
 }
 
-.bar-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.bar-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 12px;
-  border-radius: 8px;
-  background: #1e222d;
-  border: 1px solid #3b4557;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.bar-link:hover {
-  background: #2a2e39;
-}
-
 h2 {
   margin: 0;
   font-size: 16px;
@@ -772,9 +748,6 @@ button:focus-visible {
   h1 {
     font-size: 20px;
   }
-  .bar-nav {
-    display: none;
-  }
   #progress {
     top: auto;
     bottom: 14px;
@@ -993,7 +966,7 @@ button.danger:hover { filter: brightness(1.1); }
 }
 
 /* Exit: top right of the broadcast bar, with a hover / focus tip (the lobby's only tooltip). */
-.exit-wrap { position: relative; align-self: center; display: inline-flex; }
+.exit-wrap { position: relative; margin-left: auto; align-self: center; display: inline-flex; }
 button.exit { padding: 7px 12px; font-size: 13px; }
 .exit-wrap .tip {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 5;

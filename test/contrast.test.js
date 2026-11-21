@@ -40,8 +40,6 @@ const SURFACES = [
   ['.lineup-drawer', ['var(--text)', 'var(--muted)', 'var(--gold)']],
   ['.command-dock', ['var(--text)', 'var(--muted)', 'var(--gold)', '#ffa8a8']],
   ['.live-pill', ['#ffffff']],
-  ['.bar-link', ['var(--text)']],
-  ['.bar-link:hover', ['var(--text)']],
   ['.drawer-toggle', ['var(--text)']],
   ['.drawer-toggle:hover', ['var(--text)']],
   ['.surprise-btn', ['var(--text)']],
