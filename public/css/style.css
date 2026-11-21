@@ -1060,7 +1060,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 .studio-scroll::-webkit-scrollbar-thumb { background: #4b5870; border-radius: 999px; border: 2px solid #101420; }
 .studio-scroll::-webkit-scrollbar-thumb:hover { background: #67758d; }
 
-.editor #roster-form { padding-top: 14px; }
+.editor #roster-form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.studio-form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.chips-panel, .bulk-panel { padding-top: 14px; }
 .editor label { display: block; font-weight: 650; margin-top: 4px; }
 .editor textarea {
   width: 100%; padding: 12px; border: 1px solid #a9b1c3;
@@ -1068,9 +1070,100 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   line-height: 1.6; resize: vertical;
 }
 .editor-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
-#editor-status { margin-top: 16px; white-space: pre-line; }
-#editor-status.error { color: #ffa8a8; }
-#editor-status.ok { color: #8ce99a; }
+
+/* Roster Studio (#133 phase 3): mode-fit strip, Quick Add, interactive chips, sticky Save bar. */
+.mode-fit-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.fit-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.fit-pill.ok { background: #173024; color: #8ce99a; border: 1px solid #2b5940; }
+.fit-pill.warn { background: #2c1522; color: #ffa8a8; border: 1px solid #6b2b3e; }
+
+.quick-add {
+  display: flex;
+  flex: 1 1 200px;
+  gap: 6px;
+  min-width: 0;
+}
+.quick-add-btn { padding: 5px 12px; font-size: 13px; border-radius: 999px; }
+
+.roster-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 999px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  background: #26364a;
+  border: 1px solid #4b5870;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+}
+.chip-remove:hover { background: #3d1424; border-color: #ff8787; color: #ffa8a8; }
+
+.studio-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-top: 1px solid var(--panel-border);
+}
+
+.studio-status {
+  flex: 1 1 180px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: pre-line;
+}
+.studio-status.error { color: #ffa8a8; }
+.studio-status.ok { color: #8ce99a; }
+
+.studio-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.studio-foot-actions button.primary { padding: 9px 22px; font-size: 15px; }
+.studio-foot-actions button.secondary { padding: 9px 14px; font-size: 13px; }
 
 @media (min-width: 1000px) {
   /* Desktop Open-Stage Split: Studio Panel docked on the left, live 3D stage open on the right. */

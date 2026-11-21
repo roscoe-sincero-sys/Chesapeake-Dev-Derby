@@ -10,6 +10,10 @@ to release.
 Accessibility work for a WAVE AIM score of 10/10 (#129), by Google Gemini 4 Neon in Antigravity.
 
 ### Added
+- **Roster Studio with live 3D stage preview (#133, phase 3):** **Edit team list** now offers
+  interactive **Roster chips** with one-step Quick Add/Remove alongside the **Bulk text / paste**
+  view, live capacity & mode-fit badges (`Derby Race`, `Let's Rumble`), sticky **Save / Discard**
+  footer, and live 3D stage updates as teammates are added or removed.
 - **Hall of Fame & Broadcast Stats Desk (#133, phase 2):** **Winner history** now features a
   3-card **Broadcast Stat Strip** (`public/js/history-stats.js`: All-Time Leader, Longest Drought
   underdog, and Game Mix proportion bar), a **Match log | Standings** toggle for ranked all-time

@@ -30,22 +30,51 @@
     <div class="studio-stage">
       <main class="studio-panel editor">
         <div class="studio-head">
-          <h1>Edit team list</h1>
-          <p class="studio-sub">Add, rename, or remove people below. Changes apply to the next pick. Recent winner history is kept.</p>
+          <div class="studio-title-row">
+            <h1>Edit team list</h1>
+            <span id="roster-cap" class="count"></span>
+          </div>
+          <p class="studio-sub">Add, rename, or remove teammates — watch them appear live on the 3D stage. Changes apply to the next pick.</p>
+          <div id="mode-fit-strip" class="mode-fit-strip" aria-label="Game player limits"></div>
+
+          <div class="studio-controls">
+            <div class="view-toggle" role="group" aria-label="Editor view">
+              <button id="view-chips" type="button" class="filter-chip" aria-pressed="true">Roster chips</button>
+              <button id="view-bulk" type="button" class="filter-chip" aria-pressed="false">Bulk text / paste</button>
+            </div>
+            <div id="quick-add-row" class="quick-add">
+              <label for="add-name" class="visually-hidden">Add teammate name</label>
+              <input id="add-name" class="studio-search" type="text" maxlength="80" placeholder="Add teammate name…" autocomplete="off" disabled />
+              <button id="add-name-btn" type="button" class="secondary quick-add-btn" disabled>Add</button>
+            </div>
+          </div>
         </div>
 
-        <div class="studio-scroll">
-          <form id="roster-form">
-            <label for="names">Team list</label>
-            <p id="names-hint" class="hint">One name per line, up to 30 names of 40 characters. Blank lines, duplicates and calendar labels (Organizer, Optional, Home, Office, Telework…) are ignored. Saving an empty list clears the team list.</p>
-            <textarea id="names" rows="11" aria-describedby="names-hint" disabled></textarea>
-            <div class="editor-actions">
-              <button id="save-names" type="submit" class="primary" disabled>Save team list</button>
-              <button id="reload-names" type="button" hidden>Retry loading</button>
+        <form id="roster-form" class="studio-form">
+          <div class="studio-scroll">
+            <div id="chips-panel" class="chips-panel">
+              <ul id="roster-chips" class="roster-chips" aria-label="Team roster"></ul>
+              <p id="chips-empty" class="hint" hidden>No teammates yet. Add a name above or switch to Bulk text / paste.</p>
             </div>
-          </form>
-          <p id="editor-status" role="status" aria-live="polite">Loading team list...</p>
-        </div>
+
+            <div id="bulk-panel" class="bulk-panel" hidden>
+              <label for="names">Team list (one name per line)</label>
+              <p id="names-hint" class="hint">Up to 30 names of 40 characters. Blank lines, duplicates and calendar labels (Organizer, Optional, Home, Office, Telework…) are ignored. Saving an empty list clears the team list.</p>
+              <textarea id="names" rows="11" aria-describedby="names-hint" disabled></textarea>
+            </div>
+
+            <p id="parse-preview" class="hint" hidden></p>
+          </div>
+
+          <div class="studio-foot">
+            <p id="editor-status" class="studio-status" role="status" aria-live="polite">Loading team list...</p>
+            <div class="studio-foot-actions">
+              <button id="reload-names" type="button" class="secondary" hidden>Retry loading</button>
+              <button id="discard-names" type="button" class="secondary" hidden>Discard</button>
+              <button id="save-names" type="submit" class="primary" disabled>Save team list</button>
+            </div>
+          </div>
+        </form>
       </main>
     </div>
   </div>

@@ -408,6 +408,18 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
   assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), NAMES.length);
   await page.evaluate(`(() => { const s = document.getElementById('history-search'); s.value = 'Ada'; s.dispatchEvent(new Event('input')); })()`);
   assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), 1, 'name search narrows standings');
+
+  // Phase 3: Roster Studio — interactive chips, Quick Add, Bulk Paste toggle, and live 3D stage update.
+  await send('Page.navigate', { url: `${base}/roster.html` });
+  await page.until(`document.querySelectorAll('#roster-chips .roster-chip').length === ${NAMES.length}`, 20000, 'roster chips');
+  await page.evaluate(`(() => { const i = document.getElementById('add-name'); i.value = 'Katherine'; document.getElementById('add-name-btn').click(); })()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#roster-chips .roster-chip').length`), NAMES.length + 1, 'Quick Add adds a chip');
+  assert.equal(await page.evaluate(`document.getElementById('discard-names').hidden`), false, 'Discard appears when dirty');
+  await page.evaluate(`document.getElementById('view-bulk').click()`);
+  assert.equal(await page.evaluate(`document.getElementById('bulk-panel').hidden`), false);
+  assert.match(await page.evaluate(`document.getElementById('names').value`), /Katherine/);
+  await page.evaluate(`document.getElementById('discard-names').click()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#roster-chips .roster-chip').length`), NAMES.length, 'Discard restores saved list');
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
