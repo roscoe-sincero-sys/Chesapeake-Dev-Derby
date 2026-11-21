@@ -10,6 +10,7 @@ import { Particles } from './effects.js';
 import { emojiTexture } from './util3d.js';
 import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
 import { WrestleMatch } from './wrestle.js';
+import { WrestleStage } from './wrestle-stage.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -123,6 +124,16 @@ export class Game {
     this.projectileVisuals = new Map();
     this.disposables = [];
 
+    // Live 3D lobby stage (#123 phase 2): 'flyover' | 'race-grid' | 'wrestle-ring'.
+    this.stageMode = 'flyover';
+    this.stageGroup = null;
+    this.stageRacers = [];
+    this.stageNames = [];
+    this.wrestleStage = null;
+    this.reducedMotion = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : { matches: false };
+
     this.camPos = new THREE.Vector3();
     this.camLook = new THREE.Vector3();
     this.camReady = false;
@@ -147,6 +158,118 @@ export class Game {
     this.camera.fov = w / h < 1 ? 70 : 55;
     this.camera.updateProjectionMatrix();
     this.wrestle?.resize(w / h);
+    this.wrestleStage?.resize(w / h);
+  }
+
+  // ------------------------------------------------------------ live 3D lobby stage (#123)
+
+  /** Removes any mode-specific lobby stage preview and returns to the Chesapeake Bay fly-over. */
+  clearStage() {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+    }
+    this.stageGroup = null;
+    this.stageRacers = [];
+    this.stageNames = [];
+    this.stageMode = 'flyover';
+  }
+
+  /** Shows the classic Chesapeake Bay Bridge fly-over (default for modes without a custom stage). */
+  showFlyover() {
+    if (this.stageMode === 'flyover') return;
+    this.clearStage();
+    this.showcase.group.visible = true;
+    this.camReady = false;
+  }
+
+  /** Stages the checked-in teammates idling on the Bay Bridge starting grid. */
+  showRaceGrid(names) {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    const prevNames = new Set(this.stageNames);
+    const sameMode = this.stageMode === 'race-grid';
+    if (sameMode && names.length === this.stageNames.length && names.every((n, i) => n === this.stageNames[i])) return;
+
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+    }
+    this.stageMode = 'race-grid';
+    this.stageNames = [...names];
+    this.showcase.group.visible = true;
+    this.stageGroup = new THREE.Group();
+    this.scene.add(this.stageGroup);
+
+    const n = names.length;
+    const cols = n <= 4 ? Math.max(1, n) : n <= 12 ? 4 : 5;
+    const width = TUNING.halfWidth * 1.45;
+    const used = new Set();
+    this.stageRacers = names.map((name, i) => {
+      let h = 2166136261;
+      for (let c = 0; c < name.length; c++) h = Math.imul(h ^ name.charCodeAt(c), 16777619);
+      h >>>= 0;
+      let kindIdx = h % RACER_KINDS.length;
+      if (used.size < RACER_KINDS.length) {
+        while (used.has(kindIdx)) kindIdx = (kindIdx + 1) % RACER_KINDS.length;
+        used.add(kindIdx);
+      }
+      const color = `#${new THREE.Color().setHSL(((h % 360) / 360), 0.85, 0.55).getHexString()}`;
+      const visual = buildRacer(kindIdx, color, name);
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const inRow = Math.min(cols, n - row * cols);
+      const d = inRow === 1 ? 0 : ((col / (inRow - 1)) - 0.5) * width;
+      const s = 6 - row * 3.4 - (col % 2) * 0.7;
+      this.track.place(visual.root, s, d, 0);
+      this.stageGroup.add(visual.root);
+      return {
+        visual,
+        s,
+        d,
+        phase: (h % 628) / 100,
+        pop: sameMode && !prevNames.has(name) ? 1 : 0,
+      };
+    });
+    if (!sameMode) this.camReady = false;
+  }
+
+  /** Stages the checked-in teammates warming up in the spotlighted Mahabharata wrestling ring. */
+  showWrestleRing(names, { modelStyle = 'classic' } = {}) {
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'wrestle-ring';
+    if (!this.wrestleStage) {
+      this.wrestleStage = new WrestleStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.wrestleStage.setLineup(names, { modelStyle });
+  }
+
+  /** Current live lobby stage summary (used by browser tests under ?test). */
+  stageState() {
+    if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
+      return {
+        mode: 'wrestle-ring',
+        count: this.wrestleStage.wrestlers.length,
+        modelStyle: this.wrestleStage.modelStyle,
+        requestedStyle: this.wrestleStage.requestedStyle,
+      };
+    }
+    if (this.stageMode === 'race-grid') {
+      return { mode: 'race-grid', count: this.stageRacers.length };
+    }
+    return { mode: 'flyover', count: 0 };
   }
 
   /**
@@ -154,6 +277,7 @@ export class Game {
    * Returns the line-up: [{ id, name, kind, color }].
    */
   startWrestle(names, options = {}) {
+    this.clearStage();
     this.clearRace();
     this.showcase.group.visible = false;
     this.wrestle = new WrestleMatch(names, { ...options, sfx: this.sfx });
@@ -188,6 +312,7 @@ export class Game {
    * Returns the line-up: [{ id, name, color, kind }].
    */
   startRace(names, { rng = Math.random, timeScale = 1, onStart, onWinner } = {}) {
+    this.clearStage();
     this.clearRace();
     this.raceHooks = { onStart, onWinner };
     this.showcase.group.visible = false;
@@ -294,8 +419,19 @@ export class Game {
     }
 
     if (this.phase === 'lobby') {
-      this.flyT += real;
-      this.updateLobbyCamera(real);
+      const reduced = Boolean(this.reducedMotion?.matches);
+      if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
+        this.wrestleStage.update(real, reduced);
+        this.renderer.render(this.wrestleStage.scene, this.wrestleStage.camera);
+        return;
+      }
+      if (!reduced) this.flyT += real;
+      if (this.stageMode === 'race-grid') {
+        this.updateRaceGridCamera(real, reduced);
+        this.updateStageRacers(real, reduced);
+      } else {
+        this.updateLobbyCamera(real);
+      }
       for (const { sim, visual } of this.showcase.items) visual.update(sim, this.clock);
     } else if (this.phase === 'countdown') {
       this.updateCountdown(real);
@@ -689,6 +825,30 @@ export class Game {
     }
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
+  }
+
+  updateStageRacers(dt, reduced) {
+    const t = this.clock;
+    for (const r of this.stageRacers) {
+      if (r.pop > 0) r.pop = Math.max(0, r.pop - dt * 3.5);
+      const hop = reduced ? 0 : Math.sin(r.pop * Math.PI) * 1.1;
+      const rev = reduced ? 0 : Math.abs(Math.sin(t * 8.5 + r.phase)) * 0.06;
+      r.visual.body.position.y = rev + hop;
+      const dist = this.camera.position.distanceTo(r.visual.root.position);
+      const tagScale = Math.min(1.4, Math.max(0.55, dist / 26));
+      r.visual.label.scale.set(4.4 * tagScale, 1.1 * tagScale, 1);
+      r.visual.label.position.y = LABEL_Y - (1 - Math.min(1, tagScale)) * 1.0 + hop;
+    }
+  }
+
+  updateRaceGridCamera(dt, reduced) {
+    const sway = reduced ? 0 : Math.sin(this.flyT * 0.32) * 2.8;
+    const rows = Math.max(1, Math.ceil(this.stageRacers.length / 4));
+    const back = 14 + Math.min(10, rows * 2.4);
+    const pos = this.track.point(6 - back, -1.6 + sway, 7.8 + Math.min(3, rows * 0.6), this._a);
+    const look = this.track.point(18, -1.2, 1.6, this._b);
+    this.setCamera(pos, look, dt, 2.5, 3);
+    this.focus.copy(look);
   }
 
   updateLobbyCamera(dt) {

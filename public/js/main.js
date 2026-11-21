@@ -321,12 +321,28 @@ function updateAttendanceStatus() {
   $('attendance-status').hidden = !parts.length;
 }
 
+/** Syncs the live 3D lobby stage (#123 phase 2) to the selected mode, its options, and checked-in teammates. */
+function syncStage() {
+  if (!game || state.phase !== 'lobby' || !state.loaded) return;
+  try {
+    const mode = findMode(state.mode);
+    const names = selectRacers(state.roster, state.absent).map(show);
+    const options = state.options[mode.id];
+    if (mode.stagePreview) mode.stagePreview(game, { names, options });
+    else game.showFlyover();
+  } catch (err) {
+    console.warn('Lobby 3D stage preview unavailable; falling back to fly-over.', err);
+    game.showFlyover();
+  }
+}
+
 /**
  * Everything that depends on who's ready and which game is selected: the count, each card's player range
  * (in red, with the headcount, when it doesn't fit), Start's label and state, and the readiness line.
  */
 function updateReadiness() {
   updateAttendanceStatus();
+  syncStage();
   const ready = selectRacers(state.roster, state.absent).length;
   const mode = findMode(state.mode);
   const fits = fitsPlayers(mode, ready);
@@ -403,6 +419,7 @@ function setOption(mode, id, value) {
   state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], [id]: value });
   saveLobbySettings();
   updateAttendanceStatus();
+  syncStage();
 }
 
 /** The controls a mode's options can use (see modes.js). Each returns the element for one option. */

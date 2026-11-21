@@ -7,6 +7,16 @@ to release.
 
 ## [Unreleased]
 
+### Added
+- **Live mode-reactive 3D stage (#123, phase 2):** the open center of the lobby now previews the
+  selected game live in 3D:
+  - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid;
+  - **Let’s Rumble** switches to the spotlighted wrestling ring (`public/js/wrestle-stage.js`) with
+    teammates flexing inside, and toggling **Classic | HD** swaps their 3D models live on stage;
+  - checking or unchecking a teammate adds/removes them on the 3D stage in real time;
+  - modes can declare an optional `stagePreview(stage, { names, options })` hook in `modes.js`,
+    falling back to the Bay Bridge fly-over when omitted.
+
 ### Changed
 - **Live Broadcast Stage HUD shell (#123, phase 1):** replaces the centered lobby modal with an
   open-center Broadcast HUD on wide screens (≥ 1000 px) — a compact **Top Broadcast Bar** (with

@@ -292,6 +292,33 @@ test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, a
   assert.ok(await evaluate(`!!document.activeElement.closest('#roster')`), 'focus is inside the roster');
 });
 
+test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Classic/HD, and fallback modes', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until } = await openLobby(t, { extra: 1, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return; // Software WebGL is expected in CI; skip stage assertions only if WebGL is disabled.
+
+  const stage = () => evaluate('window.derbyTest.game.stageState()');
+  // Derby Race starts with all 6 teammates idling on the starting grid.
+  assert.deepEqual(await stage(), { mode: 'race-grid', count: 6 });
+
+  // Unchecking 2 teammates removes them from the 3D starting grid live.
+  await evaluate(`[...document.querySelectorAll('#roster input')].slice(0, 2).forEach((box) => box.click())`);
+  assert.deepEqual(await stage(), { mode: 'race-grid', count: 4 });
+
+  // Switching to Let's Rumble transitions the 3D stage to the wrestling ring (Classic by default) with the 4 teammates.
+  await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'classic', requestedStyle: 'classic' });
+
+  // Toggling HD swaps the wrestlers in the ring to HD models live on stage.
+  await evaluate(`document.querySelector('[data-option="rumble-models"] .segment[data-value="hd"]').click()`);
+  await until(`window.derbyTest.game.stageState().modelStyle === 'hd'`, 20000, 'HD models to swap in on stage');
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
+
+  // A third mode without a stagePreview hook (Arena) falls back cleanly to the Chesapeake Bay fly-over.
+  await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'flyover', count: 0 });
+});
+
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);

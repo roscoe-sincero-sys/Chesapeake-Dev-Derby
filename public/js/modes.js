@@ -60,6 +60,7 @@ export const MODES = [
       for (const el of root.querySelectorAll('[data-list="racers"]')) el.textContent = RACER_KINDS.map((k) => `${k.emoji} ${k.label}`).join(' · ');
     },
     ready: (n) => `${n} racers on the grid — may the best tab win. Let's go see it in your virtual meeting room.`,
+    stagePreview: (stage, { names }) => stage.showRaceGrid(names),
     start: startRace,
   },
   {
@@ -85,6 +86,7 @@ export const MODES = [
       for (const el of root.querySelectorAll('[data-list="wrestlers"]')) el.textContent = WRESTLER_KINDS.map((k) => k.label).join(', ');
     },
     ready: (n) => `${n} wrestlers ready — last one in the ring leads standup.`,
+    stagePreview: (stage, { names, options }) => stage.showWrestleRing(names, { modelStyle: options.models }),
     start: startRumble,
   },
 ];
