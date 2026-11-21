@@ -297,10 +297,11 @@ export class Game {
    * Returns the line-up: [{ id, name, kind, color }].
    */
   startWrestle(names, options = {}) {
+    const initialOrbit = this.wrestleStage?.orbit;
     this.clearStage();
     this.clearRace();
     this.showcase.group.visible = false;
-    this.wrestle = new WrestleMatch(names, { ...options, sfx: this.sfx });
+    this.wrestle = new WrestleMatch(names, { ...options, initialOrbit, sfx: this.sfx });
     this.wrestle.resize(window.innerWidth / window.innerHeight);
     this.phase = 'wrestle';
     return this.wrestle.lineup;
@@ -332,6 +333,10 @@ export class Game {
    * Returns the line-up: [{ id, name, color, kind }].
    */
   startRace(names, { rng = Math.random, timeScale = 1, onStart, onWinner } = {}) {
+    // Carry the camera smoothly from the lobby's live starting-grid angle into the countdown (#123 phase 3).
+    const handoff = this.camReady && this.stageMode === 'race-grid';
+    const prevPos = handoff ? this.camPos.clone() : null;
+    const prevLook = handoff ? this.camLook.clone() : null;
     this.clearStage();
     this.clearRace();
     this.raceHooks = { onStart, onWinner };
@@ -375,7 +380,13 @@ export class Game {
     this.winnerAt = 0;
     this.confettiTimer = 0;
     this.doneReported = false;
-    this.camReady = false;
+    if (handoff) {
+      this.camPos.copy(prevPos);
+      this.camLook.copy(prevLook);
+      this.camReady = true;
+    } else {
+      this.camReady = false;
+    }
 
     return this.sim.racers.map((r, i) => ({ id: r.id, name: r.name, color: this.visuals[i].color, kind: this.visuals[i].kind }));
   }

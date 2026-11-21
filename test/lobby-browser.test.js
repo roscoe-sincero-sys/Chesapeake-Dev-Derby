@@ -355,6 +355,15 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   // A third mode without a stagePreview hook (Arena) falls back cleanly to the Chesapeake Bay fly-over.
   await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);
   assert.deepEqual(await stage(), { mode: 'flyover', count: 0 });
+
+  // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
+  assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
+  assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
+  assert.equal(await evaluate(`document.getElementById('surprise-mode').disabled`), false);
+  const beforeSurprise = await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').dataset.mode`);
+  await evaluate(`document.getElementById('surprise-mode').click()`);
+  const afterSurprise = await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').dataset.mode`);
+  assert.notEqual(afterSurprise, beforeSurprise, 'Surprise me picks a different eligible mode');
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
