@@ -105,7 +105,7 @@ export class WrestleMatch {
    * @param {string[]} names  the wrestlers (2 to 12), as shown on screen
    * @param {object} options  { rng, sfx, modelStyle: 'classic' | 'hd', onEvent(e), onWinner(wrestler) }
    */
-  constructor(names, { rng = Math.random, sfx = null, onEvent = () => {}, onWinner = () => {}, previewPlan = null, modelStyle = 'hd' } = {}) {
+  constructor(names, { rng = Math.random, sfx = null, onEvent = () => {}, onWinner = () => {}, previewPlan = null, modelStyle = 'hd', initialOrbit = null } = {}) {
     if (modelStyle !== 'classic' && modelStyle !== 'hd') throw new Error('Unknown wrestling model style.');
     this.modelStyle = modelStyle;
     this.plan = previewPlan ?? planMatch(names, rng);
@@ -128,7 +128,7 @@ export class WrestleMatch {
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.3, 200);
     this.camPos = new THREE.Vector3(0, 15, 19);
     this.camLook = new THREE.Vector3(0, MAT_Y, 0);
-    this.orbit = this.random() * Math.PI * 2;
+    this.orbit = Number.isFinite(initialOrbit) ? initialOrbit : this.random() * Math.PI * 2;
     this.particles = new Particles(this.scene);
 
     this.buildArena();

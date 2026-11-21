@@ -8,6 +8,17 @@ to release.
 ## [Unreleased]
 
 ### Added
+- **Broadcast polish & Curtain-Part launch (#123, phase 3):**
+  - **Curtain-Part transition & camera handoff:** pressing **Start** glides the HUD panels outward
+    over 220 ms (instant under `prefers-reduced-motion`) while the 3D camera continues seamlessly
+    from the lobby starting grid or wrestling ring orbit into the match countdown.
+  - **Pre-match broadcast chyron (`public/js/chyron.js`):** rotating solid-surface highlights bar
+    showing live stage hype, longest-drought underdogs from `history.json`, and recent winner
+    cooldowns.
+  - **`🎲 Surprise me` mode chip:** picks a random eligible game mode and switches the live 3D stage
+    to reveal it.
+  - **Opt-in micro-audio:** subtle Web Audio tick on attendance toggles and broadcast chime on mode
+    switches when unmuted.
 - **Live mode-reactive 3D stage (#123, phase 2):** the open center of the lobby now previews the
   selected game live in 3D:
   - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid

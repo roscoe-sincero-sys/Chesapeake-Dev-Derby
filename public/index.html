@@ -70,6 +70,12 @@
           </p>
           <p id="reset-status" class="hint" role="status" hidden></p>
         </section>
+
+        <!-- Pre-match broadcast chyron (#123 phase 3): underdog streaks, cooldowns & live stage hype -->
+        <aside id="chyron" class="chyron" aria-label="Match highlights" aria-live="off" hidden>
+          <span id="chyron-tag" class="chyron-tag"></span>
+          <span id="chyron-text" class="chyron-text"></span>
+        </aside>
       </div>
 
       <!-- Bottom Command Dock: Pick a game, selected game's options, and Launch -->
@@ -77,6 +83,7 @@
         <section id="game-section" class="lobby-area">
           <fieldset class="mode-picker">
             <legend class="area-title">Pick a game</legend>
+            <button id="surprise-mode" type="button" class="surprise-btn" title="Pick a random eligible game">🎲 Surprise me</button>
             <div id="mode-cards" class="mode-cards"></div>
           </fieldset>
           <div id="mode-options" class="mode-options"></div>
