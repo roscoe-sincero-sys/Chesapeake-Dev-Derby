@@ -36,6 +36,14 @@ const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 // [selector of the box, its text colours]
 const SURFACES = [
   ['.panel', ['var(--text)', 'var(--muted)', 'var(--gold)']],
+  ['.lobby-head', ['var(--text)', 'var(--muted)', 'var(--gold)']],
+  ['.lineup-drawer', ['var(--text)', 'var(--muted)', 'var(--gold)']],
+  ['.command-dock', ['var(--text)', 'var(--muted)', 'var(--gold)', '#ffa8a8']],
+  ['.live-pill', ['#ffffff']],
+  ['.bar-link', ['var(--text)']],
+  ['.bar-link:hover', ['var(--text)']],
+  ['.drawer-toggle', ['var(--text)']],
+  ['.drawer-toggle:hover', ['var(--text)']],
   ['#status', ['var(--text)']],
   ['#status.error', ['var(--text)']],
   ['#status.warn', ['var(--text)']],

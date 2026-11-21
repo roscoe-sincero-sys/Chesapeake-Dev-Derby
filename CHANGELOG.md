@@ -7,6 +7,16 @@ to release.
 
 ## [Unreleased]
 
+### Changed
+- **Live Broadcast Stage HUD shell (#123, phase 1):** replaces the centered lobby modal with an
+  open-center Broadcast HUD on wide screens (≥ 1000 px) — a compact **Top Broadcast Bar** (with
+  `LIVE` badge and **History** / **Team** links), an internally scrolling, collapsible **Left Lineup
+  Drawer** (`◂` / `▸` button or `H` key for Spectator/Hype view, zero page scrolling even with 30
+  names), and a **Bottom Command Dock** (mode cards, options, and Launch) — leaving over half of a
+  1366 × 768 screen open to the live 3D Chesapeake Bay flyover.
+- **Phone layout:** compact single-row top bar (`Exit` aligned cleanly beside Mute), a live 3D window
+  above the docked sheet on taller phones, and the sticky Launch bar flush with the bottom edge.
+
 ## [1.7.0] - 2026-11-20
 
 ### Changed

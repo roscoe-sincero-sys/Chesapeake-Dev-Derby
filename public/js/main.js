@@ -224,9 +224,20 @@ function setTeamOpen(open) {
   $('team-toggle').setAttribute('aria-expanded', String(open));
 }
 
+/** Collapses or expands the desktop left Lineup Drawer ("Spectator / Hype" mode, H key). */
+function setDrawerOpen(open) {
+  $('roster-section').classList.toggle('drawer-collapsed', !open);
+  const btn = $('drawer-toggle');
+  btn.setAttribute('aria-expanded', String(open));
+  btn.textContent = open ? '◂' : '▸';
+  btn.title = open ? 'Hide lineup (H)' : 'Show lineup (H)';
+  btn.setAttribute('aria-label', open ? 'Hide lineup' : 'Show lineup');
+}
+
 /** Opens the team list and puts focus on it, so attendance can be fixed to suit the game. */
 function reviewTeam() {
   setTeamOpen(true);
+  setDrawerOpen(true);
   const target = $('roster').querySelector('input:not([disabled])') ?? $('check-all');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest' });
@@ -678,6 +689,7 @@ function init() {
 
   $('start').addEventListener('click', startSelected);
   $('team-toggle').addEventListener('click', () => setTeamOpen($('roster-section').classList.contains('collapsed')));
+  $('drawer-toggle').addEventListener('click', () => setDrawerOpen($('roster-section').classList.contains('drawer-collapsed')));
   $('pick').addEventListener('click', pick);
   $('exit-app').addEventListener('click', exitApp);
   $('check-all').addEventListener('click', () => setAll(true));
@@ -712,6 +724,8 @@ function init() {
       startSelected();
     } else if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
       mute.click();
+    } else if (e.key.toLowerCase() === 'h' && state.phase === 'lobby' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      setDrawerOpen($('roster-section').classList.contains('drawer-collapsed'));
     }
   });
 

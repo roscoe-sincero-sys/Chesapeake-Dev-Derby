@@ -18,15 +18,19 @@
       <button id="quit" type="button" hidden>✕ Quit race</button>
     </div>
 
-    <!-- Lobby: who is here, which game, then Start -->
-    <main id="lobby" class="panel">
+    <!-- Lobby: Live Broadcast Stage (#123) — open 3D center framed by docked solid-surface HUD panels -->
+    <main id="lobby" class="lobby-hud">
       <header class="lobby-head">
         <div class="flag-chip" aria-hidden="true"></div>
         <div class="lobby-title">
-          <h1>Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span id="demo-badge" class="demo-badge" title="A browser-only demo: names and results are saved only in this browser." hidden>Demo</span></h1>
+          <h1>Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span id="demo-badge" class="demo-badge" title="A browser-only demo: names and results are saved only in this browser." hidden>Demo</span> <span class="live-pill" aria-hidden="true">LIVE</span></h1>
           <p class="tagline">Pick who leads the team meeting.</p>
           <p id="demo-note" class="demo-note" hidden>Demo: names and results are saved only in this browser. Nothing is sent anywhere.</p>
         </div>
+        <nav class="bar-nav" aria-label="Lobby pages">
+          <a class="bar-link" href="history.html">History</a>
+          <a class="bar-link" href="roster.html">Team</a>
+        </nav>
         <span class="exit-wrap">
           <button id="exit-app" type="button" class="secondary exit" aria-describedby="exit-tip">Exit</button>
           <span id="exit-tip" class="tip" role="tooltip">Close the Derby app. Your team list and winners stay saved.</span>
@@ -35,9 +39,9 @@
 
       <div id="status" role="status"></div>
 
-      <div class="lobby-body">
-        <!-- Who's here: attendance, shared by every game. On phones it folds into a summary row. -->
-        <section id="roster-section" class="lobby-area" aria-labelledby="team-heading">
+      <div class="lobby-stage">
+        <!-- Who's here: attendance, shared by every game. Left collapsible drawer on desktop; folds into a summary row on phones. -->
+        <section id="roster-section" class="lobby-area lineup-drawer" aria-labelledby="team-heading">
           <div class="area-head">
             <h2 id="team-heading" class="area-title">
               <button id="team-toggle" type="button" class="team-toggle" aria-expanded="true" aria-controls="team-body">
@@ -46,6 +50,7 @@
               <span class="team-title">Who’s here</span>
             </h2>
             <span id="racer-count" class="count"></span>
+            <button id="drawer-toggle" type="button" class="drawer-toggle" aria-expanded="true" aria-controls="team-body" title="Hide lineup (H)" aria-label="Hide lineup">◂</button>
           </div>
           <div id="team-body">
             <nav class="roster-actions" aria-label="Team list controls">
@@ -77,8 +82,10 @@
             </div>
           </form>
         </dialog>
+      </div>
 
-        <!-- Pick a game: one card per mode, then the selected mode's options. Built from js/modes.js. -->
+      <!-- Bottom Command Dock: Pick a game, selected game's options, and Launch -->
+      <div class="command-dock">
         <section id="game-section" class="lobby-area">
           <fieldset class="mode-picker">
             <legend class="area-title">Pick a game</legend>
@@ -86,15 +93,15 @@
           </fieldset>
           <div id="mode-options" class="mode-options"></div>
         </section>
-      </div>
 
-      <footer class="lobby-foot">
-        <p id="readiness" class="readiness" role="status"></p>
-        <div class="lobby-actions">
-          <button id="pick" type="button" class="secondary" disabled>Just pick<span class="pick-long"> someone</span></button>
-          <button id="start" type="button" class="primary" aria-describedby="readiness" disabled>▶ Start race</button>
-        </div>
-      </footer>
+        <footer class="lobby-foot">
+          <p id="readiness" class="readiness" role="status"></p>
+          <div class="lobby-actions">
+            <button id="pick" type="button" class="secondary" disabled>Just pick<span class="pick-long"> someone</span></button>
+            <button id="start" type="button" class="primary" aria-describedby="readiness" disabled>▶ Start race</button>
+          </div>
+        </footer>
+      </div>
     </main>
 
     <!-- How to play, one per mode (js/modes.js `guide`): cloned into that mode's options. -->
