@@ -29,7 +29,8 @@ npm start       # then open http://127.0.0.1:4100
 **`start.cmd`**. This launcher automatically stops the server and closes its terminal about three
 seconds after the last game or roster-editor tab closes. Reloading or moving between those screens keeps
 it running. On startup it waits up to four seconds for an existing tab to reconnect, avoiding a duplicate
-tab after you stop the server with Ctrl+C and restart the launcher. `npm start` and `npm run open` keep running until you press Ctrl+C.
+tab after you stop the server with Ctrl+C and restart the launcher. `npm start` and `npm run open` keep
+running until you press Ctrl+C.
 
 **Exit** (top right of the lobby) closes the app however you started it: the server stops, the launcher's
 terminal closes, and the page says the Derby is closed. Hover over it for a reminder. Your team list and
@@ -58,33 +59,41 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** The lobby is an open-center **Live Broadcast Stage**:
-   - On a wide screen (1000 px and up), the live 3D stage fills the center of the screen — **Derby Race**
-     stages the checked-in teammates idling on the Standup Bay Bridge before gliding down the course, and
-     **Let’s Rumble** switches to the spotlighted wrestling ring where toggling **Classic | HD** swaps
-     the 3D models live. Solid HUD panels frame the edges: a **Top Broadcast Bar** (`LIVE`, **History**,
-     **Team**, **Exit**), a scrollable and collapsible **Left Lineup Drawer** (click `◂` or press **H**
-     for a full-bleed spectator view), a rotating pre-match **broadcast chyron**, and a **Bottom Command
-     Dock** (**Pick a game** + **🎲 Surprise me**, the selected game's options, and **Launch**).
-   - On a phone, taller screens show a live 3D stage window above a docked sheet, the team list folds
-     into a full-width **Who's here · 12 playing** row (open by default when fewer than two people are
-     ready), and **Just pick** and **Start** stay pinned at the bottom in one row.
+2. **Open the lobby.** The lobby is a **Live Broadcast Stage**: the selected game plays live in 3D
+   behind solid panels.
+   - **On a wide screen** (1000 px and up) the 3D stage fills the middle. **Derby Race** shows the
+     checked-in teammates idling on the Standup Bay Bridge, then glides down the course; **Let’s Rumble**
+     shows them in the spotlit wrestling ring, and switching **Classic | HD** swaps their models live.
+     Around the edges:
+     - the **top bar**: `LIVE`, **History**, **Team**, **Exit** and mute;
+     - the **Who's here** drawer on the left, which scrolls on its own and folds away with `◂` or **H**
+       for a full spectator view;
+     - a **chyron** over the stage, rotating pre-match notes (who's on the grid, who hasn't won in a
+       while, who's sitting out);
+     - the **dock** along the bottom: **Pick a game** with **🎲 Surprise me**, the selected game's
+       options, then **Just pick someone** and **Start**.
+   - **On a phone** a window onto the 3D stage sits above the lobby. The team list folds into a
+     **Who's here · 12 playing** row (open to start with when fewer than two people are ready), and
+     **Just pick** and **Start** stay at the bottom in one row.
 
-   <img src="docs/lobby-wide.png" alt="The Live Broadcast Stage lobby on a laptop: Top Broadcast Bar, collapsible Left Lineup Drawer, open center showing 5 racers idling on the Standup Bay Bridge with the ON GRID chyron, and Bottom Command Dock with mode cards, Surprise me, Race length slider, and Start race." width="640">
-   <img src="docs/lobby-phone.png" alt="The Pocket Broadcast lobby on a phone: live 3D wrestling ring window at the top, folded Who's here row, Let's Rumble selected with Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
-   - The list is in **alphabetical order**. A name that is an email address is shown without the
+   <p>
+     <img src="docs/lobby-wide.png" width="600" alt="The lobby on a laptop: the top bar; the Who's here drawer on the left with five teammates checked and one sitting out; five racers idling on the Standup Bay Bridge with the ON GRID chyron; and the dock with the Derby Race card selected, Surprise me, the Race length slider, Just pick someone and Start race.">
+     <img src="docs/lobby-phone.png" width="156" alt="The lobby on a phone: the wrestling ring at the top, the folded Who's here row, Let's Rumble selected with its Classic or HD toggle, and Just pick and Start rumble in one row at the bottom.">
+   </p>
+
+   *The lobby on a 1366 × 768 laptop with Derby Race selected, and on a 390 × 844 phone with Let’s
+   Rumble.*
+
+   In the **Who's here** list:
+   - Names are in **alphabetical order**. A name that is an email address is shown without the
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
      full entry. Hover a name to see it in full.
    - **Uncheck** anyone who is absent today. Attendance is kept in this browser tab through reloads, games
      and visits to **Edit team list**; a new tab (the next meeting) starts with everyone present. Removed
-     names are dropped from saved attendance; new names start checked. The selected game and each game's
-     options (race length, Classic or HD) are kept in this browser from one meeting to the next
-     (`localStorage`); a browser that has never chosen starts on the race. An explicit `?speed=` or
-     `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves to the nearest of
-     the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears in the
-     Launch zone beside Start so toggling checkboxes never shifts the team list.
+     names are dropped from saved attendance; new names start checked. When anyone is unchecked, the
+     count ("2 people marked absent.") appears beside Start, so ticking boxes never shifts the list.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("Sits out 3 more picks"…), and named on the **Sitting out** line under the list, next to
      **Full history** and **Reset**.
@@ -100,6 +109,11 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    **How to play** opens a pop-up dialog explaining that game without expanding the dock. If the number
    checked doesn't suit the selected game, its card says so in red ("2–12 players · 14 checked"), Start is
    disabled, and the line above Start says what to change, with a **Review team list** link.
+
+   The selected game and each game's options (race length, Classic or HD) are kept in this browser from
+   one meeting to the next (`localStorage`); a browser that has never chosen starts on the race. An
+   explicit `?speed=` or `?mode=` URL setting overrides the saved race length or game. A length saved by
+   an older version of the slider moves to the nearest of the five lengths.
 
 4. Click **▶ Start race** (the button follows the selected game: **▶ Start rumble** for Rumble), or press
    **Enter**. When the lobby opens, keyboard focus is already on Start if the selected game can start;
@@ -340,6 +354,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
   no empty button, even on one that stays hidden until needed (the wrestler list's button in a match).
 - **`test/modes.test.js`** — the game mode registry: every mode records a result the server accepts and the
   history pages can label, each mode's options have valid defaults, and the player ranges.
+- **`test/chyron.test.js`** — the lobby's chyron: teammates who have never won or haven't won for longest,
+  who's sitting out, absent teammates left out, and nothing shown when nobody is ready.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
   controls stay readable (see [Accessibility](#accessibility)).
 - **`test/wrestle.test.js`** — the battle royal's plan: a fair draw, everyone but the winner thrown out
@@ -404,6 +420,7 @@ public/
   css/style.css
   js/main.js         Lobby logic, starts the selected game, saves the winner
   js/modes.js        The game modes (race, Rumble): names, player ranges, options, and how each starts
+  js/chyron.js       The lobby's pre-match chyron lines: who's on the grid, droughts, who's sitting out
   js/api.js          Sends API requests to the server, or to the demo store in the online demo
   js/config.js       DEMO switch (false here; the demo build replaces this file)
   js/data-rules.js   Team list, winner and history rules, shared by the server and the demo
@@ -419,6 +436,7 @@ public/
   js/audience.js     Grandstands and the cheering wildlife
   js/wrestle-sim.js  Let’s Rumble: the battle royal's rules and script (pure logic)
   js/wrestle.js      The wrestling ring, camera and choreography
+  js/wrestle-stage.js  The lobby's live wrestling ring (no match), with Classic and HD models
   js/wrestlers.js    The Mahabharata wrestler models and their poses
   js/crowd.js        The reacting crowd and its hand-lettered signs
   js/obstacles.js    The 11 obstacle models, item crates, thrown items
@@ -493,7 +511,7 @@ The online demo uses the same pages.
   - disabled buttons are greyed out with readable text instead of being faded.
 - **Not colour alone:** each state also has words or a mark:
   - absent teammates are struck through;
-  - recent winners say "Sits out N more races";
+  - recent winners say "Sits out N more picks";
   - knocked-out wrestlers are struck through.
 - **Motion:** with the system setting **Reduce motion** on, page animations and transitions are switched
   off and the background scenery (waves, boats, clouds) holds still. The race and the wrestling match still
@@ -669,8 +687,11 @@ when it starts and serves it at `GET /api/version`, and the lobby shows it next 
 
 AI development assistance:
 
+- **Claude (Anthropic)** - initial developer; later features, documentation and releases, including the
+  1.8.0 README and release (Claude Opus 5.5).
+- **Google Gemini 4 Neon** (in Antigravity) - the 1.8.0 lobby rework (#123): the Live Broadcast Stage,
+  the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots.
 - **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
-- **Claude (Anthropic)** - initial developer.
 
 Claude's initial development statistics, as reported by the project owner:
 
