@@ -44,6 +44,7 @@ const SURFACES = [
   ['.bar-link:hover', ['var(--text)']],
   ['.drawer-toggle', ['var(--text)']],
   ['.drawer-toggle:hover', ['var(--text)']],
+  ['#reset-dialog, #guide-dialog', ['var(--text)', 'var(--muted)', '#8ab4f8']],
   ['#status', ['var(--text)']],
   ['#status.error', ['var(--text)']],
   ['#status.warn', ['var(--text)']],

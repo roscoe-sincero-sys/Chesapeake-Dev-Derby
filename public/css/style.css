@@ -848,23 +848,45 @@ button.secondary {
 button.secondary:disabled { cursor: not-allowed; }
 .range-scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 
-/* Absent count shares the hint line under "Team list". */
-#attendance-status { color: var(--gold); }
+/* Absent count & storage warning sit in the Launch zone so toggling checkboxes never shifts #roster. */
+#attendance-status { color: var(--gold); margin: 4px 0 0; font-size: 13px; }
+.launch-notes { display: flex; flex-direction: column; }
 
-/* Reset the last three winners. */
+/* Modals: Reset winners & How to play pop-up. Always pointer-events: auto in the top layer. */
 .error-text { color: #ffa8a8; }
-#reset-dialog {
-  max-width: min(420px, calc(100vw - 32px));
+#reset-dialog, #guide-dialog {
+  pointer-events: auto;
   padding: 20px 22px;
   color: var(--text);
   background: var(--panel);
-  border: 1px solid var(--panel-border);
+  border: 1px solid #3b4557;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
 }
-#reset-dialog::backdrop { background: rgba(5, 8, 15, 0.6); }
-#reset-dialog h2 { font-size: 18px; }
+#reset-dialog { max-width: min(420px, calc(100vw - 32px)); }
+#guide-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(82vh, 680px);
+  overflow-y: auto;
+}
+#reset-dialog::backdrop, #guide-dialog::backdrop { background: rgba(5, 8, 15, 0.65); }
+#reset-dialog h2, #guide-dialog h2 { font-size: 18px; }
 #reset-dialog p { margin: 10px 0 18px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.guide-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.guide-dialog-head button { padding: 6px 14px; font-size: 13px; }
+.how-to-play-btn { align-self: flex-start; font-size: 13px; padding: 2px 0; }
+.lineup-drawer.attention {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(242, 184, 23, 0.45), 0 14px 36px rgba(0, 0, 0, 0.45);
+}
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .dialog-actions button { border-radius: 10px; padding: 10px 16px; font-size: 14px; min-height: 44px; }
 button.danger { background: #c92a2a; border-color: #ff8787; color: #fff; font-weight: 650; }
@@ -1246,8 +1268,7 @@ button.exit { padding: 7px 12px; font-size: 13px; }
     align-items: stretch;
   }
   .mode-options { margin-top: 0; }
-  .mode-config { padding: 12px 14px; gap: 10px; }
-  .how-to-play[open] { max-height: 240px; overflow-y: auto; padding-right: 4px; }
+  .mode-config { padding: 10px 14px; gap: 8px; }
   .lobby-foot {
     position: static;
     margin: 0;

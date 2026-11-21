@@ -234,13 +234,39 @@ function setDrawerOpen(open) {
   btn.setAttribute('aria-label', open ? 'Hide lineup' : 'Show lineup');
 }
 
-/** Opens the team list and puts focus on it, so attendance can be fixed to suit the game. */
+let attentionTimer = null;
+
+/** Opens the team list, highlights it briefly, and puts focus on it so attendance can be adjusted. */
 function reviewTeam() {
   setTeamOpen(true);
   setDrawerOpen(true);
+  const drawer = $('roster-section');
+  drawer.classList.remove('attention');
+  void drawer.offsetWidth;
+  drawer.classList.add('attention');
+  clearTimeout(attentionTimer);
+  attentionTimer = setTimeout(() => drawer.classList.remove('attention'), 1200);
+  $('roster').scrollTop = 0;
   const target = $('roster').querySelector('input:not([disabled])') ?? $('check-all');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest' });
+}
+
+let guideReturnFocus = null;
+
+/** Opens the "How to play" pop-up dialog for `mode`, keeping the Bottom Command Dock compact. */
+function openGuide(mode, trigger) {
+  const template = document.getElementById(`guide-${mode.guide}`);
+  if (!template) return;
+  const dialog = $('guide-dialog');
+  $('guide-title').textContent = `How to play — ${mode.name}`;
+  const body = $('guide-dialog-body');
+  body.replaceChildren(template.content.cloneNode(true));
+  mode.fillGuide?.(body);
+  guideReturnFocus = trigger ?? document.activeElement;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+  $('guide-close').focus({ preventScroll: true });
 }
 
 /** Asks for confirmation, then clears the recent-winner list so everyone is eligible again. */
@@ -321,12 +347,28 @@ function updateAttendanceStatus() {
   $('attendance-status').hidden = !parts.length;
 }
 
+/** Syncs the live 3D lobby stage (#123 phase 2) to the selected mode, its options, and checked-in teammates. */
+function syncStage() {
+  if (!game || state.phase !== 'lobby' || !state.loaded) return;
+  try {
+    const mode = findMode(state.mode);
+    const names = selectRacers(state.roster, state.absent).map(show);
+    const options = state.options[mode.id];
+    if (mode.stagePreview) mode.stagePreview(game, { names, options });
+    else game.showFlyover();
+  } catch (err) {
+    console.warn('Lobby 3D stage preview unavailable; falling back to fly-over.', err);
+    game.showFlyover();
+  }
+}
+
 /**
  * Everything that depends on who's ready and which game is selected: the count, each card's player range
  * (in red, with the headcount, when it doesn't fit), Start's label and state, and the readiness line.
  */
 function updateReadiness() {
   updateAttendanceStatus();
+  syncStage();
   const ready = selectRacers(state.roster, state.absent).length;
   const mode = findMode(state.mode);
   const fits = fitsPlayers(mode, ready);
@@ -393,8 +435,6 @@ function selectMode(id) {
   for (const panel of $('mode-options').children) {
     const inactive = panel.dataset.mode !== state.mode;
     panel.classList.toggle('inactive', inactive);
-    // An open How to play would keep its (now hidden) panel tall, and with it the shared options area.
-    if (inactive) panel.querySelector('.how-to-play')?.removeAttribute('open');
   }
   updateReadiness();
 }
@@ -403,6 +443,7 @@ function setOption(mode, id, value) {
   state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], [id]: value });
   saveLobbySettings();
   updateAttendanceStatus();
+  syncStage();
 }
 
 /** The controls a mode's options can use (see modes.js). Each returns the element for one option. */
@@ -500,11 +541,10 @@ function renderOptions(mode) {
   for (const option of mode.options) panel.append(OPTION_CONTROLS[option.type](mode, option));
   const template = document.getElementById(`guide-${mode.guide}`);
   if (template) {
-    const guide = el('details', 'how-to-play');
-    const content = template.content.cloneNode(true);
-    mode.fillGuide?.(content);
-    guide.append(el('summary', null, 'How to play'), content);
-    panel.append(guide);
+    const btn = el('button', 'link how-to-play-btn', 'How to play');
+    btn.type = 'button';
+    btn.addEventListener('click', () => openGuide(mode, btn));
+    panel.append(btn);
   }
   return panel;
 }
@@ -685,6 +725,11 @@ function init() {
     $('demo-note').hidden = false;
   }
   renderModes();
+  // Stage non-race modes immediately so returning from Edit team / Full history never flashes the bridge.
+  const initialMode = findMode(state.mode);
+  if (game && initialMode.stagePreview && initialMode.id !== 'race') {
+    try { initialMode.stagePreview(game, { names: [], options: state.options[initialMode.id] }); } catch { /* handled on loadState */ }
+  }
   updateReadiness();
 
   $('start').addEventListener('click', startSelected);
@@ -699,6 +744,16 @@ function init() {
   $('reset-dialog').addEventListener('close', () => {
     if ($('reset-dialog').returnValue === 'reset') resetWinners();
     else $('reset-winners').focus({ preventScroll: true });
+  });
+  $('guide-close').addEventListener('click', () => $('guide-dialog').close());
+  $('guide-dialog').addEventListener('click', (e) => {
+    if (e.target === $('guide-dialog')) $('guide-dialog').close();
+  });
+  $('guide-dialog').addEventListener('close', () => {
+    if (document.activeElement === document.body || $('guide-dialog').contains(document.activeElement)) {
+      guideReturnFocus?.focus?.({ preventScroll: true });
+    }
+    guideReturnFocus = null;
   });
   $('quit').addEventListener('click', backToLobby);
   $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner, state.pendingMode));
