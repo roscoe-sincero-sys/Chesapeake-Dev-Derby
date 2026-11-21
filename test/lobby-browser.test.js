@@ -254,6 +254,44 @@ test('on a phone, the whole Who’s here row folds and unfolds the team list, an
   assert.deepEqual(await state(), ['false', 'none', 'Who’s here 5 playing · 1 absent']);
 });
 
+test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, and collapsible Lineup Drawer', { skip, timeout: 120000 }, async (t) => {
+  const names = Array.from({ length: 30 }, (_, i) => `Teammate ${i + 1}`);
+  const { evaluate, key } = await openLobby(t, { extra: 0, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const measure = () => evaluate(`(() => {
+    const stage = document.querySelector('.lobby-stage').getBoundingClientRect();
+    const drawer = document.getElementById('roster-section').getBoundingClientRect();
+    const lobby = document.getElementById('lobby');
+    const openWidth = Math.max(0, stage.width - drawer.width - 36);
+    return {
+      vscroll: document.documentElement.scrollHeight > innerHeight || lobby.scrollHeight > lobby.clientHeight,
+      openRatio: (openWidth * stage.height) / (innerWidth * innerHeight),
+      collapsed: document.getElementById('roster-section').classList.contains('drawer-collapsed'),
+      drawerWidth: Math.round(drawer.width),
+      expandedAttr: document.getElementById('drawer-toggle').getAttribute('aria-expanded'),
+    };
+  })()`);
+
+  const open = await measure();
+  assert.equal(open.vscroll, false, '30 names scroll inside the drawer, never the page');
+  assert.ok(open.openRatio >= 0.5, `at least half of 1366 x 768 is open 3D stage (got ${(open.openRatio * 100).toFixed(1)}%)`);
+  assert.equal(open.collapsed, false);
+  assert.equal(open.expandedAttr, 'true');
+
+  // H collapses the Lineup Drawer for a full-bleed spectator view, and H expands it again.
+  await key('h', 'KeyH', 72, 'h');
+  const collapsed = await measure();
+  assert.equal(collapsed.collapsed, true);
+  assert.equal(collapsed.expandedAttr, 'false');
+  assert.ok(collapsed.openRatio > open.openRatio, 'collapsing the drawer opens even more 3D stage');
+
+  // Switching to Rumble (2–12 players) with 30 checked and clicking Review team list auto-expands the drawer.
+  await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
+  await evaluate(`document.querySelector('#readiness button').click()`);
+  const reopened = await measure();
+  assert.equal(reopened.collapsed, false, 'Review team list reopens the collapsed drawer');
+  assert.ok(await evaluate(`!!document.activeElement.closest('#roster')`), 'focus is inside the roster');
+});
+
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);

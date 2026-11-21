@@ -77,55 +77,92 @@ button {
   border-color: var(--gold);
 }
 
-/* ---------- lobby ---------- */
+/* ---------- lobby (#123 Live Broadcast Stage) ---------- */
 
 #lobby {
   position: fixed;
   z-index: 20;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(760px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
+  inset: 0;
   display: flex;
   flex-direction: column;
-  --pad-x: 26px;
-  --pad-b: 20px;
-  padding: 22px var(--pad-x) var(--pad-b);
-  gap: 14px;
+  --pad-x: 18px;
+  --pad-b: 14px;
   overflow-y: auto;
+  pointer-events: auto;
 }
 
 .lobby-head {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  padding: 10px 64px 10px var(--pad-x);
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+  pointer-events: auto;
 }
 
 /* A little Maryland-flag-inspired chip: black/gold stripes and red/white quarters. */
 .flag-chip {
   flex: none;
-  width: 58px;
-  height: 58px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   background:
     conic-gradient(from 0deg at 75% 25%, #fff 0 25%, var(--red) 0 50%, #fff 0 75%, var(--red) 0) top right / 50% 50% no-repeat,
     conic-gradient(from 0deg at 25% 75%, #fff 0 25%, var(--red) 0 50%, #fff 0 75%, var(--red) 0) bottom left / 50% 50% no-repeat,
-    repeating-linear-gradient(90deg, #16130f 0 5px, var(--gold) 5px 10px);
+    repeating-linear-gradient(90deg, #16130f 0 4px, var(--gold) 4px 8px);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
 }
 
 h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 22px;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .tagline {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 13px;
+}
+
+.live-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}
+
+.bar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.bar-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bar-link:hover {
+  background: #2a2e39;
 }
 
 h2 {
@@ -724,11 +761,8 @@ button:focus-visible {
 
 @media (max-width: 720px) {
   #lobby {
-    padding-top: 16px;
-  }
-  #lobby {
-    --pad-x: 16px;
-    --pad-b: 14px;
+    --pad-x: 14px;
+    --pad-b: 12px;
   }
   /* On a small screen the winner card needs the room. */
   #hud.results-open #leaderboard,
@@ -736,7 +770,10 @@ button:focus-visible {
     display: none;
   }
   h1 {
-    font-size: 23px;
+    font-size: 20px;
+  }
+  .bar-nav {
+    display: none;
   }
   #progress {
     top: auto;
@@ -933,9 +970,9 @@ button.danger:hover { filter: brightness(1.1); }
   color: var(--gold);
 }
 
-/* Exit: top right of the lobby card, with a hover / focus tip (the lobby's only tooltip). */
-.exit-wrap { position: relative; margin-left: auto; align-self: flex-start; display: inline-flex; }
-button.exit { padding: 8px 14px; }
+/* Exit: top right of the broadcast bar, with a hover / focus tip (the lobby's only tooltip). */
+.exit-wrap { position: relative; align-self: center; display: inline-flex; }
+button.exit { padding: 7px 12px; font-size: 13px; }
 .exit-wrap .tip {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 5;
   width: max-content; max-width: min(260px, 70vw); white-space: normal;
@@ -951,14 +988,11 @@ button.exit { padding: 8px 14px; }
 .closed { max-width: 460px; margin: 18vh auto 0; padding: 28px; text-align: center; }
 .closed p { color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
 @media (max-width: 720px) {
-  /* Narrow screens: Exit gets its own line under the title, so the name keeps its room. */
-  .lobby-head { flex-wrap: wrap; }
-  /* Only the title keeps clear of the Mute button; Exit lines up with the lobby's right edge. */
-  .lobby-title { flex: 1 1 0; min-width: 0; padding-right: 44px; }
-  .exit-wrap { order: 3; flex-basis: 100%; justify-content: flex-end; margin-top: -6px; }
+  .lobby-title { flex: 1 1 0; min-width: 0; }
+  .exit-wrap { margin-left: auto; }
 }
 
-/* ---------- lobby layout (#117): Who's here, Pick a game, then one action bar ---------- */
+/* ---------- Broadcast HUD layout (#123): Top bar, Left Lineup Drawer, Open 3D Stage, Bottom Command Dock ---------- */
 
 /* Quiet section headings, so the mode cards and Start are what stand out. */
 .area-title {
@@ -971,12 +1005,46 @@ button.exit { padding: 8px 14px; }
   color: var(--muted);
 }
 
-.lobby-body { display: flex; flex-direction: column; gap: 24px; }
+.lobby-stage {
+  flex: none;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
+  pointer-events: auto;
+}
+.lineup-drawer {
+  background: var(--panel);
+  padding: 12px var(--pad-x);
+}
+.command-dock {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px var(--pad-x) 0;
+  background: var(--panel);
+  pointer-events: auto;
+}
 .lobby-area { min-width: 0; }
-#game-section { border-top: 1px solid var(--panel-border); padding-top: 24px; }
-.area-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+#game-section { border-top: none; padding-top: 0; }
+.area-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 #team-body .roster-actions { margin: 0; flex-wrap: wrap; }
 #team-body .hint { margin: 4px 0 10px; }
+
+.drawer-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  border-radius: 8px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 14px;
+}
+.drawer-toggle:hover { background: #2a2e39; }
 
 /* On wide screens the heading is plain text; on phones it's a full-width row that folds the team list:
    "WHO'S HERE 12 playing · 2 absent ▸". */
@@ -1107,14 +1175,94 @@ button.exit { padding: 8px 14px; }
 /* Wide enough for any "Start ‹verb›", so Start doesn't shift when the mode changes. */
 .lobby-actions button.primary { padding-inline: 26px; min-width: 210px; }
 
-/* Wide screens: attendance on the left, the game on the right, both in view. */
+/* Wide screens: Open-center Live 3D Stage framed by Top Bar, Left Lineup Drawer, and Bottom Command Dock. */
 @media (min-width: 1000px) {
-  #lobby { width: min(1040px, calc(100vw - 32px)); }
-  .lobby-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; }
-  #roster-section { padding-right: 24px; }
-  /* Three columns beside the game, so 15 names take five rows. */
-  #roster { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
-  #game-section { border-top: none; padding-top: 0; border-left: 1px solid var(--panel-border); padding-left: 24px; }
+  #lobby { overflow: hidden; pointer-events: none; }
+  #status { align-self: center; max-width: 720px; margin: 10px 18px 0; pointer-events: auto; }
+  .lobby-stage {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: flex-start;
+    padding: 14px 18px;
+    background: transparent;
+    border-bottom: none;
+    pointer-events: none;
+  }
+  .lineup-drawer {
+    width: 268px;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #2c3547;
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+  }
+  .lineup-drawer.drawer-collapsed {
+    width: auto;
+  }
+  .lineup-drawer.drawer-collapsed #team-body,
+  .lineup-drawer.drawer-collapsed #sitting-out,
+  .lineup-drawer.drawer-collapsed #reset-status {
+    display: none;
+  }
+  .lineup-drawer.drawer-collapsed .area-head { margin-bottom: 0; }
+  .drawer-toggle { display: inline-flex; }
+  #team-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #roster {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding-right: 2px;
+  }
+  #roster label {
+    min-height: 36px;
+    padding: 5px 9px;
+    font-size: 14px;
+  }
+  .command-dock {
+    flex: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(350px, 380px);
+    gap: 18px;
+    align-items: stretch;
+    padding: 10px 18px 12px;
+    border-top: 1px solid #2c3547;
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.4);
+  }
+  #game-section {
+    display: grid;
+    grid-template-columns: minmax(290px, 1fr) minmax(300px, 1.05fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+  .mode-options { margin-top: 0; }
+  .mode-config { padding: 12px 14px; gap: 10px; }
+  .how-to-play[open] { max-height: 240px; overflow-y: auto; padding-right: 4px; }
+  .lobby-foot {
+    position: static;
+    margin: 0;
+    padding: 0 0 0 18px;
+    border-top: none;
+    border-left: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .readiness { flex: none; }
+  .lobby-actions { margin-left: 0; justify-content: flex-end; }
+  .lobby-actions button.primary { min-width: 196px; padding-inline: 20px; }
 }
 
 /* Phones (and phones on their side): the team list folds into a summary row, the readiness line joins
@@ -1127,8 +1275,8 @@ button.exit { padding: 8px 14px; }
   .lobby-actions {
     justify-content: flex-end;
     position: sticky;
-    bottom: calc(-1 * var(--pad-b));
-    margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-b));
+    bottom: 0;
+    margin: auto calc(-1 * var(--pad-x)) 0;
     padding: 10px var(--pad-x) calc(var(--pad-b) - 2px);
     background: var(--panel);
     border-top: 1px solid var(--panel-border);
@@ -1138,17 +1286,25 @@ button.exit { padding: 8px 14px; }
   .lobby-actions button.primary { flex-grow: 1.5; min-width: 0; font-size: 16px; padding-inline: 12px; }
   .team-toggle { display: flex; }
   #team-heading { flex: 1; min-width: 0; }
-  .team-title, #racer-count { display: none; }
+  .team-title, #racer-count, .drawer-toggle { display: none; }
   .area-head { margin-bottom: 0; }
   #roster-section.collapsed #team-body { display: none; }
 }
 @media (max-width: 640px) {
-  .lobby-body { gap: 16px; }
-  #game-section { padding-top: 16px; }
-  .flag-chip { width: 40px; height: 40px; border-radius: 10px; }
-  .lobby-head { gap: 12px; }
-  .lobby-head h1 { font-size: 20px; }
-  .tagline { font-size: 13px; }
+  .flag-chip { width: 34px; height: 34px; border-radius: 8px; }
+  .lobby-head { gap: 10px; }
+  .lobby-head h1 { font-size: 18px; }
+  .live-pill { display: none; }
+  .tagline { font-size: 12px; }
+}
+@media (max-width: 640px) and (min-height: 640px) {
+  /* Tall phones: show a live 3D Chesapeake Bay window above the docked sheet. */
+  .lobby-stage {
+    margin-top: 96px;
+    border-top: 1px solid #2c3547;
+    border-radius: 16px 16px 0 0;
+  }
+  .lineup-drawer { border-radius: 16px 16px 0 0; }
 }
 @media (max-width: 400px) {
   .pick-long { display: none; }
