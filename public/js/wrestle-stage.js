@@ -24,9 +24,9 @@ function hashName(name) {
 }
 
 export class WrestleStage {
-  constructor(aspect = 16 / 9, initialNames = []) {
-    this.t = 0;
-    this.orbit = 0.55;
+  constructor(aspect = 16 / 9, initialNames = [], { orbit = 0.55, t = 0 } = {}) {
+    this.t = Number.isFinite(t) && t >= 0 ? t : 0;
+    this.orbit = Number.isFinite(orbit) ? orbit : 0.55;
     this.loadGen = 0;
     this.hdReady = false;
     this.modelStyle = 'classic';

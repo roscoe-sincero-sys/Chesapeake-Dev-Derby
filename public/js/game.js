@@ -106,16 +106,6 @@ export class Game {
     this.clock = 0;
     this.timeScale = 1;
     this.flyT = 0; // real seconds into the current fly-over
-    // Carry on the fly-over where the previous page left it (lobby ↔ Edit team list ↔ Full history),
-    // instead of starting again from the start line on every page.
-    this.resumeFlyover();
-    window.addEventListener('pagehide', () => {
-      if (this.phase === 'lobby' && !this.wrestle) writeFlyover(sessionStorageOrNull(), { flyT: this.flyT, clock: this.clock });
-    });
-    window.addEventListener('pageshow', (event) => {
-      // Back/forward cache: this page was frozen while another page moved the fly-over on.
-      if (event.persisted && this.phase === 'lobby') this.resumeFlyover();
-    });
     this.sim = null;
     this.raceGroup = null;
     this.visuals = [];
@@ -123,14 +113,34 @@ export class Game {
     this.crateVisuals = [];
     this.projectileVisuals = new Map();
     this.disposables = [];
-
     // Live 3D lobby stage (#123 phase 2): 'flyover' | 'race-grid' | 'wrestle-ring'.
     this.stageMode = 'flyover';
     this.stageGroup = null;
     this.stageRacers = [];
     this.stageNames = [];
     this.stageTime = 0;
+    this.savedStageTime = null;
+    this.savedWrestleOrbit = null;
+    this.savedWrestleT = null;
     this.wrestleStage = null;
+    // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
+    // instead of starting again from the beginning on each page.
+    this.resumeFlyover();
+    window.addEventListener('pagehide', () => {
+      if (this.phase === 'lobby' && !this.wrestle) {
+        writeFlyover(sessionStorageOrNull(), {
+          flyT: this.flyT,
+          clock: this.clock,
+          stageTime: this.stageMode === 'race-grid' ? this.stageTime : undefined,
+          wrestleOrbit: this.wrestleStage?.orbit,
+          wrestleT: this.wrestleStage?.t,
+        });
+      }
+    });
+    window.addEventListener('pageshow', (event) => {
+      // Back/forward cache: this page was frozen while another page moved the 3D stage on.
+      if (event.persisted && this.phase === 'lobby') this.resumeFlyover();
+    });
     this.reducedMotion = typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)')
       : { matches: false };
@@ -239,7 +249,8 @@ export class Game {
       };
     });
     if (!sameMode) {
-      this.stageTime = 0;
+      this.stageTime = this.savedStageTime ?? 0;
+      this.savedStageTime = null;
       this.camReady = false;
     }
   }
@@ -255,7 +266,12 @@ export class Game {
     }
     this.stageMode = 'wrestle-ring';
     if (!this.wrestleStage) {
-      this.wrestleStage = new WrestleStage(window.innerWidth / window.innerHeight, names);
+      this.wrestleStage = new WrestleStage(window.innerWidth / window.innerHeight, names, {
+        orbit: this.savedWrestleOrbit ?? 0.55,
+        t: this.savedWrestleT ?? 0,
+      });
+      this.savedWrestleOrbit = null;
+      this.savedWrestleT = null;
     }
     this.wrestleStage.setLineup(names, { modelStyle });
   }
@@ -393,12 +409,24 @@ export class Game {
 
   // ------------------------------------------------------------ main loop
 
-  /** Picks up the fly-over (and the scenery's clock) from the last page, if there was one. */
+  /** Picks up the lobby 3D stage (and the scenery's clock) from the last page, if there was one. */
   resumeFlyover() {
     const saved = readFlyover(sessionStorageOrNull());
     if (!saved) return;
     this.flyT = saved.flyT;
     this.clock = saved.clock;
+    if (Number.isFinite(saved.stageTime)) {
+      this.savedStageTime = saved.stageTime;
+      if (this.stageMode === 'race-grid') this.stageTime = saved.stageTime;
+    }
+    if (Number.isFinite(saved.wrestleOrbit)) {
+      this.savedWrestleOrbit = saved.wrestleOrbit;
+      if (this.wrestleStage) this.wrestleStage.orbit = saved.wrestleOrbit;
+    }
+    if (Number.isFinite(saved.wrestleT)) {
+      this.savedWrestleT = saved.wrestleT;
+      if (this.wrestleStage) this.wrestleStage.t = saved.wrestleT;
+    }
     this.camReady = false; // place the camera there at once, rather than gliding from the start line
   }
 

@@ -725,6 +725,11 @@ function init() {
     $('demo-note').hidden = false;
   }
   renderModes();
+  // Stage non-race modes immediately so returning from Edit team / Full history never flashes the bridge.
+  const initialMode = findMode(state.mode);
+  if (game && initialMode.stagePreview && initialMode.id !== 'race') {
+    try { initialMode.stagePreview(game, { names: [], options: state.options[initialMode.id] }); } catch { /* handled on loadState */ }
+  }
   updateReadiness();
 
   $('start').addEventListener('click', startSelected);
