@@ -7,55 +7,46 @@ to release.
 
 ## [Unreleased]
 
-### Added
-- **Pocket Broadcast mobile polish & docs (#123, phase 4):**
-  - Portrait phone camera framing for both Derby Race and Let's Rumble so the idling racers or
-    spotlighted wrestling ring sit directly in the top 140 px live 3D window on taller phones.
-  - Refreshed `README.md` lobby instructions, keyboard shortcuts (`H`, `Escape`), `stagePreview`
-    extension notes, and laptop/phone screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`).
-- **Broadcast polish & Curtain-Part launch (#123, phase 3):**
-  - **Curtain-Part transition & camera handoff:** pressing **Start** glides the HUD panels outward
-    over 220 ms (instant under `prefers-reduced-motion`) while the 3D camera continues seamlessly
-    from the lobby starting grid or wrestling ring orbit into the match countdown.
-  - **Pre-match broadcast chyron (`public/js/chyron.js`):** rotating solid-surface highlights bar
-    showing live stage hype, longest-drought underdogs from `history.json`, and recent winner
-    cooldowns.
-  - **`🎲 Surprise me` mode chip:** picks a random eligible game mode and switches the live 3D stage
-    to reveal it.
-  - **Opt-in micro-audio:** subtle Web Audio tick on attendance toggles and broadcast chime on mode
-    switches when unmuted.
-- **Live mode-reactive 3D stage (#123, phase 2):** the open center of the lobby now previews the
-  selected game live in 3D:
-  - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid
-    for a few seconds, then glides the camera along the race track to the finish and loops back to
-    the grid;
-  - **Let’s Rumble** switches to the spotlighted wrestling ring (`public/js/wrestle-stage.js`) with
-    teammates flexing inside, and toggling **Classic | HD** swaps their 3D models live on stage;
-  - checking or unchecking a teammate adds/removes them on the 3D stage in real time;
-  - modes can declare an optional `stagePreview(stage, { names, options })` hook in `modes.js`,
-    falling back to the Bay Bridge fly-over when omitted;
-  - **Edit team list**, **Full history**, and **Absentee list** share the same mode-reactive 3D
-    background (`startBackground()` in `page-common.js`).
+## [1.8.0] - 2026-11-20
 
-### Fixed
-- **HD wrestling stage performance:** toggling teammates in Let's Rumble (HD) now updates the ring
-  incrementally (creating or disposing only the changed wrestler and keeping `hdReady` cached)
-  instead of flashing back to Classic and re-cloning every skinned HD model on each click.
-- **Lobby modals & links:** moved `#reset-dialog` outside the `pointer-events: none` open 3D stage so
-  its **Cancel** and **Reset list** buttons work reliably; **How to play** now opens as a pop-up
-  dialog (`#guide-dialog`) instead of expanding the Bottom Command Dock; `#attendance-status`
-  ("N people marked absent.") moved to the lower-right Launch zone so unchecking names never shifts
-  the roster list; **Review team list** now pulses the Lineup Drawer as well as focusing the roster.
+The lobby rework (#123), built with Google Gemini 4 Neon in Antigravity.
 
 ### Changed
-- **Live Broadcast Stage HUD shell (#123, phase 1):** replaces the centered lobby modal with an
-  open-center Broadcast HUD on wide screens (≥ 1000 px) — a compact **Top Broadcast Bar** (with
-  `LIVE` badge and **History** / **Team** links), an internally scrolling, collapsible **Left Lineup
-  Drawer** (`◂` / `▸` button or `H` key for Spectator/Hype view, zero page scrolling even with 30
-  names), and a **Bottom Command Dock** (mode cards, options, and Launch) — leaving over half of a
-  1366 × 768 screen open to the live 3D Chesapeake Bay flyover.
-- **Phone layout:** compact single-row top bar (`Exit` aligned cleanly beside Mute), a live 3D window
-  above the docked sheet on taller phones, and the sticky Launch bar flush with the bottom edge.
+- **The lobby is a Live Broadcast Stage:** the selected game now plays live in 3D behind the lobby,
+  framed by solid panels, instead of sitting in a centred box over the fly-over.
+  - **Derby Race** shows the checked-in teammates idling on the Standup Bay Bridge, then glides the
+    camera down the course and back to the grid. **Let’s Rumble** shows them in the spotlit wrestling
+    ring, and switching **Classic | HD** swaps their models on stage.
+  - Checking or unchecking someone adds or removes them on the stage straight away, in HD too.
+  - On wide screens (1000 px and up): a **top bar** (`LIVE`, **History**, **Team**, **Exit**, mute); a
+    **Who's here** drawer on the left that scrolls on its own, so 30 names fit without the page
+    scrolling, and folds away with `◂` or **H** for a full spectator view; and a **dock** along the
+    bottom with the game cards, the selected game's options, and Just pick someone and Start. More than
+    half of a 1366 × 768 screen is left for the stage.
+  - On phones: a one-row top bar, a window onto the 3D stage above the lobby on taller phones (framed
+    on the grid or the ring), and the Just pick and Start row flush with the bottom edge.
+  - **How to play** opens in a dialog instead of growing the options, and **Escape** closes it.
+  - "2 people marked absent." now appears beside Start, so ticking boxes never shifts the team list.
+    **Review team list** also makes the Who's here drawer pulse.
+  - Rumble's line in the lobby reads "Dangal: last warrior standing leads standup."
+- **Pressing Start** slides the panels out of the way (at once with Reduce motion on) and the camera
+  carries on from the lobby's grid or ring into the countdown.
+- **Edit team list**, **Full history** and the **Absentee list** show the same 3D stage as the lobby,
+  and it carries on from page to page.
+
+### Added
+- **A broadcast chyron** over the stage, rotating pre-match notes: who's on the grid or in the ring,
+  teammates who have never won or have gone longest without a win, and who's sitting out.
+- **🎲 Surprise me**, beside Pick a game: picks a game at random from those that fit the team, and the
+  stage switches to it.
+- **Sound cues** (only when sound is on): a soft tick when you tick or untick someone, and a chime when
+  the game changes.
+- **For new games:** a mode in `modes.js` can stage its own lobby preview with an optional
+  `stagePreview(stage, { names, options })`; without one, the lobby shows the Standup Bay Bridge
+  fly-over. See **Adding a game** in the README.
+- **Tests:** `test/chyron.test.js`; the lobby browser tests cover the drawer, the stage's lineup, the
+  dialogs and Surprise me; contrast checks cover the new panels.
+- README: new laptop and phone screenshots, the new lobby, and Google Gemini 4 Neon in Contributors.
 
 ## [1.7.0] - 2026-11-20
 
@@ -330,7 +321,8 @@ The first versioned release: everything up to this point.
 - Keyboard focus starts on a sensible control on each page.
 - Licensed under the Apache License 2.0.
 
-[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/roscoe-sincero-sys/Chesapeake-Dev-Derby/compare/v1.6.0...v1.6.1
