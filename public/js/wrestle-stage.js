@@ -263,10 +263,13 @@ export class WrestleStage {
       this.t += dt;
       this.orbit += dt * 0.14;
     }
-    const radius = this.camera.aspect < 1 ? 18 : 15.5;
-    const height = this.camera.aspect < 1 ? 9.5 : 7.8;
+    const portrait = this.camera.aspect < 1;
+    const radius = portrait ? 18.5 : 15.5;
+    const height = portrait ? 10.5 : 7.8;
+    // On portrait phones, aim below the ring so the wrestlers and Maryland-flag mat sit in the top 3D window.
+    const targetY = portrait ? MAT_Y - 6.8 : MAT_Y + 0.6;
     this.camera.position.set(Math.sin(this.orbit) * radius, height, Math.cos(this.orbit) * radius);
-    this.camera.lookAt(0, MAT_Y + 0.6, 0);
+    this.camera.lookAt(0, targetY, 0);
 
     for (const w of this.wrestlers) {
       if (w.pop > 0) w.pop = Math.max(0, w.pop - dt * 3.5);

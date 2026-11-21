@@ -892,9 +892,11 @@ export class Game {
     const gridHeight = 7.8 + Math.min(3, rows * 0.6);
 
     if (reduced || this.stageTime < holdSeconds) {
+      const portrait = this.camera.aspect < 1;
       const sway = reduced ? 0 : Math.sin(this.stageTime * 0.6) * 2.2;
-      const pos = this.track.point(6 - back, -1.6 + sway, gridHeight, this._a);
-      const look = this.track.point(18, -1.2, 1.6, this._b);
+      const pos = this.track.point(6 - back, -1.6 + sway, gridHeight + (portrait ? 2.5 : 0), this._a);
+      // On portrait phones, aim lower so the starting grid and <race> banner sit in the top 3D window.
+      const look = this.track.point(18, -1.2, portrait ? -7.5 : 1.6, this._b);
       this.setCamera(pos, look, dt, 2.5, 3);
       this.focus.copy(look);
       return;

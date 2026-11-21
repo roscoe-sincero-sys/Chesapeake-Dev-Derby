@@ -8,6 +8,11 @@ to release.
 ## [Unreleased]
 
 ### Added
+- **Pocket Broadcast mobile polish & docs (#123, phase 4):**
+  - Portrait phone camera framing for both Derby Race and Let's Rumble so the idling racers or
+    spotlighted wrestling ring sit directly in the top 140 px live 3D window on taller phones.
+  - Refreshed `README.md` lobby instructions, keyboard shortcuts (`H`, `Escape`), `stagePreview`
+    extension notes, and laptop/phone screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`).
 - **Broadcast polish & Curtain-Part launch (#123, phase 3):**
   - **Curtain-Part transition & camera handoff:** pressing **Start** glides the HUD panels outward
     over 220 ms (instant under `prefers-reduced-motion`) while the 3D camera continues seamlessly
