@@ -10,23 +10,46 @@
     { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
   </script>
 </head>
-<body class="editor-page">
+<body class="studio-page">
   <canvas id="scene" aria-hidden="true"></canvas>
-  <main class="panel editor">
-    <a id="back-to-lobby" href="./">Back to lobby</a>
-    <h1>Edit team list</h1>
-    <p>Add, rename, or remove people below. Changes apply to the next pick. Recent winner history is kept.</p>
-    <form id="roster-form">
-      <label for="names">Team list</label>
-      <p id="names-hint" class="hint">One name per line, up to 30 names of 40 characters. Blank lines, duplicates and calendar labels (Organizer, Optional, Home, Office, Telework…) are ignored. Saving an empty list clears the team list.</p>
-      <textarea id="names" rows="11" aria-describedby="names-hint" disabled></textarea>
-      <div class="editor-actions">
-        <button id="save-names" type="submit" class="primary" disabled>Save team list</button>
-        <button id="reload-names" type="button" hidden>Retry loading</button>
+
+  <div id="toolbar">
+    <button id="mute" type="button" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <div class="studio-shell">
+    <header class="lobby-head">
+      <div class="flag-chip" aria-hidden="true"></div>
+      <div class="lobby-title">
+        <p class="studio-brand">Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span class="studio-pill" aria-hidden="true">ROSTER STUDIO</span></p>
+        <p class="tagline">Pick who leads the team meeting.</p>
       </div>
-    </form>
-    <p id="editor-status" role="status" aria-live="polite">Loading team list...</p>
-  </main>
+      <a id="back-to-lobby" class="studio-back" href="./">← Back to Stage</a>
+    </header>
+
+    <div class="studio-stage">
+      <main class="studio-panel editor">
+        <div class="studio-head">
+          <h1>Edit team list</h1>
+          <p class="studio-sub">Add, rename, or remove people below. Changes apply to the next pick. Recent winner history is kept.</p>
+        </div>
+
+        <div class="studio-scroll">
+          <form id="roster-form">
+            <label for="names">Team list</label>
+            <p id="names-hint" class="hint">One name per line, up to 30 names of 40 characters. Blank lines, duplicates and calendar labels (Organizer, Optional, Home, Office, Telework…) are ignored. Saving an empty list clears the team list.</p>
+            <textarea id="names" rows="11" aria-describedby="names-hint" disabled></textarea>
+            <div class="editor-actions">
+              <button id="save-names" type="submit" class="primary" disabled>Save team list</button>
+              <button id="reload-names" type="button" hidden>Retry loading</button>
+            </div>
+          </form>
+          <p id="editor-status" role="status" aria-live="polite">Loading team list...</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
   <script type="module" src="js/roster.js"></script>
   <script type="module" src="js/session.js"></script>
 </body>

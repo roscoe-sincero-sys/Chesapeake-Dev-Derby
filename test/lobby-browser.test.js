@@ -366,6 +366,40 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   assert.notEqual(afterSurprise, beforeSurprise, 'Surprise me picks a different eligible mode');
 });
 
+test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
+  const base = await startServer(t, NAMES);
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`${base}/api/winners`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: base },
+      body: JSON.stringify({ name: NAMES[i % NAMES.length], mode: i % 2 ? 'wrestle' : 'race', absent: [] }),
+    });
+    assert.equal(res.status, 200);
+  }
+  const send = await openBrowser(t);
+  const page = pageHelpers(send);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+  await send('Page.enable');
+  await send('Page.navigate', { url: `${base}/history.html` });
+  await page.until(`document.querySelectorAll('#history-rows tr').length === 40`, 20000, '40 history rows');
+
+  const before = await page.evaluate(`(() => {
+    const s = document.querySelector('.studio-scroll');
+    const p = document.querySelector('.studio-panel').getBoundingClientRect();
+    return {
+      overflow: s.scrollHeight > s.clientHeight,
+      openRatio: (innerWidth - p.width - 36) / innerWidth,
+      backHref: document.getElementById('back-to-lobby')?.getAttribute('href'),
+    };
+  })()`);
+  assert.equal(before.overflow, true, '40 rows scroll inside .studio-scroll');
+  assert.ok(before.openRatio >= 0.4, `at least 40% open 3D stage beside the Studio Panel (got ${(before.openRatio * 100).toFixed(1)}%)`);
+  assert.equal(before.backHref, './');
+
+  await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 300, y: 400, deltaX: 0, deltaY: 360 });
+  await page.until(`document.querySelector('.studio-scroll').scrollTop > 0`, 5000, 'mouse wheel to scroll history');
+});
+
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);

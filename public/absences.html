@@ -10,30 +10,53 @@
     { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
   </script>
 </head>
-<body class="editor-page">
+<body class="studio-page">
   <canvas id="scene" aria-hidden="true"></canvas>
-  <main class="panel editor history">
-    <nav class="page-links" aria-label="Pages">
-      <a id="back-to-lobby" href="./">Back to lobby</a>
-      <a href="history.html">Winner history</a>
-    </nav>
-    <h1>Absentee list</h1>
-    <p>Who was marked absent (unticked in the lobby) at each pick, newest first. Recent winners sitting
-      out aren't listed: they weren't absent.</p>
-    <p id="absence-summary" class="hint" role="status" aria-live="polite">Loading absentees...</p>
-    <div class="history-scroll">
-      <table id="absence-table" class="log-table" hidden>
-        <caption class="visually-hidden">Absentees at each pick, newest first</caption>
-        <thead>
-          <tr><th scope="col">#</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Absent</th><th scope="col">How</th><th scope="col">Picked</th></tr>
-        </thead>
-        <tbody id="absence-rows"></tbody>
-      </table>
+
+  <div id="toolbar">
+    <button id="mute" type="button" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <div class="studio-shell">
+    <header class="lobby-head">
+      <div class="flag-chip" aria-hidden="true"></div>
+      <div class="lobby-title">
+        <p class="studio-brand">Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span class="studio-pill" aria-hidden="true">ATTENDANCE LOG</span></p>
+        <p class="tagline">Pick who leads the team meeting.</p>
+      </div>
+      <a id="back-to-lobby" class="studio-back" href="./">← Back to Stage</a>
+    </header>
+
+    <div class="studio-stage">
+      <main class="studio-panel">
+        <div class="studio-head">
+          <div class="studio-title-row">
+            <h1>Absentee list</h1>
+            <nav class="studio-tabs" aria-label="Archive views">
+              <a class="studio-tab" href="history.html">Winner history</a>
+              <span class="studio-tab active" aria-current="page">Absentee list</span>
+            </nav>
+          </div>
+          <p class="studio-sub">Who was marked absent (unticked in the lobby) at each pick, newest first. Recent winners sitting out aren't listed: they weren't absent.</p>
+          <p id="absence-summary" class="hint" role="status" aria-live="polite">Loading absentees...</p>
+        </div>
+
+        <div class="studio-scroll">
+          <table id="absence-table" class="log-table" hidden>
+            <caption class="visually-hidden">Absentees at each pick, newest first</caption>
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Absent</th><th scope="col">How</th><th scope="col">Picked</th></tr>
+            </thead>
+            <tbody id="absence-rows"></tbody>
+          </table>
+          <div class="editor-actions">
+            <button id="reload-absences" type="button" hidden>Retry loading</button>
+          </div>
+        </div>
+      </main>
     </div>
-    <div class="editor-actions">
-      <button id="reload-absences" type="button" hidden>Retry loading</button>
-    </div>
-  </main>
+  </div>
+
   <script type="module" src="js/absences.js"></script>
   <script type="module" src="js/session.js"></script>
 </body>

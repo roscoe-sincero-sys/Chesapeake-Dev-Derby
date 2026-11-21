@@ -10,29 +10,53 @@
     { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
   </script>
 </head>
-<body class="editor-page">
+<body class="studio-page">
   <canvas id="scene" aria-hidden="true"></canvas>
-  <main class="panel editor history">
-    <nav class="page-links" aria-label="Pages">
-      <a id="back-to-lobby" href="./">Back to lobby</a>
-      <a href="absences.html">Absentee list</a>
-    </nav>
-    <h1>Winner history</h1>
-    <p>Every meeting leader the derby has picked, newest first.</p>
-    <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
-    <div class="history-scroll">
-      <table id="history-table" class="log-table" hidden>
-        <caption class="visually-hidden">All past winners, newest first</caption>
-        <thead>
-          <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
-        </thead>
-        <tbody id="history-rows"></tbody>
-      </table>
+
+  <div id="toolbar">
+    <button id="mute" type="button" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <div class="studio-shell">
+    <header class="lobby-head">
+      <div class="flag-chip" aria-hidden="true"></div>
+      <div class="lobby-title">
+        <p class="studio-brand">Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span class="studio-pill" aria-hidden="true">HALL OF FAME</span></p>
+        <p class="tagline">Pick who leads the team meeting.</p>
+      </div>
+      <a id="back-to-lobby" class="studio-back" href="./">← Back to Stage</a>
+    </header>
+
+    <div class="studio-stage">
+      <main class="studio-panel">
+        <div class="studio-head">
+          <div class="studio-title-row">
+            <h1>Winner history</h1>
+            <nav class="studio-tabs" aria-label="Archive views">
+              <span class="studio-tab active" aria-current="page">Winner history</span>
+              <a class="studio-tab" href="absences.html">Absentee list</a>
+            </nav>
+          </div>
+          <p class="studio-sub">Every meeting leader the derby has picked, newest first.</p>
+          <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
+        </div>
+
+        <div class="studio-scroll">
+          <table id="history-table" class="log-table" hidden>
+            <caption class="visually-hidden">All past winners, newest first</caption>
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
+            </thead>
+            <tbody id="history-rows"></tbody>
+          </table>
+          <div class="editor-actions">
+            <button id="reload-history" type="button" hidden>Retry loading</button>
+          </div>
+        </div>
+      </main>
     </div>
-    <div class="editor-actions">
-      <button id="reload-history" type="button" hidden>Retry loading</button>
-    </div>
-  </main>
+  </div>
+
   <script type="module" src="js/history.js"></script>
   <script type="module" src="js/session.js"></script>
 </body>

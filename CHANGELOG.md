@@ -10,6 +10,12 @@ to release.
 Accessibility work for a WAVE AIM score of 10/10 (#129), by Google Gemini 4 Neon in Antigravity.
 
 ### Changed
+- **Broadcast Studio Desk shell & scroll fix (#133, phase 1):** **Edit team list**, **Winner
+  history**, and **Absentee list** now share the lobby's **Top Broadcast Bar** (with version pill,
+  segment badge, **← Back to Stage**, and **Mute** button) and use an **Open-Stage Split** on wide
+  screens (left scrollable Studio Panel + open live 3D stage on the right). Fixes the broken
+  mouse-wheel scrollbar on long history/absentee tables and adds sticky table headers while
+  preserving WAVE 10/10 and WCAG 2.2 AA compliance.
 - **The top bar no longer has History and Team links.** They went to the same pages as **Full
   history** and **Edit team list** in the Who's here drawer, which stay. **Edit team list**, **Full
   history** and the **Absentee list** likewise lose the **Return to lobby** link at the bottom; **Back
