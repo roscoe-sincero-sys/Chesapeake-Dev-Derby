@@ -25,8 +25,9 @@ async function load() {
     history.forEach((entry, i) => {
       const tr = document.createElement('tr');
       const [day, time] = dateAndTime(entry.date);
-      const name = cell(shown.get(nameKey(entry.name)) ?? entry.name, 'who');
-      name.title = entry.name;
+      const shownName = shown.get(nameKey(entry.name)) ?? entry.name;
+      const name = cell(shownName, 'who');
+      if (shownName !== entry.name) name.title = entry.name;
       tr.append(
         cell(String(history.length - i), 'num'),
         name,

@@ -165,8 +165,9 @@ function renderLobby() {
     box.type = 'checkbox';
     const name = document.createElement('span');
     name.className = 'name';
-    name.textContent = show(entry.name);
-    name.title = entry.name; // full name on hover (shortened addresses, or long names cut off by the tile)
+    const shownName = show(entry.name);
+    name.textContent = shownName;
+    if (shownName !== entry.name) name.title = entry.name; // full email on hover only when shortened
     label.append(box, name);
 
     if (entry.eligible) {
@@ -196,7 +197,6 @@ function renderLobby() {
       text.className = 'who';
       text.append(name, badge);
       label.append(text);
-      label.title = `${show(entry.name)} won recently — eligible again in ${wait} pick${wait === 1 ? '' : 's'}.`;
     }
     li.append(label);
     list.append(li);
@@ -238,7 +238,6 @@ function setDrawerOpen(open) {
   const btn = $('drawer-toggle');
   btn.setAttribute('aria-expanded', String(open));
   btn.textContent = open ? '◂' : '▸';
-  btn.title = open ? 'Hide lineup (H)' : 'Show lineup (H)';
   btn.setAttribute('aria-label', open ? 'Hide lineup' : 'Show lineup');
 }
 
@@ -788,7 +787,6 @@ async function showVersion() {
     if (typeof version !== 'string' || !version) return;
     const el = $('app-version');
     el.textContent = `v${version}`;
-    el.title = `Version ${version}`;
     el.hidden = false;
   } catch {
     /* an older server without /api/version: just leave it out */

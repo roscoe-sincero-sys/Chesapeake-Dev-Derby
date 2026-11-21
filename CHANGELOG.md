@@ -7,6 +7,16 @@ to release.
 
 ## [Unreleased]
 
+### Fixed
+- **Accessibility / WAVE 10/10 (#129):** eliminated redundant `title` attributes across the lobby,
+  **Winner history**, and **Absentee list** (only setting hover `title` when an email address is
+  actually shortened), removed redundant duplicate links across all four pages (`index.html`,
+  `roster.html`, `history.html`, `absences.html`), fixed skipped `h2 → h4` heading levels inside
+  the **How to play** templates, bumped `11px` pill/badge text to `12px`, and added
+  `test/wave-alerts.test.js` to guard against regressions.
+- **README screenshots (#129):** regenerated `docs/lobby-wide.png` and `docs/lobby-phone.png` for
+  **v1.8.0**.
+
 ## [1.8.0] - 2026-11-20
 
 The lobby rework (#123), built with Google Gemini 4 Neon in Antigravity.

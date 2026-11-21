@@ -37,10 +37,12 @@ async function load() {
     for (const row of result.rows) {
       const tr = document.createElement('tr');
       const [day, time] = dateAndTime(row.date);
-      const absent = cell(row.absent.map(show).join(', '), 'who');
-      absent.title = row.absent.join('\n');
-      const picked = cell(show(row.name), 'picked');
-      picked.title = row.name;
+      const shownAbsent = row.absent.map(show);
+      const absent = cell(shownAbsent.join(', '), 'who');
+      if (row.absent.some((n, i) => shownAbsent[i] !== n)) absent.title = row.absent.join('\n');
+      const shownPicked = show(row.name);
+      const picked = cell(shownPicked, 'picked');
+      if (shownPicked !== row.name) picked.title = row.name;
       tr.append(cell(String(row.number), 'num'), cell(day), cell(time), absent, cell(MODE[row.mode] ?? '—', `mode ${row.mode ?? 'unknown'}`), picked);
       tbody.append(tr);
     }
