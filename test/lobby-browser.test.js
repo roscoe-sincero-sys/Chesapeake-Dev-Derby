@@ -420,6 +420,17 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
   assert.match(await page.evaluate(`document.getElementById('names').value`), /Katherine/);
   await page.evaluate(`document.getElementById('discard-names').click()`);
   assert.equal(await page.evaluate(`document.querySelectorAll('#roster-chips .roster-chip').length`), NAMES.length, 'Discard restores saved list');
+
+  // Phase 4: Mobile phone viewports (390 x 844 and 320 x 568) have zero horizontal overflow on Studio pages.
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: true });
+    for (const url of [`${base}/history.html`, `${base}/roster.html`]) {
+      await send('Page.navigate', { url });
+      await page.until(`document.querySelector('.studio-panel') !== null`, 15000, `${url} at ${w}x${h}`);
+      const hscroll = await page.evaluate(`document.documentElement.scrollWidth > innerWidth`);
+      assert.equal(hscroll, false, `${url} at ${w}x${h} has no horizontal scroll`);
+    }
+  }
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {

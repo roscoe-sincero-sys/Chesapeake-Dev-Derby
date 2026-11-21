@@ -7,39 +7,46 @@ to release.
 
 ## [Unreleased]
 
-Accessibility work for a WAVE AIM score of 10/10 (#129), by Google Gemini 4 Neon in Antigravity.
+## [1.9.0] - 2026-11-21
+
+Broadcast Studio Desk (#133) and WAVE AIM 10/10 accessibility fixes (#129), by Google Gemini 4 Neon in
+Antigravity.
 
 ### Added
-- **Roster Studio with live 3D stage preview (#133, phase 3):** **Edit team list** now offers
-  interactive **Roster chips** with one-step Quick Add/Remove alongside the **Bulk text / paste**
-  view, live capacity & mode-fit badges (`Derby Race`, `Let's Rumble`), sticky **Save / Discard**
-  footer, and live 3D stage updates as teammates are added or removed.
-- **Hall of Fame & Broadcast Stats Desk (#133, phase 2):** **Winner history** now features a
-  3-card **Broadcast Stat Strip** (`public/js/history-stats.js`: All-Time Leader, Longest Drought
-  underdog, and Game Mix proportion bar), a **Match log | Standings** toggle for ranked all-time
-  team standings, mode filter chips (`All`, `Race`, `Wrestle`, `Skip`), live name search, and
-  `Sitting out` cooldown badges.
+- **Broadcast Studio Desk (#133):** **Edit team list**, **Winner history**, and **Absentee list** now
+  share the lobby's **Top Broadcast Bar** (version pill, segment badge, **← Back to Stage**, and
+  **Mute** button) and use an **Open-Stage Split** on desktop (`≥ 1000 px`) with the live 3D stage
+  visible on the right.
+- **Hall of Fame & Broadcast Stats Desk (#133):** **Winner history** adds a 3-card **Broadcast Stat
+  Strip** (`public/js/history-stats.js`: All-Time Leader, Longest Drought underdog, and Game Mix
+  proportion bar), a **Match log | Standings** toggle for ranked all-time team standings, mode filter
+  chips (`All`, `Race`, `Wrestle`, `Skip`), live name search, sticky table headers, and `Sitting out`
+  cooldown badges.
+- **Roster Studio with live 3D preview (#133):** **Edit team list** adds interactive **Roster chips**
+  with one-step Quick Add/Remove alongside the **Bulk text / paste** view, live capacity & mode-fit
+  badges (`Derby Race`, `Let's Rumble`), sticky **Save / Discard** footer, and live 3D stage updates as
+  teammates are added or removed.
+- **Tests:** `test/history-stats.test.js`, `test/wave-alerts.test.js`, and Broadcast Studio browser
+  coverage in `test/lobby-browser.test.js`.
 
 ### Changed
-- **Broadcast Studio Desk shell & scroll fix (#133, phase 1):** **Edit team list**, **Winner
-  history**, and **Absentee list** now share the lobby's **Top Broadcast Bar** (with version pill,
-  segment badge, **← Back to Stage**, and **Mute** button) and use an **Open-Stage Split** on wide
-  screens (left scrollable Studio Panel + open live 3D stage on the right). Fixes the broken
-  mouse-wheel scrollbar on long history/absentee tables and adds sticky table headers while
-  preserving WAVE 10/10 and WCAG 2.2 AA compliance.
 - **The top bar no longer has History and Team links.** They went to the same pages as **Full
   history** and **Edit team list** in the Who's here drawer, which stay. **Edit team list**, **Full
-  history** and the **Absentee list** likewise lose the **Return to lobby** link at the bottom; **Back
-  to lobby** at the top stays.
+  history** and the **Absentee list** likewise lose the **Return to lobby** link at the bottom; **← Back
+  to Stage** at the top stays.
 - Hover tips are gone from the mute button, the version, the Demo label, the drawer's `◂` button and
   **Surprise me**, and from a recent winner in the team list ("won recently — eligible again in…"); the
   same words are shown on screen or read out by screen readers. A name in the team list, Full history
   or the Absentee list shows a hover tip only when it is a shortened email address.
+- **README screenshots:** refreshed `docs/lobby-wide.png` and `docs/lobby-phone.png` for **v1.9.0**.
 
 ### Fixed
-- WAVE alerts: one "Redundant title text" alert per name (61 on a 61-entry history), "Redundant link"
-  for the links above, "Skipped heading level" in **How to play**, and "Very small text" on the `LIVE`
-  label, the team list's badges and the chyron's tag, now 12 px instead of 11 px.
+- **History & Absentee list scrolling (#133):** replaced the conflicting `html`/`body` overflow rules
+  with a dedicated `.studio-scroll` container and visible scrollbar so mouse-wheel, trackpad, touch,
+  and keyboard scrolling work smoothly on long lists.
+- **WAVE alerts (#129):** eliminated "Redundant title text" alerts (61 on a 61-entry history),
+  "Redundant link" alerts, "Skipped heading level" in **How to play**, and "Very small text" on the
+  `LIVE` label, team list badges, and chyron tag (now 12 px).
 - README: the lobby screenshots show the current version.
 
 ### Added
