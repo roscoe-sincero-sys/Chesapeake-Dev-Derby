@@ -58,8 +58,7 @@
               <button id="check-none" type="button" class="link" disabled>Clear all</button>
               <a class="link" href="roster.html">Edit team list</a>
             </nav>
-            <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.
-              <span id="attendance-status" role="status" hidden></span></p>
+            <p class="hint">Uncheck anyone who is absent. The last three winners sit this one out.</p>
             <ul id="roster"></ul>
           </div>
           <p id="sitting-out" class="sitting-out" hidden>
@@ -71,17 +70,6 @@
           </p>
           <p id="reset-status" class="hint" role="status" hidden></p>
         </section>
-
-        <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
-          <form method="dialog">
-            <h2 id="reset-title">Reset the last three winners?</h2>
-            <p id="reset-body">This clears the list, so everyone can play again, including recent winners. It can't be undone. The full history is kept.</p>
-            <div class="dialog-actions">
-              <button value="cancel" type="submit" autofocus>Cancel</button>
-              <button value="reset" type="submit" class="danger">Reset list</button>
-            </div>
-          </form>
-        </dialog>
       </div>
 
       <!-- Bottom Command Dock: Pick a game, selected game's options, and Launch -->
@@ -95,7 +83,10 @@
         </section>
 
         <footer class="lobby-foot">
-          <p id="readiness" class="readiness" role="status"></p>
+          <div class="launch-notes">
+            <p id="readiness" class="readiness" role="status"></p>
+            <p id="attendance-status" class="attendance-status" role="status" hidden></p>
+          </div>
           <div class="lobby-actions">
             <button id="pick" type="button" class="secondary" disabled>Just pick<span class="pick-long"> someone</span></button>
             <button id="start" type="button" class="primary" aria-describedby="readiness" disabled>▶ Start race</button>
@@ -103,6 +94,26 @@
         </footer>
       </div>
     </main>
+
+    <!-- Modals sit outside #lobby so they never inherit pointer-events: none from the open 3D stage. -->
+    <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-body">
+      <form method="dialog">
+        <h2 id="reset-title">Reset the last three winners?</h2>
+        <p id="reset-body">This clears the list, so everyone can play again, including recent winners. It can't be undone. The full history is kept.</p>
+        <div class="dialog-actions">
+          <button value="cancel" type="submit" autofocus>Cancel</button>
+          <button value="reset" type="submit" class="danger">Reset list</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="guide-dialog" aria-labelledby="guide-title">
+      <div class="guide-dialog-head">
+        <h2 id="guide-title">How to play</h2>
+        <button id="guide-close" type="button" class="secondary">Close</button>
+      </div>
+      <div id="guide-dialog-body" class="how-to-play"></div>
+    </dialog>
 
     <!-- How to play, one per mode (js/modes.js `guide`): cloned into that mode's options. -->
     <template id="guide-race">

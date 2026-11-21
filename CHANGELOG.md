@@ -10,12 +10,21 @@ to release.
 ### Added
 - **Live mode-reactive 3D stage (#123, phase 2):** the open center of the lobby now previews the
   selected game live in 3D:
-  - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid;
+  - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid
+    for a few seconds, then glides the camera along the race track to the finish and loops back to
+    the grid;
   - **Let’s Rumble** switches to the spotlighted wrestling ring (`public/js/wrestle-stage.js`) with
     teammates flexing inside, and toggling **Classic | HD** swaps their 3D models live on stage;
   - checking or unchecking a teammate adds/removes them on the 3D stage in real time;
   - modes can declare an optional `stagePreview(stage, { names, options })` hook in `modes.js`,
     falling back to the Bay Bridge fly-over when omitted.
+
+### Fixed
+- **Lobby modals & links:** moved `#reset-dialog` outside the `pointer-events: none` open 3D stage so
+  its **Cancel** and **Reset list** buttons work reliably; **How to play** now opens as a pop-up
+  dialog (`#guide-dialog`) instead of expanding the Bottom Command Dock; `#attendance-status`
+  ("N people marked absent.") moved to the lower-right Launch zone so unchecking names never shifts
+  the roster list; **Review team list** now pulses the Lineup Drawer as well as focusing the roster.
 
 ### Changed
 - **Live Broadcast Stage HUD shell (#123, phase 1):** replaces the centered lobby modal with an

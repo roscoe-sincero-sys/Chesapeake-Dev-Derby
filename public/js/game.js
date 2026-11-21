@@ -129,6 +129,7 @@ export class Game {
     this.stageGroup = null;
     this.stageRacers = [];
     this.stageNames = [];
+    this.stageTime = 0;
     this.wrestleStage = null;
     this.reducedMotion = typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -237,7 +238,10 @@ export class Game {
         pop: sameMode && !prevNames.has(name) ? 1 : 0,
       };
     });
-    if (!sameMode) this.camReady = false;
+    if (!sameMode) {
+      this.stageTime = 0;
+      this.camReady = false;
+    }
   }
 
   /** Stages the checked-in teammates warming up in the spotlighted Mahabharata wrestling ring. */
@@ -842,12 +846,32 @@ export class Game {
   }
 
   updateRaceGridCamera(dt, reduced) {
-    const sway = reduced ? 0 : Math.sin(this.flyT * 0.32) * 2.8;
+    if (!reduced) this.stageTime += dt;
+    const holdSeconds = 3.5;
     const rows = Math.max(1, Math.ceil(this.stageRacers.length / 4));
     const back = 14 + Math.min(10, rows * 2.4);
-    const pos = this.track.point(6 - back, -1.6 + sway, 7.8 + Math.min(3, rows * 0.6), this._a);
-    const look = this.track.point(18, -1.2, 1.6, this._b);
-    this.setCamera(pos, look, dt, 2.5, 3);
+    const gridHeight = 7.8 + Math.min(3, rows * 0.6);
+
+    if (reduced || this.stageTime < holdSeconds) {
+      const sway = reduced ? 0 : Math.sin(this.stageTime * 0.6) * 2.2;
+      const pos = this.track.point(6 - back, -1.6 + sway, gridHeight, this._a);
+      const look = this.track.point(18, -1.2, 1.6, this._b);
+      this.setCamera(pos, look, dt, 2.5, 3);
+      this.focus.copy(look);
+      return;
+    }
+
+    // After holding on the starting grid, glide along the race track to the finish, then restart at the grid.
+    const fly = this.stageTime - holdSeconds;
+    const s = 6 - back + fly * FLYOVER_SPEED * 1.4;
+    if (s >= this.track.length - 60) {
+      this.stageTime = 0;
+      this.camReady = false;
+      return;
+    }
+    const pos = this.track.point(s, Math.sin(fly * 0.35) * 6, 12 + Math.min(10, fly * 1.5), this._a);
+    const look = this.track.point(s + 38, 0, 1.2, this._b);
+    this.setCamera(pos, look, dt, 2.2, 2.5);
     this.focus.copy(look);
   }
 
