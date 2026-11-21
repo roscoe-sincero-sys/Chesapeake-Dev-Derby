@@ -65,7 +65,8 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      checked-in teammates idling on the Standup Bay Bridge, then glides down the course; **Let’s Rumble**
      shows them in the spotlit wrestling ring, and switching **Classic | HD** swaps their models live.
      Around the edges:
-     - the **top bar**: `LIVE`, **History**, **Team**, **Exit** and mute;
+     - the **top bar**: `LIVE`, **Exit** and mute (the history and the team list open from the
+       **Who's here** drawer: **Full history** and **Edit team list**);
      - the **Who's here** drawer on the left, which scrolls on its own and folds away with `◂` or **H**
        for a full spectator view;
      - a **chyron** over the stage, rotating pre-match notes (who's on the grid, who hasn't won in a
@@ -89,7 +90,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
      Racers, results and the winner list use the same short names; `data/winners.json` still stores the
-     full entry. Hover a name to see it in full.
+     full entry. Hover a shortened address to see it in full.
    - **Uncheck** anyone who is absent today. Attendance is kept in this browser tab through reloads, games
      and visits to **Edit team list**; a new tab (the next meeting) starts with everyone present. Removed
      names are dropped from saved attendance; new names start checked. When anyone is unchecked, the
@@ -356,6 +357,9 @@ Uses Node's built-in test runner — no extra packages. Covers:
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/chyron.test.js`** — the lobby's chyron: teammates who have never won or haven't won for longest,
   who's sitting out, absent teammates left out, and nothing shown when nobody is ready.
+- **`test/wave-alerts.test.js`** — nothing that makes the [WAVE](https://wave.webaim.org/extension/)
+  checker raise an alert: no `title` tooltips in the pages, and in scripts only on a shortened email
+  address; no skipped heading levels; no two links to the same place on a page; no text 10 px or smaller.
 - **`test/contrast.test.js`** — colour contrast: panel surfaces stay solid and reach WCAG AA, and disabled
   controls stay readable (see [Accessibility](#accessibility)).
 - **`test/wrestle.test.js`** — the battle royal's plan: a fair draw, everyone but the winner thrown out
@@ -475,7 +479,8 @@ arena, say) doesn't touch the lobby's markup or CSS:
 
 The derby aims to meet **WCAG 2.2 level AA** on every screen it shows: the lobby, the race and wrestling
 screens, the winner card, **Edit team list**, **Full history**, the **Absentee list**, the reset dialog
-and the closed screen.
+and the closed screen, and a [WAVE](https://wave.webaim.org/extension/) AIM score of **10/10** (no errors,
+contrast errors or alerts) on the lobby, **Edit team list**, **Full history** and the **Absentee list**.
 The online demo uses the same pages.
 
 ### What's built in
@@ -525,6 +530,7 @@ The online demo uses the same pages.
 | Tool | What it checks | When |
 | ---- | -------------- | ---- |
 | [`test/contrast.test.js`](test/contrast.test.js) | Every panel surface has a **solid** background, and each text colour on it reaches 4.5:1. Also: the primary button's solid colour under its gradient; disabled controls without fading or dimming filters; hover tips hidden with `visibility`, not just `opacity: 0`. | Every `npm test`, and on every pull request and push to `main` (GitHub Actions). |
+| [`test/wave-alerts.test.js`](test/wave-alerts.test.js) | What WAVE flags as alerts: `title` tooltips (only a shortened email address gets one), skipped heading levels, two links to the same place on one page, and text 10 px or smaller. | Every `npm test`, and on every pull request and push to `main`. |
 | [axe-core](https://github.com/dequelabs/axe-core) 4.10 (Deque) | WCAG 2 AA `color-contrast` rule. | Each accessibility change: every screen, desktop (1280×800) and phone (390×844), in headless Chrome driven by Puppeteer. |
 | [Lighthouse](https://developer.chrome.com/docs/lighthouse) 12.2 (Google) | The full Lighthouse **Accessibility** audit: contrast, names and labels, ARIA, headings, lists and more. | Each accessibility change: the lobby and the absentee list (desktop and mobile), team list and history pages, with small and large teams. Score: **100** on each. |
 | Worst-case contrast measurement | Every visible piece of text, including disabled controls and text over the 3D scene. See-through layers are composited over both pure white and pure black; every gradient colour stop and every opacity is applied. | Each accessibility change, same screens as axe-core. |
@@ -533,7 +539,7 @@ The online demo uses the same pages.
 Results for version 1.2.0 (2026-11-15): **0** contrast problems with each method on every screen, and
 Lighthouse Accessibility **100** on every page.
 
-Only `test/contrast.test.js` runs automatically. The other tools are run in a browser during
+Only `test/contrast.test.js` and `test/wave-alerts.test.js` run automatically. The other tools are run in a browser during
 development; to run them yourself, see below.
 
 ### Check it yourself
@@ -690,7 +696,8 @@ AI development assistance:
 - **Claude (Anthropic)** - initial developer; later features, documentation and releases, including the
   1.8.0 README and release (Claude Opus 5.5).
 - **Google Gemini 4 Neon** (in Antigravity) - the 1.8.0 lobby rework (#123): the Live Broadcast Stage,
-  the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots.
+  the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots; and
+  the WAVE 10/10 fixes and refreshed screenshots (#129).
 - **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
 
 Claude's initial development statistics, as reported by the project owner:
