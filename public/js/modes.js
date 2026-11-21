@@ -69,7 +69,7 @@ export const MODES = [
     icon: '🤼',
     name: 'Let’s Rumble',
     verb: 'rumble',
-    tagline: 'Battle royal: last one in the ring leads standup.',
+    tagline: 'Dangal: last warrior standing leads standup.',
     players: { min: MIN_WRESTLERS, max: MAX_WRESTLERS },
     options: [
       {

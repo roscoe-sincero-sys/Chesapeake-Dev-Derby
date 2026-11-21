@@ -1378,10 +1378,10 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   .live-pill { display: none; }
   .tagline { font-size: 12px; }
 }
-@media (max-width: 640px) and (min-height: 640px) {
-  /* Tall phones: show a live 3D Chesapeake Bay window above the docked sheet. */
+@media (max-width: 640px) and (min-height: 700px) {
+  /* Tall phones: show a live 3D stage window (Bridge grid or Wrestling ring) above the docked sheet. */
   .lobby-stage {
-    margin-top: 96px;
+    margin-top: 140px;
     border-top: 1px solid #2c3547;
     border-radius: 16px 16px 0 0;
   }
