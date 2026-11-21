@@ -848,23 +848,45 @@ button.secondary {
 button.secondary:disabled { cursor: not-allowed; }
 .range-scale { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 
-/* Absent count shares the hint line under "Team list". */
-#attendance-status { color: var(--gold); }
+/* Absent count & storage warning sit in the Launch zone so toggling checkboxes never shifts #roster. */
+#attendance-status { color: var(--gold); margin: 4px 0 0; font-size: 13px; }
+.launch-notes { display: flex; flex-direction: column; }
 
-/* Reset the last three winners. */
+/* Modals: Reset winners & How to play pop-up. Always pointer-events: auto in the top layer. */
 .error-text { color: #ffa8a8; }
-#reset-dialog {
-  max-width: min(420px, calc(100vw - 32px));
+#reset-dialog, #guide-dialog {
+  pointer-events: auto;
   padding: 20px 22px;
   color: var(--text);
   background: var(--panel);
-  border: 1px solid var(--panel-border);
+  border: 1px solid #3b4557;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
 }
-#reset-dialog::backdrop { background: rgba(5, 8, 15, 0.6); }
-#reset-dialog h2 { font-size: 18px; }
+#reset-dialog { max-width: min(420px, calc(100vw - 32px)); }
+#guide-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(82vh, 680px);
+  overflow-y: auto;
+}
+#reset-dialog::backdrop, #guide-dialog::backdrop { background: rgba(5, 8, 15, 0.65); }
+#reset-dialog h2, #guide-dialog h2 { font-size: 18px; }
 #reset-dialog p { margin: 10px 0 18px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.guide-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.guide-dialog-head button { padding: 6px 14px; font-size: 13px; }
+.how-to-play-btn { align-self: flex-start; font-size: 13px; padding: 2px 0; }
+.lineup-drawer.attention {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(242, 184, 23, 0.45), 0 14px 36px rgba(0, 0, 0, 0.45);
+}
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .dialog-actions button { border-radius: 10px; padding: 10px 16px; font-size: 14px; min-height: 44px; }
 button.danger { background: #c92a2a; border-color: #ff8787; color: #fff; font-weight: 650; }
@@ -1072,8 +1094,61 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 #team-body .roster-actions a.link { margin-left: auto; }
 
 /* Mode cards: one button each, pressed when selected, so Tab reaches every card. */
-.mode-picker { margin: 0; padding: 0; border: none; min-width: 0; }
+.mode-picker { position: relative; margin: 0; padding: 0; border: none; min-width: 0; }
 .mode-picker legend { margin-bottom: 10px; }
+.surprise-btn {
+  position: absolute;
+  top: -26px;
+  right: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.surprise-btn:hover:not(:disabled) { background: #2a2e39; border-color: var(--gold); }
+.surprise-btn:disabled { background: #171b27; color: var(--muted); cursor: not-allowed; }
+
+/* Pre-match broadcast chyron (#123 phase 3). */
+.chyron {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, 100%);
+  padding: 7px 14px 7px 8px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid #2c3547;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  font-size: 13px;
+  pointer-events: auto;
+}
+.chyron-tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1b0f00;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.chyron-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Curtain-part launch transition (#123 phase 3): HUD docks glide outward as the 3D match begins. */
+.lobby-head, .lineup-drawer, .command-dock, .chyron {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, visibility 0.22s;
+}
+#lobby.launching { pointer-events: none; }
+#lobby.launching .lobby-head { transform: translateY(-100%); opacity: 0; visibility: hidden; }
+#lobby.launching .lineup-drawer { transform: translateX(-115%); opacity: 0; visibility: hidden; }
+#lobby.launching .command-dock { transform: translateY(100%); opacity: 0; visibility: hidden; }
+#lobby.launching .chyron { transform: translateY(36px); opacity: 0; visibility: hidden; }
 .mode-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1182,12 +1257,19 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   .lobby-stage {
     flex: 1 1 0;
     min-height: 0;
+    position: relative;
     display: flex;
     align-items: flex-start;
     padding: 14px 18px;
     background: transparent;
     border-bottom: none;
     pointer-events: none;
+  }
+  .chyron {
+    display: inline-flex;
+    position: absolute;
+    right: 18px;
+    bottom: 14px;
   }
   .lineup-drawer {
     width: 268px;
@@ -1246,8 +1328,7 @@ button.exit { padding: 7px 12px; font-size: 13px; }
     align-items: stretch;
   }
   .mode-options { margin-top: 0; }
-  .mode-config { padding: 12px 14px; gap: 10px; }
-  .how-to-play[open] { max-height: 240px; overflow-y: auto; padding-right: 4px; }
+  .mode-config { padding: 10px 14px; gap: 8px; }
   .lobby-foot {
     position: static;
     margin: 0;
@@ -1297,10 +1378,10 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   .live-pill { display: none; }
   .tagline { font-size: 12px; }
 }
-@media (max-width: 640px) and (min-height: 640px) {
-  /* Tall phones: show a live 3D Chesapeake Bay window above the docked sheet. */
+@media (max-width: 640px) and (min-height: 700px) {
+  /* Tall phones: show a live 3D stage window (Bridge grid or Wrestling ring) above the docked sheet. */
   .lobby-stage {
-    margin-top: 96px;
+    margin-top: 140px;
     border-top: 1px solid #2c3547;
     border-radius: 16px 16px 0 0;
   }

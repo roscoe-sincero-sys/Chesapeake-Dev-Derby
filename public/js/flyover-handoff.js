@@ -5,12 +5,18 @@
 const KEY = 'derby-flyover';
 /** After this long away the fly-over simply starts again. */
 export const MAX_AGE_MS = 30 * 60 * 1000;
+/** Must match WrestleStage's orbit angular velocity (rad/s). */
+const WRESTLE_ORBIT_RATE = 0.14;
 
-/** Saves where the fly-over is: `flyT` (its seconds) and `clock` (the scenery's seconds). */
-export function writeFlyover(storage, { flyT, clock }, now = Date.now()) {
+/** Saves where the lobby 3D stage is: `flyT`, `clock`, and optional `stageTime` / `wrestleOrbit` / `wrestleT`. */
+export function writeFlyover(storage, { flyT, clock, stageTime, wrestleOrbit, wrestleT }, now = Date.now()) {
   if (!storage || !Number.isFinite(flyT) || !Number.isFinite(clock)) return;
+  const payload = { flyT, clock, at: now };
+  if (Number.isFinite(stageTime) && stageTime >= 0) payload.stageTime = stageTime;
+  if (Number.isFinite(wrestleOrbit)) payload.wrestleOrbit = wrestleOrbit;
+  if (Number.isFinite(wrestleT) && wrestleT >= 0) payload.wrestleT = wrestleT;
   try {
-    storage.setItem(KEY, JSON.stringify({ flyT, clock, at: now }));
+    storage.setItem(KEY, JSON.stringify(payload));
   } catch {
     /* storage full or blocked: the next page just starts from the beginning */
   }
@@ -31,5 +37,9 @@ export function readFlyover(storage, now = Date.now()) {
   if (!saved || !Number.isFinite(saved.flyT) || !Number.isFinite(saved.clock) || !Number.isFinite(saved.at)) return null;
   const away = (now - saved.at) / 1000;
   if (away < 0 || away * 1000 > MAX_AGE_MS || saved.flyT < 0 || saved.clock < 0) return null;
-  return { flyT: saved.flyT + away, clock: saved.clock + away };
+  const out = { flyT: saved.flyT + away, clock: saved.clock + away };
+  if (Number.isFinite(saved.stageTime) && saved.stageTime >= 0) out.stageTime = saved.stageTime + away;
+  if (Number.isFinite(saved.wrestleOrbit)) out.wrestleOrbit = saved.wrestleOrbit + away * WRESTLE_ORBIT_RATE;
+  if (Number.isFinite(saved.wrestleT) && saved.wrestleT >= 0) out.wrestleT = saved.wrestleT + away;
+  return out;
 }

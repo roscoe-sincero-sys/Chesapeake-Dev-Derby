@@ -84,6 +84,13 @@ export class Sfx {
     this.lastPlayed.set(name, now);
 
     switch (name) {
+      case 'tick':
+        this.tone(680, 0.04, { type: 'sine', gain: 0.05, slide: 140 });
+        break;
+      case 'switch':
+        this.tone(520, 0.07, { type: 'triangle', gain: 0.07 });
+        this.tone(780, 0.09, { type: 'triangle', gain: 0.07, delay: 0.055 });
+        break;
       case 'count':
         this.tone(440, 0.18, { gain: 0.16 });
         break;

@@ -7,6 +7,46 @@ to release.
 
 ## [Unreleased]
 
+### Added
+- **Pocket Broadcast mobile polish & docs (#123, phase 4):**
+  - Portrait phone camera framing for both Derby Race and Let's Rumble so the idling racers or
+    spotlighted wrestling ring sit directly in the top 140 px live 3D window on taller phones.
+  - Refreshed `README.md` lobby instructions, keyboard shortcuts (`H`, `Escape`), `stagePreview`
+    extension notes, and laptop/phone screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`).
+- **Broadcast polish & Curtain-Part launch (#123, phase 3):**
+  - **Curtain-Part transition & camera handoff:** pressing **Start** glides the HUD panels outward
+    over 220 ms (instant under `prefers-reduced-motion`) while the 3D camera continues seamlessly
+    from the lobby starting grid or wrestling ring orbit into the match countdown.
+  - **Pre-match broadcast chyron (`public/js/chyron.js`):** rotating solid-surface highlights bar
+    showing live stage hype, longest-drought underdogs from `history.json`, and recent winner
+    cooldowns.
+  - **`🎲 Surprise me` mode chip:** picks a random eligible game mode and switches the live 3D stage
+    to reveal it.
+  - **Opt-in micro-audio:** subtle Web Audio tick on attendance toggles and broadcast chime on mode
+    switches when unmuted.
+- **Live mode-reactive 3D stage (#123, phase 2):** the open center of the lobby now previews the
+  selected game live in 3D:
+  - **Derby Race** stages the checked-in teammates idling on the Chesapeake Bay Bridge starting grid
+    for a few seconds, then glides the camera along the race track to the finish and loops back to
+    the grid;
+  - **Let’s Rumble** switches to the spotlighted wrestling ring (`public/js/wrestle-stage.js`) with
+    teammates flexing inside, and toggling **Classic | HD** swaps their 3D models live on stage;
+  - checking or unchecking a teammate adds/removes them on the 3D stage in real time;
+  - modes can declare an optional `stagePreview(stage, { names, options })` hook in `modes.js`,
+    falling back to the Bay Bridge fly-over when omitted;
+  - **Edit team list**, **Full history**, and **Absentee list** share the same mode-reactive 3D
+    background (`startBackground()` in `page-common.js`).
+
+### Fixed
+- **HD wrestling stage performance:** toggling teammates in Let's Rumble (HD) now updates the ring
+  incrementally (creating or disposing only the changed wrestler and keeping `hdReady` cached)
+  instead of flashing back to Classic and re-cloning every skinned HD model on each click.
+- **Lobby modals & links:** moved `#reset-dialog` outside the `pointer-events: none` open 3D stage so
+  its **Cancel** and **Reset list** buttons work reliably; **How to play** now opens as a pop-up
+  dialog (`#guide-dialog`) instead of expanding the Bottom Command Dock; `#attendance-status`
+  ("N people marked absent.") moved to the lower-right Launch zone so unchecking names never shifts
+  the roster list; **Review team list** now pulses the Lineup Drawer as well as focusing the roster.
+
 ### Changed
 - **Live Broadcast Stage HUD shell (#123, phase 1):** replaces the centered lobby modal with an
   open-center Broadcast HUD on wide screens (≥ 1000 px) — a compact **Top Broadcast Bar** (with

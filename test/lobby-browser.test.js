@@ -116,7 +116,7 @@ const LOBBY = `(() => {
     readiness: document.getElementById('readiness').textContent,
     cards: [...document.querySelectorAll('.mode-card')].map((c) => [...c.querySelectorAll('span')].map((s) => s.textContent).join(' ')),
     panel: active && active.querySelector('h3').textContent,
-    howToPlay: active?.querySelector('.how-to-play')?.textContent ?? null,
+    howToPlayBtn: active?.querySelector('.how-to-play-btn')?.textContent ?? null,
     lobbyShown: !document.getElementById('lobby').hidden,
     calls: window.derbyTestCalls,
   };
@@ -150,7 +150,16 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.ok(lobby.lobbyShown);
   assert.deepEqual(lobby.calls, []);
   assert.equal(lobby.panel, 'Arena options');
-  assert.match(lobby.howToPlay, /Knock everyone off the arena/);
+  assert.equal(lobby.howToPlayBtn, 'How to play');
+  // Opening How to play shows Arena's guide in a pop-up dialog without expanding the options dock.
+  const dockHeight = await evaluate(`Math.round(document.getElementById('mode-options').getBoundingClientRect().height)`);
+  await evaluate(`document.querySelector('.mode-config[data-mode="arena"] .how-to-play-btn').click()`);
+  assert.equal(await evaluate(`document.getElementById('guide-dialog').open`), true);
+  assert.match(await evaluate(`document.getElementById('guide-dialog-body').textContent`), /Knock everyone off the arena/);
+  assert.equal(await evaluate(`Math.round(document.getElementById('mode-options').getBoundingClientRect().height)`), dockHeight);
+  await evaluate(`document.getElementById('guide-close').click()`);
+  assert.equal(await evaluate(`document.getElementById('guide-dialog').open`), false);
+  await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').focus()`);
 
   // Six checked don't fit 2–4: said beside a disabled Start, which Enter can't get round.
   assert.equal(lobby.start, '▶ Start arena');
@@ -228,14 +237,14 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '6 playing');
   assert.equal(lobby.panel, 'Race options');
 
-  // An open How to play doesn't follow you to another game: the options area shrinks back.
+  // How to play opens as a pop-up dialog, so the options area never expands when viewing a long guide.
   const area = `Math.round(document.getElementById('mode-options').getBoundingClientRect().height)`;
   const closed = await evaluate(area);
-  await evaluate(`document.querySelector('.mode-config[data-mode="race"] .how-to-play').open = true`);
-  assert.ok(await evaluate(area) > closed + 100, 'the race guide is long');
-  await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
-  assert.equal(await evaluate(`document.querySelector('.mode-config[data-mode="race"] .how-to-play').open`), false);
-  assert.equal(await evaluate(area), closed, 'the options area is back to its size');
+  await evaluate(`document.querySelector('.mode-config[data-mode="race"] .how-to-play-btn').click()`);
+  assert.equal(await evaluate(`document.getElementById('guide-dialog').open`), true);
+  assert.equal(await evaluate(area), closed, 'the options area stays compact while the guide pop-up is open');
+  await evaluate(`document.getElementById('guide-close').click()`);
+  assert.equal(await evaluate(`document.getElementById('guide-dialog').open`), false);
 });
 
 test('on a phone, the whole Who’s here row folds and unfolds the team list, and shows who’s absent', { skip, timeout: 120000 }, async (t) => {
@@ -277,6 +286,18 @@ test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, a
   assert.equal(open.collapsed, false);
   assert.equal(open.expandedAttr, 'true');
 
+  // Unchecking a teammate updates #attendance-status in the Launch zone without shifting #roster.
+  const rosterTop = await evaluate(`Math.round(document.getElementById('roster').getBoundingClientRect().top)`);
+  assert.ok(rosterTop > 0, 'roster is visible on screen');
+  await evaluate(`document.querySelector('#roster input').click()`);
+  assert.equal(await evaluate(`Math.round(document.getElementById('roster').getBoundingClientRect().top)`), rosterTop, 'marking absent does not shift the roster');
+  assert.match(await evaluate(`document.getElementById('attendance-status').textContent`), /1 person marked absent/);
+  assert.ok(await evaluate(`!!document.getElementById('attendance-status').closest('.lobby-foot')`), 'absent count sits in the Launch zone');
+
+  // Modals sit outside the pointer-events: none stage, so Reset and How to play buttons are clickable.
+  assert.equal(await evaluate(`getComputedStyle(document.getElementById('reset-dialog')).pointerEvents`), 'auto');
+  assert.equal(await evaluate(`getComputedStyle(document.getElementById('guide-dialog')).pointerEvents`), 'auto');
+
   // H collapses the Lineup Drawer for a full-bleed spectator view, and H expands it again.
   await key('h', 'KeyH', 72, 'h');
   const collapsed = await measure();
@@ -284,12 +305,65 @@ test('Broadcast HUD (#123 phase 1): open 3D stage at 1366 x 768 with 30 names, a
   assert.equal(collapsed.expandedAttr, 'false');
   assert.ok(collapsed.openRatio > open.openRatio, 'collapsing the drawer opens even more 3D stage');
 
-  // Switching to Rumble (2–12 players) with 30 checked and clicking Review team list auto-expands the drawer.
+  // Switching to Rumble (2–12 players) with 29 checked and clicking Review team list auto-expands & highlights the drawer.
   await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
-  await evaluate(`document.querySelector('#readiness button').click()`);
+  const highlighted = await evaluate(`(() => {
+    document.querySelector('#readiness button').click();
+    return document.getElementById('roster-section').classList.contains('attention');
+  })()`);
+  assert.equal(highlighted, true, 'Review team list highlights the drawer');
   const reopened = await measure();
   assert.equal(reopened.collapsed, false, 'Review team list reopens the collapsed drawer');
   assert.ok(await evaluate(`!!document.activeElement.closest('#roster')`), 'focus is inside the roster');
+});
+
+test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Classic/HD, and fallback modes', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, leave, load } = await openLobby(t, { extra: 1, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return; // Software WebGL is expected in CI; skip stage assertions only if WebGL is disabled.
+
+  const stage = () => evaluate('window.derbyTest.game.stageState()');
+  // Derby Race starts with all 6 teammates idling on the starting grid.
+  assert.deepEqual(await stage(), { mode: 'race-grid', count: 6 });
+
+  // Unchecking 2 teammates removes them from the 3D starting grid live.
+  await evaluate(`[...document.querySelectorAll('#roster input')].slice(0, 2).forEach((box) => box.click())`);
+  assert.deepEqual(await stage(), { mode: 'race-grid', count: 4 });
+
+  // Switching to Let's Rumble transitions the 3D stage to the wrestling ring (Classic by default) with the 4 teammates.
+  await evaluate(`document.querySelector('.mode-card[data-mode="rumble"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'classic', requestedStyle: 'classic' });
+
+  // Toggling HD swaps the wrestlers in the ring to HD models live on stage.
+  await evaluate(`document.querySelector('[data-option="rumble-models"] .segment[data-value="hd"]').click()`);
+  await until(`window.derbyTest.game.stageState().modelStyle === 'hd'`, 20000, 'HD models to swap in on stage');
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
+
+  // Toggling a teammate while in HD updates incrementally without flashing back to Classic or rebuilding everyone.
+  await evaluate(`document.querySelectorAll('#roster input')[2].click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 3, modelStyle: 'hd', requestedStyle: 'hd' });
+  await evaluate(`document.querySelectorAll('#roster input')[2].click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
+
+  // Edit team list and Full history share the same mode-reactive 3D background (wrestle-ring here).
+  for (const subpage of ['roster.html', 'history.html']) {
+    await leave(subpage);
+    await until(`window.derby?.stageState?.().mode === 'wrestle-ring' && window.derby.stageState().count === 4`, 15000, `${subpage} to show wrestling ring`);
+  }
+  await load();
+
+  // A third mode without a stagePreview hook (Arena) falls back cleanly to the Chesapeake Bay fly-over.
+  await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'flyover', count: 0 });
+
+  // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
+  assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
+  assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
+  assert.equal(await evaluate(`document.getElementById('surprise-mode').disabled`), false);
+  const beforeSurprise = await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').dataset.mode`);
+  await evaluate(`document.getElementById('surprise-mode').click()`);
+  const afterSurprise = await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').dataset.mode`);
+  assert.notEqual(afterSurprise, beforeSurprise, 'Surprise me picks a different eligible mode');
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {

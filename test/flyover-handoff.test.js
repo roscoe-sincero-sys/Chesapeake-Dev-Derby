@@ -35,3 +35,12 @@ test('saving never throws, even where storage is blocked or the numbers are brok
   writeFlyover(storage, { flyT: NaN, clock: 1 });
   assert.equal(storage.getItem('derby-flyover'), null);
 });
+
+test('mode-specific 3D stage timers (race grid and wrestling ring orbit) carry on across pages', () => {
+  const storage = memory();
+  writeFlyover(storage, { flyT: 10, clock: 20, stageTime: 7.5, wrestleOrbit: 1.0, wrestleT: 5 }, 2_000_000);
+  const next = readFlyover(storage, 2_002_000);
+  assert.equal(next.stageTime, 9.5);
+  assert.equal(next.wrestleT, 7);
+  assert.ok(Math.abs(next.wrestleOrbit - (1.0 + 2 * 0.14)) < 1e-9);
+});

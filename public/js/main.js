@@ -11,6 +11,7 @@ import { endSession, resumeSession } from './session.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences } from './lobby-settings.js';
 import { normalizeSpeed, DEFAULT_SPEED } from './race-lengths.js';
 import { MODES, findMode, fitsPlayers, modeOptions, playersText, capacityText } from './modes.js';
+import { buildChyronLines } from './chyron.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +37,7 @@ let lastReadiness = '';
 const state = {
   names: [],
   winners: [],
+  history: [],
   roster: [],
   shown: new Map(), // nameKey -> on-screen name (email addresses shortened when unambiguous)
   raceNames: new Map(), // on-screen name -> stored name, for the game in progress
@@ -80,8 +82,12 @@ async function api(path, options) {
 async function loadState() {
   const status = $('status');
   try {
-    const data = await api('/api/state');
+    const [data, hist] = await Promise.all([
+      api('/api/state'),
+      api('/api/history').catch(() => ({ history: [] })),
+    ]);
     state.names = data.names;
+    state.history = Array.isArray(hist?.history) ? hist.history : [];
     state.loaded = true;
     state.shown = displayNames(state.names);
     state.absent = retainRosterAbsences(state.absent, state.names);
@@ -171,6 +177,8 @@ function renderLobby() {
         else state.absent.add(key);
         li.classList.toggle('absent', !box.checked);
         attendanceRestored = false;
+        sfx.unlock();
+        sfx.play('tick', 0.04);
         saveLobbySettings();
         updateReadiness();
       });
@@ -234,13 +242,39 @@ function setDrawerOpen(open) {
   btn.setAttribute('aria-label', open ? 'Hide lineup' : 'Show lineup');
 }
 
-/** Opens the team list and puts focus on it, so attendance can be fixed to suit the game. */
+let attentionTimer = null;
+
+/** Opens the team list, highlights it briefly, and puts focus on it so attendance can be adjusted. */
 function reviewTeam() {
   setTeamOpen(true);
   setDrawerOpen(true);
+  const drawer = $('roster-section');
+  drawer.classList.remove('attention');
+  void drawer.offsetWidth;
+  drawer.classList.add('attention');
+  clearTimeout(attentionTimer);
+  attentionTimer = setTimeout(() => drawer.classList.remove('attention'), 1200);
+  $('roster').scrollTop = 0;
   const target = $('roster').querySelector('input:not([disabled])') ?? $('check-all');
   target.focus({ preventScroll: true });
   target.scrollIntoView({ block: 'nearest' });
+}
+
+let guideReturnFocus = null;
+
+/** Opens the "How to play" pop-up dialog for `mode`, keeping the Bottom Command Dock compact. */
+function openGuide(mode, trigger) {
+  const template = document.getElementById(`guide-${mode.guide}`);
+  if (!template) return;
+  const dialog = $('guide-dialog');
+  $('guide-title').textContent = `How to play — ${mode.name}`;
+  const body = $('guide-dialog-body');
+  body.replaceChildren(template.content.cloneNode(true));
+  mode.fillGuide?.(body);
+  guideReturnFocus = trigger ?? document.activeElement;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+  $('guide-close').focus({ preventScroll: true });
 }
 
 /** Asks for confirmation, then clears the recent-winner list so everyone is eligible again. */
@@ -321,12 +355,107 @@ function updateAttendanceStatus() {
   $('attendance-status').hidden = !parts.length;
 }
 
+/** Syncs the live 3D lobby stage (#123 phase 2) to the selected mode, its options, and checked-in teammates. */
+function syncStage() {
+  if (!game || state.phase !== 'lobby' || !state.loaded) return;
+  try {
+    const mode = findMode(state.mode);
+    const names = selectRacers(state.roster, state.absent).map(show);
+    const options = state.options[mode.id];
+    if (mode.stagePreview) mode.stagePreview(game, { names, options });
+    else game.showFlyover();
+  } catch (err) {
+    console.warn('Lobby 3D stage preview unavailable; falling back to fly-over.', err);
+    game.showFlyover();
+  }
+}
+
+let chyronLines = [];
+let chyronIdx = 0;
+let chyronTimer = null;
+let launchTimer = null;
+
+function renderChyronLine() {
+  const bar = $('chyron');
+  if (!chyronLines.length) {
+    bar.hidden = true;
+    return;
+  }
+  const item = chyronLines[chyronIdx % chyronLines.length];
+  $('chyron-tag').textContent = item.tag;
+  $('chyron-text').textContent = item.text;
+  bar.hidden = false;
+}
+
+/** Updates the pre-match broadcast chyron from roster, winners, history, and selected mode. */
+function updateChyron() {
+  if (!state.loaded) return;
+  const next = buildChyronLines({
+    roster: state.roster,
+    absent: state.absent,
+    winners: state.winners,
+    history: state.history,
+    show,
+    mode: findMode(state.mode),
+  });
+  const sig = next.map((l) => `${l.tag}:${l.text}`).join('|');
+  const prevSig = chyronLines.map((l) => `${l.tag}:${l.text}`).join('|');
+  chyronLines = next;
+  if (sig !== prevSig) chyronIdx = 0;
+  renderChyronLine();
+  clearInterval(chyronTimer);
+  const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (chyronLines.length > 1 && !reduced) {
+    chyronTimer = setInterval(() => {
+      if (state.phase !== 'lobby') return;
+      chyronIdx = (chyronIdx + 1) % chyronLines.length;
+      renderChyronLine();
+    }, 6000);
+  }
+}
+
+/** Picks a random eligible game mode (preferring a different one when 2+ fit) and switches the stage to it. */
+function surpriseMode() {
+  const ready = selectRacers(state.roster, state.absent).length;
+  const eligible = MODES.filter((m) => fitsPlayers(m, ready));
+  if (eligible.length < 2) return;
+  const others = eligible.filter((m) => m.id !== state.mode);
+  const pool = others.length ? others : eligible;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  selectMode(picked.id);
+  sfx.unlock();
+  sfx.play('switch', 0.05);
+  document.querySelector(`.mode-card[data-mode="${picked.id}"]`)?.focus({ preventScroll: true });
+}
+
+/** Hides the lobby with the 220 ms Curtain-Part glide (instant under reduced motion or ?test stubs). */
+function hideLobby() {
+  const lobby = $('lobby');
+  clearTimeout(launchTimer);
+  const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const instant = reduced || !game || (params.has('test') && Array.isArray(window.derbyTestModes));
+  if (instant) {
+    lobby.classList.remove('launching');
+    lobby.hidden = true;
+    return;
+  }
+  lobby.classList.add('launching');
+  launchTimer = setTimeout(() => {
+    if (state.phase !== 'lobby') {
+      lobby.hidden = true;
+      lobby.classList.remove('launching');
+    }
+  }, 230);
+}
+
 /**
  * Everything that depends on who's ready and which game is selected: the count, each card's player range
  * (in red, with the headcount, when it doesn't fit), Start's label and state, and the readiness line.
  */
 function updateReadiness() {
   updateAttendanceStatus();
+  syncStage();
+  updateChyron();
   const ready = selectRacers(state.roster, state.absent).length;
   const mode = findMode(state.mode);
   const fits = fitsPlayers(mode, ready);
@@ -335,6 +464,7 @@ function updateReadiness() {
   const absent = state.absent.size;
   $('team-summary').replaceChildren(el('span', 'count', `${ready} playing`), ...(absent ? [` · ${absent} absent`] : []));
   $('pick').disabled = ready < 2;
+  $('surprise-mode').disabled = !state.loaded || MODES.filter((m) => fitsPlayers(m, ready)).length < 2;
 
   for (const card of $('mode-cards').children) {
     const cardMode = findMode(card.dataset.mode);
@@ -393,8 +523,6 @@ function selectMode(id) {
   for (const panel of $('mode-options').children) {
     const inactive = panel.dataset.mode !== state.mode;
     panel.classList.toggle('inactive', inactive);
-    // An open How to play would keep its (now hidden) panel tall, and with it the shared options area.
-    if (inactive) panel.querySelector('.how-to-play')?.removeAttribute('open');
   }
   updateReadiness();
 }
@@ -403,6 +531,7 @@ function setOption(mode, id, value) {
   state.options[mode.id] = modeOptions(mode, { ...state.options[mode.id], [id]: value });
   saveLobbySettings();
   updateAttendanceStatus();
+  syncStage();
 }
 
 /** The controls a mode's options can use (see modes.js). Each returns the element for one option. */
@@ -500,11 +629,10 @@ function renderOptions(mode) {
   for (const option of mode.options) panel.append(OPTION_CONTROLS[option.type](mode, option));
   const template = document.getElementById(`guide-${mode.guide}`);
   if (template) {
-    const guide = el('details', 'how-to-play');
-    const content = template.content.cloneNode(true);
-    mode.fillGuide?.(content);
-    guide.append(el('summary', null, 'How to play'), content);
-    panel.append(guide);
+    const btn = el('button', 'link how-to-play-btn', 'How to play');
+    btn.type = 'button';
+    btn.addEventListener('click', () => openGuide(mode, btn));
+    panel.append(btn);
   }
   return panel;
 }
@@ -518,7 +646,13 @@ function renderModes() {
     card.type = 'button';
     card.dataset.mode = mode.id;
     card.setAttribute('aria-pressed', String(mode.id === state.mode));
-    card.addEventListener('click', () => selectMode(mode.id));
+    card.addEventListener('click', () => {
+      if (state.mode !== mode.id) {
+        sfx.unlock();
+        sfx.play('switch', 0.05);
+      }
+      selectMode(mode.id);
+    });
     const icon = el('span', 'mode-icon', mode.icon);
     const check = el('span', 'mode-check', '✓');
     icon.setAttribute('aria-hidden', 'true');
@@ -568,7 +702,7 @@ async function start(mode) {
       state.progress = text;
       updateReadiness();
     },
-    hideLobby: () => { $('lobby').hidden = true; },
+    hideLobby,
     showQuit: (label) => {
       $('quit').textContent = label;
       $('quit').hidden = false;
@@ -594,6 +728,8 @@ function pick() {
 }
 
 function backToLobby() {
+  clearTimeout(launchTimer);
+  $('lobby').classList.remove('launching');
   game?.clearRace();
   $('reset-status').hidden = true;
   hud.end();
@@ -685,9 +821,15 @@ function init() {
     $('demo-note').hidden = false;
   }
   renderModes();
+  // Stage non-race modes immediately so returning from Edit team / Full history never flashes the bridge.
+  const initialMode = findMode(state.mode);
+  if (game && initialMode.stagePreview && initialMode.id !== 'race') {
+    try { initialMode.stagePreview(game, { names: [], options: state.options[initialMode.id] }); } catch { /* handled on loadState */ }
+  }
   updateReadiness();
 
   $('start').addEventListener('click', startSelected);
+  $('surprise-mode').addEventListener('click', surpriseMode);
   $('team-toggle').addEventListener('click', () => setTeamOpen($('roster-section').classList.contains('collapsed')));
   $('drawer-toggle').addEventListener('click', () => setDrawerOpen($('roster-section').classList.contains('drawer-collapsed')));
   $('pick').addEventListener('click', pick);
@@ -699,6 +841,16 @@ function init() {
   $('reset-dialog').addEventListener('close', () => {
     if ($('reset-dialog').returnValue === 'reset') resetWinners();
     else $('reset-winners').focus({ preventScroll: true });
+  });
+  $('guide-close').addEventListener('click', () => $('guide-dialog').close());
+  $('guide-dialog').addEventListener('click', (e) => {
+    if (e.target === $('guide-dialog')) $('guide-dialog').close();
+  });
+  $('guide-dialog').addEventListener('close', () => {
+    if (document.activeElement === document.body || $('guide-dialog').contains(document.activeElement)) {
+      guideReturnFocus?.focus?.({ preventScroll: true });
+    }
+    guideReturnFocus = null;
   });
   $('quit').addEventListener('click', backToLobby);
   $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner, state.pendingMode));

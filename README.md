@@ -58,14 +58,20 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    A plain array (`["Ada", "Grace"]`) works too. Blank entries and duplicates are ignored, and anything
    past the 30th name is dropped (the lobby tells you when this happens). Reload the page after editing.
 
-2. **Open the lobby.** It asks three things in order: **Who's here**, **Pick a game**, and that game's
-   options. Then one button starts it. On a wide screen (1000 px and up) the team list is on the left and
-   the game on the right; on a narrower one they stack. On a phone the team list folds into a
-   **Who's here · 12 playing** row: tap it to open the list (it starts open when fewer than two people are
-   ready). Everyone is listed with a checkbox. A ticked box means that person is playing.
+2. **Open the lobby.** The lobby is an open-center **Live Broadcast Stage**:
+   - On a wide screen (1000 px and up), the live 3D stage fills the center of the screen — **Derby Race**
+     stages the checked-in teammates idling on the Standup Bay Bridge before gliding down the course, and
+     **Let’s Rumble** switches to the spotlighted wrestling ring where toggling **Classic | HD** swaps
+     the 3D models live. Solid HUD panels frame the edges: a **Top Broadcast Bar** (`LIVE`, **History**,
+     **Team**, **Exit**), a scrollable and collapsible **Left Lineup Drawer** (click `◂` or press **H**
+     for a full-bleed spectator view), a rotating pre-match **broadcast chyron**, and a **Bottom Command
+     Dock** (**Pick a game** + **🎲 Surprise me**, the selected game's options, and **Launch**).
+   - On a phone, taller screens show a live 3D stage window above a docked sheet, the team list folds
+     into a full-width **Who's here · 12 playing** row (open by default when fewer than two people are
+     ready), and **Just pick** and **Start** stay pinned at the bottom in one row.
 
-   <img src="docs/lobby-wide.png" alt="The lobby on a laptop: Who's here with the team list on the left; Pick a game with the Derby Race card selected and its Race length slider on the right; Just pick someone and Start race at the bottom." width="640">
-   <img src="docs/lobby-phone.png" alt="The lobby on a phone: the team list folded into a Who's here row, the Let's Rumble card selected with its Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
+   <img src="docs/lobby-wide.png" alt="The Live Broadcast Stage lobby on a laptop: Top Broadcast Bar, collapsible Left Lineup Drawer, open center showing 5 racers idling on the Standup Bay Bridge with the ON GRID chyron, and Bottom Command Dock with mode cards, Surprise me, Race length slider, and Start race." width="640">
+   <img src="docs/lobby-phone.png" alt="The Pocket Broadcast lobby on a phone: live 3D wrestling ring window at the top, folded Who's here row, Let's Rumble selected with Classic or HD toggle, and Just pick and Start rumble in one row at the bottom." width="200">
    - The list is in **alphabetical order**. A name that is an email address is shown without the
      `@` and domain (`tony.stark@ultron.com` shows as **tony.stark**), unless another entry would show
      the same way (`tony.stark@vision.com`, or a plain `Tony.Stark`); then the full address is kept.
@@ -77,22 +83,23 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
      options (race length, Classic or HD) are kept in this browser from one meeting to the next
      (`localStorage`); a browser that has never chosen starts on the race. An explicit `?speed=` or
      `?mode=` URL setting overrides the saved race length or game. A length saved by an older version of the slider moves to the nearest of
-     the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears at the end
-     of the hint line under **Who's here**.
+     the five lengths. When anyone is unchecked, the count ("2 people marked absent.") appears in the
+     Launch zone beside Start so toggling checkboxes never shifts the team list.
    - The **last three winners are not eligible**: they are shown greyed out with an unticked, locked
      checkbox ("Sits out 3 more picks"…), and named on the **Sitting out** line under the list, next to
      **Full history** and **Reset**.
 
-3. **Pick a game.** Click a card: **🏁 Derby Race** (2 or more players) or **🤼 Let’s Rumble** (2 to 12).
-   Choosing a card only selects it; nothing starts until you click Start. The selected game's options
-   appear underneath:
+3. **Pick a game.** Click a card — **🏁 Derby Race** (2 or more players) or **🤼 Let’s Rumble** (2 to 12)
+   — or click **🎲 Surprise me** to let the lobby pick an eligible game at random. Choosing a card only
+   selects it and switches the live 3D stage; nothing starts until you click Start. The selected game's
+   options appear beside the cards:
    - the race has a **Race length** slider: about 120, 60 (default), 30, 15 or 10 seconds of racing, not
      counting the short countdown;
    - Rumble has **Models: Classic | HD** and **Preview wrestlers** (see [Let’s Rumble](#lets-rumble)).
 
-   **How to play**, at the bottom of the options, explains that game. If the number checked doesn't suit
-   the selected game, its card says so in red ("2–12 players · 14 checked"), Start is disabled, and the
-   line beside Start says what to change, with a **Review team list** link.
+   **How to play** opens a pop-up dialog explaining that game without expanding the dock. If the number
+   checked doesn't suit the selected game, its card says so in red ("2–12 players · 14 checked"), Start is
+   disabled, and the line above Start says what to change, with a **Review team list** link.
 
 4. Click **▶ Start race** (the button follows the selected game: **▶ Start rumble** for Rumble), or press
    **Enter**. When the lobby opens, keyboard focus is already on Start if the selected game can start;
@@ -438,7 +445,8 @@ arena, say) doesn't touch the lobby's markup or CSS:
 
 1. Write the game module, split like `wrestle.js` (3D) and `wrestle-sim.js` (rules, no graphics).
 2. Add one entry to `MODES` in `modes.js`. Options can be a `range` (a stepped slider), a `segmented`
-   toggle, or a `link`.
+   toggle, or a `link`. An optional `stagePreview(stage, { names, options })` hook can stage a live 3D
+   preview in the lobby (omitting it falls back to the Standup Bay Bridge fly-over).
 3. Add its `winMode` to `WIN_MODES` (`data-rules.js`), and a label to `MODE` and wording to `MODE_COUNT`
    (`page-common.js`) for the history pages. `test/modes.test.js` fails if any of these is missing.
 4. Add `<template id="guide-‹its guide›">` to `index.html` with its How to play.
@@ -460,8 +468,9 @@ The online demo uses the same pages.
     pressed when selected; **Space** or **Enter** selects it without starting anything;
   - in the lobby, **Enter** on Start, on a slider, or anywhere that isn't a control starts the selected
     game;
+  - **H** collapses or expands the desktop Lineup Drawer (spectator view);
   - **M** turns sound on or off;
-  - **Escape** closes the reset dialog.
+  - **Escape** closes the **How to play** and **Reset** dialogs.
 - **Focus:**
   - each page starts on the most useful control: Start in the lobby (or the selected game's card when
     the team doesn't fit it), **Back to lobby** on the other pages; after a game, focus returns to Start;
