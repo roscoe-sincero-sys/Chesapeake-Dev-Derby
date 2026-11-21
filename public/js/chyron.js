@@ -22,7 +22,7 @@ export function buildChyronLines({ roster = [], absent = new Set(), winners = []
   // 1. Live stage hype for the active mode.
   if (mode && readyNames.length >= 2) {
     if (mode.id === 'race') {
-      lines.push({ tag: 'ON GRID', text: `${readyNames.length} racers idling on the Chesapeake Bay Bridge.` });
+      lines.push({ tag: 'ON GRID', text: `${readyNames.length} racers idling on the Standup Bay Bridge.` });
     } else if (mode.id === 'rumble') {
       lines.push({ tag: 'RING LIVE', text: `${readyNames.length} wrestlers warming up for the battle royal.` });
     } else {
