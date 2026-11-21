@@ -366,6 +366,73 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   assert.notEqual(afterSurprise, beforeSurprise, 'Surprise me picks a different eligible mode');
 });
 
+test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
+  const base = await startServer(t, NAMES);
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`${base}/api/winners`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: base },
+      body: JSON.stringify({ name: NAMES[i % NAMES.length], mode: i % 2 ? 'wrestle' : 'race', absent: [] }),
+    });
+    assert.equal(res.status, 200);
+  }
+  const send = await openBrowser(t);
+  const page = pageHelpers(send);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false });
+  await send('Page.enable');
+  await send('Page.navigate', { url: `${base}/history.html` });
+  await page.until(`document.querySelectorAll('#history-rows tr').length === 40`, 20000, '40 history rows');
+
+  const before = await page.evaluate(`(() => {
+    const s = document.querySelector('.studio-scroll');
+    const p = document.querySelector('.studio-panel').getBoundingClientRect();
+    return {
+      overflow: s.scrollHeight > s.clientHeight,
+      openRatio: (innerWidth - p.width - 36) / innerWidth,
+      backHref: document.getElementById('back-to-lobby')?.getAttribute('href'),
+    };
+  })()`);
+  assert.equal(before.overflow, true, '40 rows scroll inside .studio-scroll');
+  assert.ok(before.openRatio >= 0.4, `at least 40% open 3D stage beside the Studio Panel (got ${(before.openRatio * 100).toFixed(1)}%)`);
+  assert.equal(before.backHref, './');
+
+  await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 300, y: 400, deltaX: 0, deltaY: 360 });
+  await page.until(`document.querySelector('.studio-scroll').scrollTop > 0`, 5000, 'mouse wheel to scroll history');
+
+  // Phase 2: Broadcast Stat Strip, mode filter chips, name search, and Standings view.
+  assert.equal(await page.evaluate(`document.getElementById('stat-strip').hidden`), false);
+  await page.evaluate(`document.querySelector('#mode-filters button[data-mode="race"]').click()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#history-rows tr').length`), 20, 'Race filter shows 20 of 40');
+  await page.evaluate(`document.getElementById('view-standings').click()`);
+  assert.equal(await page.evaluate(`document.getElementById('standings-table').hidden`), false);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), NAMES.length);
+  await page.evaluate(`(() => { const s = document.getElementById('history-search'); s.value = 'Ada'; s.dispatchEvent(new Event('input')); })()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), 1, 'name search narrows standings');
+
+  // Phase 3: Roster Studio — interactive chips, Quick Add, Bulk Paste toggle, and live 3D stage update.
+  await send('Page.navigate', { url: `${base}/roster.html` });
+  await page.until(`document.querySelectorAll('#roster-chips .roster-chip').length === ${NAMES.length}`, 20000, 'roster chips');
+  await page.evaluate(`(() => { const i = document.getElementById('add-name'); i.value = 'Katherine'; document.getElementById('add-name-btn').click(); })()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#roster-chips .roster-chip').length`), NAMES.length + 1, 'Quick Add adds a chip');
+  assert.equal(await page.evaluate(`document.getElementById('discard-names').hidden`), false, 'Discard appears when dirty');
+  await page.evaluate(`document.getElementById('view-bulk').click()`);
+  assert.equal(await page.evaluate(`document.getElementById('bulk-panel').hidden`), false);
+  assert.match(await page.evaluate(`document.getElementById('names').value`), /Katherine/);
+  await page.evaluate(`document.getElementById('discard-names').click()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#roster-chips .roster-chip').length`), NAMES.length, 'Discard restores saved list');
+
+  // Phase 4: Mobile phone viewports (390 x 844 and 320 x 568) have zero horizontal overflow on Studio pages.
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: true });
+    for (const url of [`${base}/history.html`, `${base}/roster.html`]) {
+      await send('Page.navigate', { url });
+      await page.until(`document.querySelector('.studio-panel') !== null`, 15000, `${url} at ${w}x${h}`);
+      const hscroll = await page.evaluate(`document.documentElement.scrollWidth > innerWidth`);
+      assert.equal(hscroll, false, `${url} at ${w}x${h} has no horizontal scroll`);
+    }
+  }
+});
+
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);

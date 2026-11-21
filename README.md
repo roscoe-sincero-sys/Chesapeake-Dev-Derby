@@ -40,10 +40,14 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 ## Running a meeting pick
 
-1. **Edit the team list** using **Edit team list** in the lobby (one name per line), or in `data/names.json` — up to 30 names.
-   A fresh copy of the repo has no team list yet: the lobby says it can't find `data/names.json`, and
-   saving from **Edit team list** creates it. The file stays on your computer; like the winner files, it
-   is listed in `.gitignore` so your team's names are never committed:
+1. **Edit the team list** using **Edit team list** in the lobby (the **Roster Studio**), or in `data/names.json` — up to 30 names.
+   The Roster Studio shares the lobby's top bar and keeps the live 3D stage open on the right on wide
+   screens: add or remove teammates with interactive **Roster chips** (watching them appear live on the
+   3D stage before you save), check the live mode-fit badges (**Derby Race 2+**, **Let's Rumble 2–12**),
+   or switch to **Bulk text / paste** to paste a list all at once. A fresh copy of the repo has no team
+   list yet: the lobby says it can't find `data/names.json`, and saving from **Edit team list** creates
+   it. The file stays on your computer; like the winner files, it is listed in `.gitignore` so your
+   team's names are never committed:
 
    ```json
    { "names": ["Ada", "Grace", "Linus"] }
@@ -216,12 +220,19 @@ so every wrestler has the same chance; when and where each ring-out happens neve
 match has its own pacing: about 15 seconds for 2 wrestlers, and about 45 to 75 seconds for 12 (a minute
 on average), whatever the **Race length** slider says (the slider is only for races).
 
-### Winner history
+### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
-5,000). Click **Full history** on the **Sitting out** line in the lobby to see the list, newest first,
-with each winner's date and time and whether they won a **race**, won by **wrestling** (Let’s Rumble),
-or were picked with **Just pick someone** (shown as Skip). On an install from before the history was added, the list starts with the winners already in
+5,000). Click **Full history** on the **Sitting out** line in the lobby to open the **Hall of Fame** studio
+panel beside the live 3D stage:
+
+- **Broadcast Stat Strip:** highlights the **All-time leader**, the active teammate with the **Longest
+  drought**, and the **Game mix** proportion bar (Race, Wrestle, Skip).
+- **Match log & Standings:** switch between the chronological match log (newest first, with sticky headers,
+  smooth mouse-wheel scrolling, and **Sitting out** badges) and ranked **All-time standings** across the
+  team. Filter by mode (**All**, **Race**, **Wrestle**, **Skip**) or search by name.
+
+On an install from before the history was added, the list starts with the winners already in
 `data/winners.json`; those show **—** under How because that wasn't recorded.
 
 ### Absentee list
@@ -357,6 +368,8 @@ Uses Node's built-in test runner — no extra packages. Covers:
   history pages can label, each mode's options have valid defaults, and the player ranges.
 - **`test/chyron.test.js`** — the lobby's chyron: teammates who have never won or haven't won for longest,
   who's sitting out, absent teammates left out, and nothing shown when nobody is ready.
+- **`test/history-stats.test.js`** — the Hall of Fame stats desk: all-time leaders (including ties),
+  longest active drought, game-mix percentages, and ranked standings.
 - **`test/wave-alerts.test.js`** — nothing that makes the [WAVE](https://wave.webaim.org/extension/)
   checker raise an alert: no `title` tooltips in the pages, and in scripts only on a shortened email
   address; no skipped heading levels; no two links to the same place on a page; no text 10 px or smaller.
@@ -419,7 +432,8 @@ public/
   index.html         Lobby, race HUD and winner card
   history.html       Winner history page (js/history.js)
   absences.html      Absentee list page (js/absences.js)
-  js/page-common.js  Shared by the history and absentee pages: loading, table cells, 3D background
+  js/page-common.js  Shared by the studio pages: Top Broadcast Bar chrome, loading, table cells, 3D stage
+  js/history-stats.js  Hall of Fame stats: all-time leader, longest drought, game mix, and standings
   js/flyover-handoff.js  Carries the background fly-over on from page to page (sessionStorage)
   css/style.css
   js/main.js         Lobby logic, starts the selected game, saves the winner
@@ -696,8 +710,9 @@ AI development assistance:
 - **Claude (Anthropic)** - initial developer; later features, documentation and releases, including the
   1.8.0 README and release (Claude Opus 5.5).
 - **Google Gemini 4 Neon** (in Antigravity) - the 1.8.0 lobby rework (#123): the Live Broadcast Stage,
-  the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots; and
-  the WAVE 10/10 fixes and refreshed screenshots (#129).
+  the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots; the
+  WAVE 10/10 fixes (#129); and the 1.9.0 Broadcast Studio Desk (#133): unified studio shell, scroll fix,
+  Hall of Fame stats & standings, and Roster Studio with live 3D preview.
 - **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
 
 Claude's initial development statistics, as reported by the project owner:

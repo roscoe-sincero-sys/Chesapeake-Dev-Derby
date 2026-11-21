@@ -52,6 +52,38 @@ export const MODE_COUNT = {
   skip: 'skipped',
 };
 
+/** Populates the Top Broadcast Bar's version pill and wires the Mute button on studio sub-pages. */
+function initStudioChrome(sfx) {
+  const versionEl = document.getElementById('app-version');
+  if (versionEl) {
+    request('/api/version')
+      .then(({ version }) => {
+        if (typeof version !== 'string' || !version) return;
+        versionEl.textContent = `v${version}`;
+        versionEl.hidden = false;
+      })
+      .catch(() => { /* older server without /api/version */ });
+  }
+  const mute = document.getElementById('mute');
+  if (mute && sfx) {
+    const showMute = () => {
+      mute.textContent = sfx.muted ? '🔇' : '🔊';
+      mute.setAttribute('aria-pressed', String(sfx.muted));
+    };
+    mute.addEventListener('click', () => {
+      sfx.unlock();
+      sfx.setMuted(!sfx.muted);
+      showMute();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'm' && !e.target.closest('input, textarea, select, [contenteditable]') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        mute.click();
+      }
+    });
+    showMute();
+  }
+}
+
 /**
  * The same live 3D stage background as the lobby (Derby Race bridge or Let's Rumble wrestling ring,
  * matching the selected mode and options), without making the page depend on WebGL: if 3D is
@@ -66,7 +98,9 @@ export function startBackground() {
     import('./eligibility.js'),
   ])
     .then(async ([{ Game }, { Sfx }, { readLobbySettings }, { findMode }, { buildRoster, selectRacers, displayNames, nameKey }]) => {
-      const game = new Game(document.getElementById('scene'), {}, new Sfx());
+      const sfx = new Sfx();
+      initStudioChrome(sfx);
+      const game = new Game(document.getElementById('scene'), {}, sfx);
       window.derby = game;
       const saved = readLobbySettings();
       const mode = findMode(saved.mode);

@@ -10,29 +10,98 @@
     { "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
   </script>
 </head>
-<body class="editor-page">
+<body class="studio-page">
   <canvas id="scene" aria-hidden="true"></canvas>
-  <main class="panel editor history">
-    <nav class="page-links" aria-label="Pages">
-      <a id="back-to-lobby" href="./">Back to lobby</a>
-      <a href="absences.html">Absentee list</a>
-    </nav>
-    <h1>Winner history</h1>
-    <p>Every meeting leader the derby has picked, newest first.</p>
-    <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
-    <div class="history-scroll">
-      <table id="history-table" class="log-table" hidden>
-        <caption class="visually-hidden">All past winners, newest first</caption>
-        <thead>
-          <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
-        </thead>
-        <tbody id="history-rows"></tbody>
-      </table>
+
+  <div id="toolbar">
+    <button id="mute" type="button" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <div class="studio-shell">
+    <header class="lobby-head">
+      <div class="flag-chip" aria-hidden="true"></div>
+      <div class="lobby-title">
+        <p class="studio-brand">Chesapeake Dev Derby <span id="app-version" class="app-version" hidden></span> <span class="studio-pill" aria-hidden="true">HALL OF FAME</span></p>
+        <p class="tagline">Pick who leads the team meeting.</p>
+      </div>
+      <a id="back-to-lobby" class="studio-back" href="./">← Back to Stage</a>
+    </header>
+
+    <div class="studio-stage">
+      <main class="studio-panel">
+        <div class="studio-head">
+          <div class="studio-title-row">
+            <h1>Winner history</h1>
+            <nav class="studio-tabs" aria-label="Archive views">
+              <span class="studio-tab active" aria-current="page">Winner history</span>
+              <a class="studio-tab" href="absences.html">Absentee list</a>
+            </nav>
+          </div>
+          <p id="history-summary" class="hint" role="status" aria-live="polite">Loading history...</p>
+
+          <!-- Broadcast Stat Strip (#133 phase 2): All-Time Leader, Longest Drought & Game Mix -->
+          <section id="stat-strip" class="stat-strip" aria-label="Broadcast highlights" hidden>
+            <div class="stat-card">
+              <p class="stat-label">👑 All-time leader</p>
+              <p id="stat-leader" class="stat-value">—</p>
+              <p id="stat-leader-sub" class="stat-sub"></p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">🔥 Longest drought</p>
+              <p id="stat-underdog" class="stat-value">—</p>
+              <p id="stat-underdog-sub" class="stat-sub"></p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">🎮 Game mix</p>
+              <div id="stat-mix-bar" class="mix-bar" aria-hidden="true"></div>
+              <p id="stat-mix-sub" class="stat-sub"></p>
+            </div>
+          </section>
+
+          <!-- Interactive view toggle, mode filters & name search -->
+          <div id="history-controls" class="studio-controls" hidden>
+            <div class="view-toggle" role="group" aria-label="History view">
+              <button id="view-log" type="button" class="filter-chip" aria-pressed="true">Match log</button>
+              <button id="view-standings" type="button" class="filter-chip" aria-pressed="false">Standings</button>
+            </div>
+            <div id="mode-filters" class="mode-filters" role="group" aria-label="Filter by game mode">
+              <button type="button" class="filter-chip" data-mode="all" aria-pressed="true">All</button>
+              <button type="button" class="filter-chip" data-mode="race" aria-pressed="false">🏁 Race</button>
+              <button type="button" class="filter-chip" data-mode="wrestle" aria-pressed="false">🤼 Wrestle</button>
+              <button type="button" class="filter-chip" data-mode="skip" aria-pressed="false">🎲 Skip</button>
+            </div>
+            <label for="history-search" class="visually-hidden">Filter by name</label>
+            <input id="history-search" class="studio-search" type="search" placeholder="Filter by name…" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="studio-scroll">
+          <table id="history-table" class="log-table" hidden>
+            <caption class="visually-hidden">All past winners, newest first</caption>
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Winner</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">How</th></tr>
+            </thead>
+            <tbody id="history-rows"></tbody>
+          </table>
+
+          <table id="standings-table" class="log-table" hidden>
+            <caption class="visually-hidden">All-time standings by total wins</caption>
+            <thead>
+              <tr><th scope="col">Rank</th><th scope="col">Teammate</th><th scope="col">Wins</th><th scope="col">🏁</th><th scope="col">🤼</th><th scope="col">🎲</th><th scope="col">Last win</th></tr>
+            </thead>
+            <tbody id="standings-rows"></tbody>
+          </table>
+
+          <p id="history-empty" class="hint" hidden>No matching results.</p>
+
+          <div class="editor-actions">
+            <button id="reload-history" type="button" hidden>Retry loading</button>
+          </div>
+        </div>
+      </main>
     </div>
-    <div class="editor-actions">
-      <button id="reload-history" type="button" hidden>Retry loading</button>
-    </div>
-  </main>
+  </div>
+
   <script type="module" src="js/history.js"></script>
   <script type="module" src="js/session.js"></script>
 </body>
