@@ -934,6 +934,115 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   color: #1b0f00;
 }
 
+/* Broadcast Stat Strip & interactive filters (#133 phase 2). */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.stat-card {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #161c2a;
+  border: 1px solid #2c3547;
+  min-width: 0;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat-value {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-sub {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mix-bar {
+  display: flex;
+  height: 10px;
+  margin: 7px 0 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #101420;
+  gap: 2px;
+}
+
+.mix-seg { min-width: 4px; }
+.mix-race { background: var(--gold); }
+.mix-wrestle { background: var(--orange); }
+.mix-skip { background: #8ab4f8; }
+.mix-unknown { background: #4b5870; }
+
+.studio-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.view-toggle, .mode-filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.filter-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #1e222d;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.filter-chip:hover { background: #2a2e39; }
+.filter-chip[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #1b0f00; }
+
+.studio-search {
+  flex: 1 1 130px;
+  min-width: 120px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #161c2a;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.studio-search::placeholder { color: var(--muted); }
+
+.cooldown-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #2c1522;
+  color: #ffa8a8;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 /* Dedicated scroll container: restores smooth mouse-wheel, trackpad, touch, and keyboard scrolling. */
 .studio-scroll {
   flex: 1 1 auto;
@@ -976,8 +1085,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
   .studio-back { padding: 6px 10px; font-size: 12px; }
   .studio-stage { padding: 10px 12px 16px; }
   .studio-head { padding: 12px 14px 10px; }
-  .studio-scroll { padding: 10px 14px 16px; }
+  .studio-scroll { padding: 0 14px 16px; }
   .studio-tabs { margin-left: 0; }
+  .stat-strip { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

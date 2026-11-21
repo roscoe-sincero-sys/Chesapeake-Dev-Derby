@@ -9,6 +9,13 @@ to release.
 
 Accessibility work for a WAVE AIM score of 10/10 (#129), by Google Gemini 4 Neon in Antigravity.
 
+### Added
+- **Hall of Fame & Broadcast Stats Desk (#133, phase 2):** **Winner history** now features a
+  3-card **Broadcast Stat Strip** (`public/js/history-stats.js`: All-Time Leader, Longest Drought
+  underdog, and Game Mix proportion bar), a **Match log | Standings** toggle for ranked all-time
+  team standings, mode filter chips (`All`, `Race`, `Wrestle`, `Skip`), live name search, and
+  `Sitting out` cooldown badges.
+
 ### Changed
 - **Broadcast Studio Desk shell & scroll fix (#133, phase 1):** **Edit team list**, **Winner
   history**, and **Absentee list** now share the lobby's **Top Broadcast Bar** (with version pill,

@@ -398,6 +398,16 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 300, y: 400, deltaX: 0, deltaY: 360 });
   await page.until(`document.querySelector('.studio-scroll').scrollTop > 0`, 5000, 'mouse wheel to scroll history');
+
+  // Phase 2: Broadcast Stat Strip, mode filter chips, name search, and Standings view.
+  assert.equal(await page.evaluate(`document.getElementById('stat-strip').hidden`), false);
+  await page.evaluate(`document.querySelector('#mode-filters button[data-mode="race"]').click()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#history-rows tr').length`), 20, 'Race filter shows 20 of 40');
+  await page.evaluate(`document.getElementById('view-standings').click()`);
+  assert.equal(await page.evaluate(`document.getElementById('standings-table').hidden`), false);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), NAMES.length);
+  await page.evaluate(`(() => { const s = document.getElementById('history-search'); s.value = 'Ada'; s.dispatchEvent(new Event('input')); })()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#standings-rows tr').length`), 1, 'name search narrows standings');
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
