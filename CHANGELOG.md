@@ -7,6 +7,34 @@ to release.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-21
+
+Standup Deathmatch: modernized Quake / QuakeWorld deathmatch inside a Google Meet daily standup,
+co-authored by Google Gemini 4 Neon (in Antigravity) and GPT 6.1 SOL (High).
+
+### Added
+- **Standup Deathmatch** (co-authored by **Google Gemini 4 Neon** in Antigravity and **GPT 6.1 SOL (High)**):
+  a third game mode presenting a modernized Quake / QuakeWorld 3D deathmatch as a shared screen inside a
+  Google Meet daily standup (`2–30` players).
+  - **14 developers, signature weapons & powerups** (`public/js/deathmatch-sim.js`, `public/js/deathmatch-avatars.js`,
+    `public/js/deathmatch.js`): Maya, Walter, Zoe, Finn, Bruno, Aman, Priya, Mei, Alex, Ben, Elliot, Sam,
+    Ray (13th), and Chevron (14th), each with reference-matched 3D developer models, bespoke developer-themed
+    Quake weapons, and 5 Quake-inspired powerups (**Quad Deploy**, **Cardboard Glare Shield**,
+    **On-Mute Invisibility**, **Cappuccino Overclock**, and **Mega-Ticket 200HP**).
+  - **Google Meet UI & 4-line Quake console:** top-left 4-line obituary console, full-height inset white
+    **In-call messages** sidebar (`2.5s–4.5s` message pacing, blending Derby billboards and Rumble crowd signs,
+    with once-per-match scripted lines, repeatable `{target}` chatter, NPC meeting crashers, and post-match
+    chat that continues until leaving the call), and bottom Google Meet control bar.
+  - **Lobby chat preview:** selecting Standup Deathmatch in the lobby stages the 3D QuakeWorld arena alongside
+    the full-height Google Meet chat preview playing `docs/in-call-messages.md` followed by
+    `docs/simulated_google_meet_chat.md` (casting 4 random developers from the 14) stamped with real local time.
+  - **Signature clock rollback & 0:00 frag leaderboard:** starts at `0:10`, triggers one of three standup
+    interruptions at `0:02`, rolls back to `0:45` with the license/time-travel exchange, and displays a
+    single-column (`< 16` invitees) or two-column (`>= 16` invitees) frag leaderboard excluding NPCs.
+  - Integrated into Winner History (`deathmatch` mode in Hall of Fame stats, filters, and Standings), WCAG AA
+    contrast checks, WAVE AIM 10/10 guardrails, and unit + browser tests (`test/deathmatch-sim.test.js`,
+    `test/lobby-browser.test.js`), with refreshed `v1.10.0` README screenshots.
+
 ## [1.9.0] - 2026-11-21
 
 Broadcast Studio Desk (#133) and WAVE AIM 10/10 accessibility fixes (#129), by Google Gemini 4 Neon in

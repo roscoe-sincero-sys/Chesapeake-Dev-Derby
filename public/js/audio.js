@@ -142,6 +142,17 @@ export class Sfx {
           this.tone(2350, 0.7, { type: 'triangle', gain: 0.05, delay });
         }
         break;
+      case 'frag':
+        this.noise(0.18, { gain: 0.22, cutoff: 1400 });
+        this.tone(190, 0.14, { type: 'sawtooth', gain: 0.1, slide: -120 });
+        break;
+      case 'chat':
+        this.tone(880, 0.05, { type: 'sine', gain: 0.04, slide: 180 });
+        break;
+      case 'rollback':
+        this.tone(660, 0.16, { type: 'sawtooth', gain: 0.12, slide: -380 });
+        this.tone(440, 0.28, { type: 'square', gain: 0.1, slide: 260, delay: 0.16 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

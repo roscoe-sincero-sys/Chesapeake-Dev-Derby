@@ -12,6 +12,7 @@ import { readLobbySettings, writeLobbySettings, retainRosterAbsences } from './l
 import { normalizeSpeed, DEFAULT_SPEED } from './race-lengths.js';
 import { MODES, findMode, fitsPlayers, modeOptions, playersText, capacityText } from './modes.js';
 import { buildChyronLines } from './chyron.js';
+import { LobbyMeetChat } from './deathmatch.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -57,6 +58,7 @@ const stored = (name) => state.raceNames.get(name) ?? name;
 
 const sfx = new Sfx();
 const hud = new Hud();
+const lobbyMeetChat = new LobbyMeetChat($('dm-lobby-chat'), $('dm-lobby-chat-list'), $('dm-lobby-chat-time'));
 let game = null;
 if (params.has('test')) window.derbyTest = { hud, get game() { return game; } };
 
@@ -356,9 +358,15 @@ function updateAttendanceStatus() {
 
 /** Syncs the live 3D lobby stage (#123 phase 2) to the selected mode, its options, and checked-in teammates. */
 function syncStage() {
-  if (!game || state.phase !== 'lobby' || !state.loaded) return;
+  if (state.phase !== 'lobby' || !state.loaded) {
+    lobbyMeetChat.stop();
+    return;
+  }
+  const mode = findMode(state.mode);
+  if (mode.id === 'deathmatch') lobbyMeetChat.start();
+  else lobbyMeetChat.stop();
+  if (!game) return;
   try {
-    const mode = findMode(state.mode);
     const names = selectRacers(state.roster, state.absent).map(show);
     const options = state.options[mode.id];
     if (mode.stagePreview) mode.stagePreview(game, { names, options });
@@ -707,6 +715,7 @@ async function start(mode) {
       $('quit').hidden = false;
     },
     hideQuit: () => { $('quit').hidden = true; },
+    quit: backToLobby,
     saveWinner: (name) => saveWinner(stored(name), mode.winMode),
   }, state.options[mode.id]);
 }

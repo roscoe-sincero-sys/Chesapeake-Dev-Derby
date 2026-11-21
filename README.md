@@ -220,6 +220,36 @@ so every wrestler has the same chance; when and where each ring-out happens neve
 match has its own pacing: about 15 seconds for 2 wrestlers, and about 45 to 75 seconds for 12 (a minute
 on average), whatever the **Race length** slider says (the slider is only for races).
 
+### Standup Deathmatch
+
+A modernized Quake / QuakeWorld deathmatch presented as a shared screen inside a Google Meet daily
+standup (2–30 players):
+
+- **Google Meet presentation:** the shared screen renders the live 3D QuakeWorld arena while the
+  right-hand **In-call messages** sidebar streams real-time team chat (2.5s–4.5s spacing) and the bottom
+  Google Meet bar displays the real local clock and participant count. In the lobby, selecting Standup
+  Deathmatch stages the 3D arena alongside the lobby chat script from `docs/in-call-messages.md` with
+  real current timestamps.
+- **4-line Quake console:** top-left monospace obituary console showing live frags and powerup pickups.
+- **14 developers, bespoke weapons & powerups:** Maya (Kubernetes Pod Cannon), Walter (prod1/prodl/prodI
+  Tri-Barrel), Zoe (Works-On-My-Machine Railgun), Finn (Volt-Can Lightning Gun), Bruno (Thock-9000 Keycap
+  Grenade Launcher), Aman (Orbital Force-Push Rocket Launcher), Priya (Meeting-About-Blockers Plasma
+  Rifle), Mei (Cat-Ear Dedicated Server Shotgun), Alex (37-Tab BFG-200GB), Ben (Regression Invader
+  Nailgun), Elliot (Triple-Synonym Scattergun), Sam (Cappuccino Dependency Mortar), Ray ($10M Glare
+  Beam), and Chevron (Silent Hotfix Disintegrator), plus Quake-style powerups (**Quad Deploy**,
+  **Cardboard Glare Shield**, **On-Mute Invisibility**, **Cappuccino Overclock**, and **Mega-Ticket
+  200HP**).
+- **Signature clock rollback:** Player 1 spawns with **0:10** left; at **0:02** a classic standup
+  interruption triggers a server clock rollback to **0:45** followed by the license/time-travel exchange.
+- **0:00 Frag Leaderboard:** single-column for fewer than 16 invitees, two-column for 16+. NPC meeting
+  crashers join the chat and arena but are strictly excluded from the leaderboard and can never lead.
+
+  <p>
+    <img src="docs/deathmatch-wide.png" width="600" alt="Standup Deathmatch in a Google Meet call: a shared screen showing the 3D QuakeWorld arena with developer avatars, the 4-line Quake obituary console in the top-left, the match clock, the full-height In-call messages panel on the right, and the Google Meet control bar along the bottom.">
+  </p>
+
+  *Standup Deathmatch on a 1366 × 768 screen inside the Google Meet call frame.*
+
 ### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest
@@ -711,8 +741,12 @@ AI development assistance:
   1.8.0 README and release (Claude Opus 5.5).
 - **Google Gemini 4 Neon** (in Antigravity) - the 1.8.0 lobby rework (#123): the Live Broadcast Stage,
   the live 3D stage for each game, the chyron, Surprise me, and the phone layout and screenshots; the
-  WAVE 10/10 fixes (#129); and the 1.9.0 Broadcast Studio Desk (#133): unified studio shell, scroll fix,
-  Hall of Fame stats & standings, and Roster Studio with live 3D preview.
+  WAVE 10/10 fixes (#129); the 1.9.0 Broadcast Studio Desk (#133): unified studio shell, scroll fix,
+  Hall of Fame stats & standings, and Roster Studio with live 3D preview; and co-author of **Standup
+  Deathmatch** (Google Meet QuakeWorld mode, 14 developer weapons & powerups, live chat, and 0:00 frag
+  leaderboard).
+- **GPT 6.1 SOL (High)** - co-author of **Standup Deathmatch**, including the 12-developer Google Meet
+  and character portrait reference artwork.
 - **OpenAI Codex** - implementation, testing, security review, and repository maintenance.
 
 Claude's initial development statistics, as reported by the project owner:

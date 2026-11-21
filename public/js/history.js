@@ -51,14 +51,14 @@ function renderStats(stats) {
   const mix = stats.modeMix;
   const bar = $('stat-mix-bar');
   bar.replaceChildren();
-  for (const [key, cls] of [['race', 'mix-race'], ['wrestle', 'mix-wrestle'], ['skip', 'mix-skip'], ['unknown', 'mix-unknown']]) {
+  for (const [key, cls] of [['race', 'mix-race'], ['wrestle', 'mix-wrestle'], ['deathmatch', 'mix-deathmatch'], ['skip', 'mix-skip'], ['unknown', 'mix-unknown']]) {
     if (!mix[key].count) continue;
     const seg = document.createElement('span');
     seg.className = `mix-seg ${cls}`;
     seg.style.flexGrow = String(mix[key].count);
     bar.append(seg);
   }
-  $('stat-mix-sub').textContent = `🏁 ${mix.race.count} · 🤼 ${mix.wrestle.count} · 🎲 ${mix.skip.count}`;
+  $('stat-mix-sub').textContent = `🏁 ${mix.race.count} · 🤼 ${mix.wrestle.count} · 🔫 ${mix.deathmatch.count} · 🎲 ${mix.skip.count}`;
 }
 
 function makeNameCell(rawName, sittingOut) {
@@ -122,6 +122,7 @@ function renderTables() {
         cell(String(row.total), 'num'),
         cell(String(row.race), 'num'),
         cell(String(row.wrestle), 'num'),
+        cell(String(row.deathmatch), 'num'),
         cell(String(row.skip), 'num'),
         cell(row.total ? day : '—'),
       );

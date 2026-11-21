@@ -92,6 +92,20 @@ const SURFACES = [
   ['button.secondary', ['var(--text)']],
   ['button.primary:disabled', ['var(--muted)']],
   ['button.primary[aria-disabled="true"]', ['var(--muted)']],
+  // Standup Deathmatch: Google Meet chrome, 4-line Quake console, chat sidebar & 0:00 frag leaderboard.
+  ['.dm-lobby-chat', ['#1f1f1f', '#5f6368']],
+  ['.dm-chat-panel', ['#1f1f1f', '#5f6368', '#b42318']],
+  ['.dm-chat-notice', ['#3c4043']],
+  ['.dm-meet-bar', ['#e8eaed']],
+  ['.dm-meet-btn-active', ['#14171f']],
+  ['.dm-meet-leave', ['#ffffff']],
+  ['.dm-present-pill', ['#e8eaed']],
+  ['.dm-clock', ['#f2b817']],
+  ['.dm-clock.rolled-back', ['#ffe066']],
+  ['.dm-console', ['#e9c46a', '#ffffff']],
+  ['.dm-quake-hud', ['#f8f9fa', '#f2b817', '#8ab4f8', '#8ce99a', '#ff8787']],
+  ['.dm-leaderboard', ['#f8f9fa', '#f2b817', 'var(--muted)']],
+  ['.dm-lb-row', ['#f8f9fa', 'var(--muted)', '#8ce99a']],
 ];
 
 test('text on every panel surface reaches WCAG AA contrast, on a solid background', () => {

@@ -72,6 +72,20 @@
           <span id="chyron-tag" class="chyron-tag"></span>
           <span id="chyron-text" class="chyron-text"></span>
         </aside>
+
+        <!-- Standup Deathmatch lobby preview chat (docs/in-call-messages.md with real local time) -->
+        <aside id="dm-lobby-chat" class="dm-lobby-chat" aria-label="In-call messages preview" hidden>
+          <div class="dm-lobby-chat-head">
+            <span class="dm-lobby-chat-title">In-call messages</span>
+            <span id="dm-lobby-chat-time" class="dm-lobby-chat-time"></span>
+          </div>
+          <p class="dm-lobby-chat-sub">Daily Standup (15 minutes)</p>
+          <ul id="dm-lobby-chat-list" class="dm-chat-list" aria-live="off"></ul>
+          <div class="dm-chat-composer" aria-hidden="true">
+            <span>Send a message</span>
+            <span>➤</span>
+          </div>
+        </aside>
       </div>
 
       <!-- Bottom Command Dock: Pick a game, selected game's options, and Launch -->
@@ -164,6 +178,13 @@
       <h3>Wrestlers</h3>
       <p class="guide-list" data-list="wrestlers"></p>
     </template>
+    <template id="guide-deathmatch">
+      <p>A modernized QuakeWorld deathmatch presented as a shared screen inside a Google Meet daily standup. The match opens with <b>0:10</b> on the clock, rolls back to <b>0:45</b> after a classic standup interruption, and crowns the invitee with the most frags at <b>0:00</b>. Meeting crasher NPCs join the chat and arena, but can never lead.</p>
+      <h3>14 Developers &amp; Signature Weapons</h3>
+      <p class="guide-list" data-list="developers"></p>
+      <h3>Powerups</h3>
+      <p class="guide-list" data-list="powerups"></p>
+    </template>
 
     <!-- After Exit -->
     <main id="closed" class="panel closed" hidden>
@@ -184,6 +205,73 @@
       <ol id="ring-roster" aria-label="Wrestlers in the ring"></ol>
       <div id="feed" aria-live="off"></div>
       <div id="countdown" aria-live="assertive"></div>
+    </div>
+
+    <!-- Standup Deathmatch: Google Meet shared-screen shell, 4-line Quake console, In-call messages & 0:00 frag board -->
+    <div id="dm-meet" class="dm-meet" role="region" aria-label="Standup Deathmatch Google Meet call" hidden>
+      <div class="dm-meet-main">
+        <div class="dm-shared-stage">
+          <div class="dm-present-bar">
+            <span class="dm-present-pill">● Presenting: quakeworld-standup.exe</span>
+            <span id="dm-clock" class="dm-clock" aria-label="Match clock">0:10</span>
+          </div>
+
+          <div id="dm-console" class="dm-console" aria-label="Quake obituary console" aria-live="off"></div>
+
+          <div class="dm-crosshair" aria-hidden="true">+</div>
+
+          <div class="dm-quake-hud" aria-label="Player status">
+            <span id="dm-hud-player" class="dm-hud-player"></span>
+            <span id="dm-hud-weapon" class="dm-hud-weapon"></span>
+            <span id="dm-hud-powerup" class="dm-hud-powerup"></span>
+            <span id="dm-hud-frags" class="dm-hud-frags"></span>
+          </div>
+
+          <section id="dm-leaderboard" class="dm-leaderboard" aria-labelledby="dm-lb-title" hidden>
+            <div class="dm-lb-head">
+              <h2 id="dm-lb-title">STANDUP DEATHMATCH — FINAL FRAGS</h2>
+              <p class="dm-lb-sub">Invitees only (NPC guests excluded). Highest kills leads today’s meeting.</p>
+            </div>
+            <div id="dm-leaderboard-grid" class="dm-lb-grid dm-lb-one-col"></div>
+            <div class="dm-lb-actions">
+              <button id="dm-continue" type="button" class="primary">Announce Meeting Leader</button>
+            </div>
+          </section>
+        </div>
+
+        <aside id="dm-chat-panel" class="dm-chat-panel" aria-label="In-call messages">
+          <div class="dm-chat-header">
+            <h2>In-call messages</h2>
+            <span class="dm-chat-badge">LIVE</span>
+          </div>
+          <p class="dm-chat-notice">Messages can be seen by people in the call and are deleted when the call ends.</p>
+          <ul id="dm-chat-list" class="dm-chat-list" aria-live="off"></ul>
+          <div class="dm-chat-composer" aria-hidden="true">
+            <span>Send a message to everyone</span>
+            <span>➤</span>
+          </div>
+        </aside>
+      </div>
+
+      <footer id="dm-meet-bar" class="dm-meet-bar">
+        <div class="dm-meet-info">
+          <span id="dm-meet-time">10:47 AM</span>
+          <span aria-hidden="true">|</span>
+          <span>Daily Standup (15 minutes)</span>
+        </div>
+        <div class="dm-meet-controls">
+          <span class="dm-meet-btn" aria-hidden="true">🎤</span>
+          <span class="dm-meet-btn" aria-hidden="true">📹</span>
+          <span class="dm-meet-btn" aria-hidden="true">CC</span>
+          <span class="dm-meet-btn" aria-hidden="true">✋</span>
+          <span class="dm-meet-btn dm-meet-btn-active" aria-hidden="true">🖥️</span>
+          <button id="dm-leave-call" type="button" class="dm-meet-leave" aria-label="Leave call and return to lobby">📞 Leave</button>
+        </div>
+        <div class="dm-meet-meta">
+          <span class="dm-meet-count-pill">👥 <span id="dm-meet-count">12</span></span>
+          <span class="dm-meet-btn dm-meet-btn-active" aria-hidden="true">💬</span>
+        </div>
+      </footer>
     </div>
 
     <!-- Winner announcement -->
