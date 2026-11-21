@@ -28,6 +28,7 @@ export class WrestleStage {
     this.t = 0;
     this.orbit = 0.55;
     this.loadGen = 0;
+    this.hdReady = false;
     this.modelStyle = 'classic';
     this.requestedStyle = 'classic';
     this.names = [];
@@ -133,72 +134,113 @@ export class WrestleStage {
   }
 
   /**
-   * Updates the wrestlers standing in the ring. When `modelStyle` is 'hd', loads HD models in the
-   * background and swaps them in live once ready (falling back to Classic if unavailable).
+   * Updates the wrestlers standing in the ring. Reuses existing rigs when only the roster changes
+   * (so toggling teammates in HD only builds or disposes the changed wrestler instead of cloning
+   * every skinned model). When switching to HD for the first time, loads models in the background
+   * and swaps them in live once ready.
    */
   setLineup(names, { modelStyle = 'classic' } = {}) {
-    const prevNames = new Set(this.names);
+    const nextStyle = modelStyle === 'hd' ? 'hd' : 'classic';
+    const sameNames = names.length === this.names.length && names.every((n, i) => n === this.names[i]);
+    if (sameNames && nextStyle === this.requestedStyle) return;
+
     this.names = [...names];
-    this.requestedStyle = modelStyle === 'hd' ? 'hd' : 'classic';
+    this.requestedStyle = nextStyle;
     const gen = ++this.loadGen;
 
-    if (this.requestedStyle === 'hd') {
-      // Show Classic immediately if not already HD, then swap in HD once prepared.
-      this.rebuild(prevNames, false);
+    if (nextStyle === 'hd') {
+      if (this.hdReady) {
+        this.syncWrestlers(true);
+        return;
+      }
+      // First time HD is requested: show Classic immediately while GLB models load, then swap once.
+      this.syncWrestlers(false);
       prepareWrestlerModels()
         .then(() => {
+          this.hdReady = true;
           if (this.loadGen !== gen || this.disposed) return;
-          this.rebuild(new Set(this.names), true);
+          this.syncWrestlers(true);
         })
         .catch(() => {
           /* Keep Classic on stage if HD assets are unavailable. */
         });
     } else {
-      this.rebuild(prevNames, false);
+      this.syncWrestlers(false);
     }
   }
 
-  rebuild(prevNames, useHd) {
-    this.clearWrestlers();
-    this.modelStyle = useHd ? 'hd' : 'classic';
+  /**
+   * Incrementally reconciles `this.wrestlers` against `this.names` and `useHd`.
+   * Existing rigs are kept in place when `modelStyle` hasn't changed; only added/removed teammates
+   * are created or disposed.
+   */
+  syncWrestlers(useHd) {
+    const nextStyle = useHd ? 'hd' : 'classic';
+    const styleChanged = nextStyle !== this.modelStyle;
+    const hadAny = this.wrestlers.length > 0;
+    const existing = new Map();
+
+    if (styleChanged) {
+      this.clearWrestlers();
+    } else {
+      const keep = new Set(this.names);
+      for (const w of this.wrestlers) {
+        if (keep.has(w.name) && !existing.has(w.name)) {
+          existing.set(w.name, w);
+        } else {
+          this.scene.remove(w.rig.root, w.rig.tags);
+          w.rig.dispose();
+        }
+      }
+      this.wrestlers = [];
+    }
+
+    this.modelStyle = nextStyle;
     const n = this.names.length;
     if (!n) return;
 
-    // Assign each teammate a stable character and belt colour; pack into two rings when over 12.
+    // Preserve character kinds already on stage so existing teammates never change identity.
     const used = new Set();
+    for (const w of existing.values()) used.add(w.kindIdx);
+
     this.wrestlers = this.names.map((name, i) => {
-      const h = hashName(name);
-      let kindIdx = h % WRESTLER_KINDS.length;
-      if (used.size < WRESTLER_KINDS.length) {
-        while (used.has(kindIdx)) kindIdx = (kindIdx + 1) % WRESTLER_KINDS.length;
-        used.add(kindIdx);
+      let entry = existing.get(name);
+      if (!entry) {
+        const h = hashName(name);
+        let kindIdx = h % WRESTLER_KINDS.length;
+        if (used.size < WRESTLER_KINDS.length) {
+          while (used.has(kindIdx)) kindIdx = (kindIdx + 1) % WRESTLER_KINDS.length;
+          used.add(kindIdx);
+        }
+        const kind = WRESTLER_KINDS[kindIdx];
+        const color = `#${new THREE.Color().setHSL(((h % 360) / 360), 0.78, 0.56).getHexString()}`;
+        const rig = buildWrestler(kind, color, name, { original: !useHd });
+        rig.root.rotation.order = 'YXZ';
+        this.scene.add(rig.root, rig.tags);
+        entry = {
+          name,
+          kindIdx,
+          rig,
+          x: 0,
+          z: 0,
+          heading: 0,
+          phase: (h % 628) / 100,
+          pop: hadAny && !styleChanged ? 1 : 0,
+        };
       }
-      const kind = WRESTLER_KINDS[kindIdx];
-      const color = `#${new THREE.Color().setHSL(((h % 360) / 360), 0.78, 0.56).getHexString()}`;
-      const rig = buildWrestler(kind, color, name, { original: !useHd });
       const outer = n <= 12 ? n : Math.ceil(n * 0.65);
       const inOuter = i < outer;
       const ringCount = inOuter ? outer : n - outer;
       const ringIdx = inOuter ? i : i - outer;
       const radius = n === 1 ? 0 : inOuter ? Math.min(4.2, 2.2 + ringCount * 0.22) : Math.min(2.1, 1.1 + ringCount * 0.14);
       const angle = (ringIdx / Math.max(1, ringCount)) * Math.PI * 2 + (inOuter ? 0 : Math.PI / Math.max(1, ringCount));
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const heading = Math.atan2(x, z);
-      rig.root.rotation.order = 'YXZ';
-      rig.root.position.set(x, MAT_Y, z);
-      rig.root.rotation.y = heading;
-      rig.tags.position.set(x, MAT_Y, z);
-      this.scene.add(rig.root, rig.tags);
-      return {
-        name,
-        rig,
-        x,
-        z,
-        heading,
-        phase: (h % 628) / 100,
-        pop: prevNames.size && !prevNames.has(name) ? 1 : 0,
-      };
+      entry.x = Math.cos(angle) * radius;
+      entry.z = Math.sin(angle) * radius;
+      entry.heading = Math.atan2(entry.x, entry.z);
+      entry.rig.root.position.set(entry.x, MAT_Y, entry.z);
+      entry.rig.root.rotation.y = entry.heading;
+      entry.rig.tags.position.set(entry.x, MAT_Y, entry.z);
+      return entry;
     });
   }
 

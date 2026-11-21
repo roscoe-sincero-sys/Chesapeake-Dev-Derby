@@ -22,6 +22,9 @@ to release.
     background (`startBackground()` in `page-common.js`).
 
 ### Fixed
+- **HD wrestling stage performance:** toggling teammates in Let's Rumble (HD) now updates the ring
+  incrementally (creating or disposing only the changed wrestler and keeping `hdReady` cached)
+  instead of flashing back to Classic and re-cloning every skinned HD model on each click.
 - **Lobby modals & links:** moved `#reset-dialog` outside the `pointer-events: none` open 3D stage so
   its **Cancel** and **Reset list** buttons work reliably; **How to play** now opens as a pop-up
   dialog (`#guide-dialog`) instead of expanding the Bottom Command Dock; `#attendance-status`

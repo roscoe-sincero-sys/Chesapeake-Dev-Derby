@@ -336,6 +336,12 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await until(`window.derbyTest.game.stageState().modelStyle === 'hd'`, 20000, 'HD models to swap in on stage');
   assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
 
+  // Toggling a teammate while in HD updates incrementally without flashing back to Classic or rebuilding everyone.
+  await evaluate(`document.querySelectorAll('#roster input')[2].click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 3, modelStyle: 'hd', requestedStyle: 'hd' });
+  await evaluate(`document.querySelectorAll('#roster input')[2].click()`);
+  assert.deepEqual(await stage(), { mode: 'wrestle-ring', count: 4, modelStyle: 'hd', requestedStyle: 'hd' });
+
   // Edit team list and Full history share the same mode-reactive 3D background (wrestle-ring here).
   for (const subpage of ['roster.html', 'history.html']) {
     await leave(subpage);
