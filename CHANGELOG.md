@@ -7,6 +7,23 @@ to release.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-21
+
+The Claw of Destiny: 3D arcade claw machine game mode with choreographed physics and cropped developer
+reference-portrait bobbleheads, by Google Gemini 4 Neon in Antigravity.
+
+### Added
+- **The Claw of Destiny (4th game mode):** a 3D arcade claw machine (`2–30` players) with choreographed
+  physics (`public/js/claw-sim.js`, `public/js/claw.js`), clear gachapon capsules containing 14-developer
+  bobbleheads with actual cropped reference portraits (`public/assets/developers/*.png`), an illuminated
+  **STANDUP-O-MATIC** / **THE ALGORITHM** cabinet with synced 3D arcade joystick, `INSERT STORY POINTS`
+  coin slot, populated **VIP LOUNGE** shelf for cooldown teammates, scanning spotlight, dynamic **Chute
+  Cam**, synthesized arcade Web Audio effects, and 10s–120s duration scaling (*Quick Grab*, *Rigged
+  Arcade* with `"500 Internal Server Error"`, and *Elimination Pit*).
+- Integrated `claw` into Winner History (`WIN_MODES`, Hall of Fame stats, filter chips, Standings), unit
+  tests (`test/claw-sim.test.js`), real-browser tests (`test/lobby-browser.test.js`), and refreshed
+  `v1.11.0` README screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`, `docs/claw-wide.png`).
+
 ## [1.10.0] - 2026-11-21
 
 Standup Deathmatch: modernized Quake / QuakeWorld deathmatch inside a Google Meet daily standup,

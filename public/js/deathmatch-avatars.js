@@ -11,7 +11,7 @@ const torsoTexCache = new Map();
 let cardboardSignTex = null;
 
 /** Draws an expressive cartoon/stylized face texture matching each developer's reference portrait. */
-function getFaceTexture(k) {
+export function getFaceTexture(k) {
   if (faceTexCache.has(k.id)) return faceTexCache.get(k.id);
   const tex = canvasTexture(256, 256, (ctx, w, h) => {
     ctx.fillStyle = k.skin;

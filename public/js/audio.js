@@ -153,6 +153,25 @@ export class Sfx {
         this.tone(660, 0.16, { type: 'sawtooth', gain: 0.12, slide: -380 });
         this.tone(440, 0.28, { type: 'square', gain: 0.1, slide: 260, delay: 0.16 });
         break;
+      case 'clawWhir':
+        this.tone(180, 0.22, { type: 'sawtooth', gain: 0.05, slide: 60 });
+        break;
+      case 'clawDrop':
+        this.noise(0.28, { gain: 0.14, cutoff: 1800 });
+        this.tone(360, 0.25, { type: 'triangle', gain: 0.07, slide: -180 });
+        break;
+      case 'clawSlip':
+        this.tone(820, 0.32, { type: 'sine', gain: 0.11, slide: -540 });
+        break;
+      case 'clawClank':
+        this.tone(920, 0.09, { type: 'square', gain: 0.12, slide: -400 });
+        this.noise(0.1, { gain: 0.16, cutoff: 2200, delay: 0.02 });
+        break;
+      case 'clawWin':
+        this.tone(523, 0.12, { type: 'square', gain: 0.12, delay: 0 });
+        this.tone(659, 0.12, { type: 'square', gain: 0.12, delay: 0.12 });
+        this.tone(1047, 0.32, { type: 'square', gain: 0.14, delay: 0.24 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

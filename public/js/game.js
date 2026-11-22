@@ -12,6 +12,7 @@ import { RaceSim, TUNING, shuffle, generateCourse } from './sim.js';
 import { WrestleMatch } from './wrestle.js';
 import { WrestleStage } from './wrestle-stage.js';
 import { DeathmatchMatch, DeathmatchStage } from './deathmatch.js';
+import { ClawMatch, ClawStage } from './claw.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -126,6 +127,8 @@ export class Game {
     this.wrestleStage = null;
     this.deathmatchStage = null;
     this.deathmatch = null;
+    this.clawStage = null;
+    this.claw = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -175,6 +178,8 @@ export class Game {
     this.wrestleStage?.resize(w / h);
     this.deathmatch?.resize(w, h);
     this.deathmatchStage?.resize(w / h);
+    this.claw?.resize(w / h);
+    this.clawStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -188,6 +193,10 @@ export class Game {
     if (this.deathmatchStage) {
       this.deathmatchStage.dispose();
       this.deathmatchStage = null;
+    }
+    if (this.clawStage) {
+      this.clawStage.dispose();
+      this.clawStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -216,6 +225,10 @@ export class Game {
     if (this.deathmatchStage) {
       this.deathmatchStage.dispose();
       this.deathmatchStage = null;
+    }
+    if (this.clawStage) {
+      this.clawStage.dispose();
+      this.clawStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -274,6 +287,10 @@ export class Game {
       this.deathmatchStage.dispose();
       this.deathmatchStage = null;
     }
+    if (this.clawStage) {
+      this.clawStage.dispose();
+      this.clawStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -313,6 +330,30 @@ export class Game {
     this.deathmatchStage.setLineup(names);
   }
 
+  /** Stages the checked-in teammates as settling gachapon capsules in the 3D Claw of Destiny cabinet. */
+  showClawCabinet(names, { sittingOut = [] } = {}) {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
+    }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'claw-cabinet';
+    if (!this.clawStage) {
+      this.clawStage = new ClawStage(window.innerWidth / window.innerHeight, names, sittingOut);
+    }
+    this.clawStage.setLineup(names, sittingOut);
+  }
+
   /** Current live lobby stage summary (used by browser tests under ?test). */
   stageState() {
     if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -329,10 +370,27 @@ export class Game {
         count: this.deathmatchStage.models.length,
       };
     }
+    if (this.stageMode === 'claw-cabinet' && this.clawStage) {
+      return {
+        mode: 'claw-cabinet',
+        count: this.clawStage.bodies.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts The Claw of Destiny in its own 3D arcade cabinet. */
+  startClaw(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.claw = new ClawMatch(names, { ...options, sfx: this.sfx });
+    this.claw.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'claw';
+    return this.claw.plan;
   }
 
   /** Starts Standup Deathmatch in its own QuakeWorld arena + Google Meet overlay. */
@@ -455,6 +513,10 @@ export class Game {
       this.deathmatch.dispose();
       this.deathmatch = null;
     }
+    if (this.claw) {
+      this.claw.dispose();
+      this.claw = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -525,6 +587,12 @@ export class Game {
       return;
     }
 
+    if (this.claw) {
+      this.claw.update(real);
+      this.renderer.render(this.claw.scene, this.claw.camera);
+      return;
+    }
+
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
       if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -535,6 +603,11 @@ export class Game {
       if (this.stageMode === 'deathmatch-arena' && this.deathmatchStage) {
         this.deathmatchStage.update(real, reduced);
         this.renderer.render(this.deathmatchStage.scene, this.deathmatchStage.camera);
+        return;
+      }
+      if (this.stageMode === 'claw-cabinet' && this.clawStage) {
+        this.clawStage.update(real, reduced);
+        this.renderer.render(this.clawStage.scene, this.clawStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;

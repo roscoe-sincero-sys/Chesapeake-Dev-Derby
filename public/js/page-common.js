@@ -44,6 +44,7 @@ export const MODE = {
   skip: '🎲 Skip',
   wrestle: '🤼 Wrestle',
   deathmatch: '🔫 Deathmatch',
+  claw: '🕹️ Claw',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
@@ -51,6 +52,7 @@ export const MODE_COUNT = {
   race: 'by race',
   wrestle: 'by wrestling',
   deathmatch: 'by deathmatch',
+  claw: 'by claw',
   skip: 'skipped',
 };
 
@@ -117,7 +119,8 @@ export function startBackground() {
         const roster = buildRoster(data.names ?? [], data.winners ?? []);
         const shown = displayNames(data.names ?? []);
         const names = selectRacers(roster, saved.absent).map((n) => shown.get(nameKey(n)) ?? n);
-        mode.stagePreview(game, { names, options });
+        const sittingOut = (data.winners ?? []).map((w) => shown.get(nameKey(w.name)) ?? w.name);
+        mode.stagePreview(game, { names, options, sittingOut });
       } catch {
         /* Keep the empty stage or fly-over if /api/state is unavailable. */
       }

@@ -1668,38 +1668,40 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   .command-dock {
     flex: none;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 412px;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 392px;
+    gap: 14px;
     align-items: stretch;
-    padding: 8px 18px;
+    padding: 6px 16px;
     border-top: 1px solid #2c3547;
     box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.4);
   }
   #game-section {
     display: grid;
-    grid-template-columns: minmax(456px, 1.35fr) minmax(300px, 1fr);
-    gap: 16px;
+    grid-template-columns: minmax(596px, 1.85fr) minmax(300px, 1fr);
+    gap: 12px;
     align-items: stretch;
   }
-  .mode-card { min-height: 68px; padding: 8px 10px; }
+  .mode-cards { gap: 6px; }
+  .mode-card { min-height: 62px; padding: 7px 10px; }
+  .mode-icon { font-size: 22px; }
   .mode-options { margin-top: 0; }
-  .mode-config { padding: 8px 14px; gap: 6px; }
+  .mode-config { padding: 7px 12px; gap: 5px; }
   .lobby-foot {
     position: static;
     margin: 0;
-    padding: 0 0 0 16px;
+    padding: 0 0 0 14px;
     border-top: none;
     border-left: 1px solid var(--panel-border);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
   .readiness { flex: none; }
   .lobby-actions { margin-left: 0; gap: 8px; justify-content: flex-end; }
-  .lobby-actions button.secondary { padding-inline: 12px; font-size: 14px; }
-  .lobby-actions button.primary { min-width: 242px; padding-inline: 14px; }
+  .lobby-actions button.secondary { padding-inline: 10px; font-size: 13px; }
+  .lobby-actions button.primary { min-width: 236px; padding-inline: 12px; }
 }
 
 /* Phones (and phones on their side): the team list folds into a summary row, the readiness line joins
@@ -1750,6 +1752,7 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 /* ================================================================== Standup Deathmatch (Google Meet + QuakeWorld) */
 
 .mix-deathmatch { background: #ff6b6b; }
+.mix-claw { background: #38bdf8; }
 
 /* Docked Google Meet preview chat card on the right side of the lobby stage */
 .dm-lobby-chat {

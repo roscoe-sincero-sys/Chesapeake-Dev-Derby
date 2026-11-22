@@ -19,6 +19,14 @@ import {
   DEVELOPER_KINDS,
   DM_POWERUPS,
 } from './deathmatch-sim.js';
+import {
+  planClawMatch,
+  MIN_CLAW_PLAYERS,
+  MAX_CLAW_PLAYERS,
+  CLAW_DURATIONS,
+  DEFAULT_CLAW_DURATION,
+  normalizeClawDuration,
+} from './claw-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -117,6 +125,29 @@ export const MODES = [
     ready: (n) => `${n} developers in the Meet call — most frags at 0:00 leads standup.`,
     stagePreview: (stage, { names }) => stage.showDeathmatchArena(names),
     start: startDeathmatch,
+  },
+  {
+    id: 'claw',
+    winMode: 'claw',
+    icon: '🕹️',
+    name: 'Claw of Destiny',
+    verb: 'claw',
+    tagline: 'Last dev capsule down the chute leads standup.',
+    players: { min: MIN_CLAW_PLAYERS, max: MAX_CLAW_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Round length',
+        steps: CLAW_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_CLAW_DURATION,
+        normalize: normalizeClawDuration,
+      },
+    ],
+    guide: 'claw',
+    ready: (n) => `${n} dev capsules in the pit — who drops down the prize chute?`,
+    stagePreview: (stage, { names, sittingOut }) => stage.showClawCabinet(names, { sittingOut }),
+    start: startClaw,
   },
 ];
 
@@ -327,4 +358,57 @@ function startDeathmatch(ctx) {
       ctx.saveWinner(leader.name);
     },
   });
+}
+
+// ------------------------------------------------------------------ claw of destiny
+
+function startClaw(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    // No WebGL: run the choreographed claw draw headlessly and announce the sole survivor.
+    const plan = planClawMatch(ctx.names, { duration, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      null,
+      0,
+      `Dropped down the ${plan.marquee} prize chute as ${plan.winner.kind.label} (decided off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const clawParams = new URLSearchParams(location.search);
+  const effectiveDuration = clawParams.has('clawDuration') ? Number(clawParams.get('clawDuration')) || duration : duration;
+
+  game.startClaw(ctx.names, {
+    duration: effectiveDuration,
+    sittingOut: ctx.sittingOut ?? [],
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'attempt') hud.note(e.text, true);
+      else if (e.type === 'excuse') hud.note(`💥 ${e.player.name} slipped out — “${e.excuse}”`);
+      else if (e.type === 'drop') hud.callout(`🕹️ ${e.player.name} drops down the chute!`, 2200);
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      hud.showWinner(
+        winner.name,
+        null,
+        null,
+        1200,
+        `Dropped down the ${plan.marquee} prize chute (${winner.kind.label})`,
+        { kicker: 'Leads today’s standup' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  hud.beginWrestle([]);
+  ctx.showQuit('✕ Quit claw');
 }
