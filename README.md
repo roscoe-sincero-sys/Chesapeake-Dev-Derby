@@ -250,6 +250,31 @@ standup (2–30 players):
 
   *Standup Deathmatch on a 1366 × 768 screen inside the Google Meet call frame.*
 
+### The Claw of Destiny
+
+A 3D arcade claw machine (2–30 players) powered by choreographed physics and scaled to the 10s–120s
+duration slider:
+
+- **Arcade cabinet & bobblehead capsules:** every active teammate drops into a glass arcade cabinet
+  (**STANDUP-O-MATIC** or **THE ALGORITHM**) as a clear gachapon capsule containing their 3D bobblehead
+  (using the 14 developer reference faces), paired with an animated 3D joystick synced to the overhead
+  X/Z gantry, a glowing **INSERT STORY POINTS** coin slot, a **VIP LOUNGE** shelf outside the glass,
+  and a downward scanning spotlight that makes nearby capsules rattle.
+- **Choreographed 4-phase suspense:** the overhead **THE STANDUP** claw hunts with fake-outs, scoops
+  the fairly pre-rolled winner plus 1–3 decoys, drops decoys one by one with dev excuses (*"Blocked by
+  Common Sense"*, *"In another meeting"*, *"SSL Certs Expired"*, *"Was not clear"*, *"Had URL Modified"*,
+  *"Testing in production"*, *"Rolling back server clock"*, *"Busy scrolling 800 columns"*), and cuts to
+  a dramatic low-angle **Chute Cam** as the sole survivor drops down the glowing prize chute.
+- **Scales with round length:** **10s–15s** (*Quick Grab*), **30s** (*Rigged Arcade* — Attempt 1 drops a
+  dev 90% of the way with *"500 Internal Server Error"*, Attempt 2 lands the winner), and **60s–120s**
+  (*Elimination Pit* — multi-drop tension ending in a sudden-death grab).
+
+  <p>
+    <img src="docs/claw-wide.png" width="600" alt="The Claw of Destiny 3D arcade claw machine: illuminated STANDUP-O-MATIC marquee, clear gachapon capsules with developer reference-portrait bobbleheads, THE STANDUP claw descending into the pile, animated arcade joystick, INSERT STORY POINTS coin slot, and sitting-out teammates on the VIP LOUNGE shelf.">
+  </p>
+
+  *The Claw of Destiny on a 1366 × 768 screen, with cooldown teammates relaxing on the VIP Lounge shelf.*
+
 ### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest

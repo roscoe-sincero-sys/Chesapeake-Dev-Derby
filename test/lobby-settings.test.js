@@ -14,8 +14,8 @@ function store(initial = null) {
 const browser = (session = store(), local = store()) => ({ session: () => session, local: () => local, tab: session, kept: local });
 
 /** Settings with every option at its default, except those given. */
-function settings({ absent = [], mode = 'race', speed = 2, models = 'classic' } = {}) {
-  return { absent: new Set(absent), mode, options: { race: { speed }, rumble: { models }, deathmatch: {} } };
+function settings({ absent = [], mode = 'race', speed = 2, models = 'classic', duration = 15 } = {}) {
+  return { absent: new Set(absent), mode, options: { race: { speed }, rumble: { models }, deathmatch: {}, claw: { duration } } };
 }
 
 test('attendance is kept for the tab, and the game and its options for the browser', () => {
@@ -25,7 +25,7 @@ test('attendance is kept for the tab, and the game and its options for the brows
   assert.deepEqual(restored, settings({ absent: ['ada', 'grace'], mode: 'rumble', speed: 8, models: 'hd' }));
   assert.deepEqual(selectRacers(buildRoster(['Ada', 'Grace', 'Linus', 'Hedy'], []), restored.absent), ['Linus', 'Hedy']);
   assert.deepEqual(JSON.parse(b.tab.value), { absent: ['ada', 'grace'] });
-  assert.deepEqual(JSON.parse(b.kept.value), { mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' }, deathmatch: {} } });
+  assert.deepEqual(JSON.parse(b.kept.value), { mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' }, deathmatch: {}, claw: { duration: 15 } } });
 });
 
 test('a new tab (tomorrow’s meeting) keeps the game and its options, with everyone present again', () => {

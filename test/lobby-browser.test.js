@@ -128,8 +128,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 4);
-  assert.deepEqual(lobby.cards[3], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 5);
+  assert.deepEqual(lobby.cards[4], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
@@ -142,6 +142,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal((await evaluate(LOBBY)).focus, 'rumble');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'deathmatch');
+  await tab();
+  assert.equal((await evaluate(LOBBY)).focus, 'claw');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'arena');
   await enter();
@@ -178,7 +180,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[3], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[4], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -364,6 +366,11 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   assert.equal(await evaluate(`document.getElementById('dm-lobby-chat').hidden`), false, 'lobby preview chat shows for Standup Deathmatch');
   assert.ok(await evaluate(`document.querySelectorAll('#dm-lobby-chat-list .dm-msg').length >= 1`), 'lobby preview chat streams messages');
 
+  // Claw of Destiny stages the 3D arcade cabinet with settling dev gachapon capsules.
+  await evaluate(`document.querySelector('.mode-card[data-mode="claw"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'claw-cabinet', count: 4 });
+  assert.equal(await evaluate(`document.getElementById('dm-lobby-chat').hidden`), true, 'lobby preview chat hides when leaving Deathmatch');
+
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
   assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
@@ -403,6 +410,17 @@ test('Standup Deathmatch runs Google Meet shared-screen match, rolls back clock 
   // Clicking Announce Meeting Leader transitions cleanly to the winner card.
   await evaluate(`document.getElementById('dm-continue').click()`);
   await until(`!document.getElementById('results').hidden`, 10000, 'winner card after leaderboard');
+});
+
+test('Claw of Destiny runs 3D arcade claw round with dev excuses and drops winner down the chute', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=claw&seed=19&clawDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('results').hidden`, 25000, 'Claw of Destiny winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /prize chute/);
 });
 
 test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
@@ -475,9 +493,9 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
   test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
-    const { evaluate } = await openLobby(t, { extra: 3, names, width, height, mobile, reducedMotion: true });
+    const { evaluate } = await openLobby(t, { extra: 2, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'arena', 'quiz', 'relay']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'arena', 'quiz']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`document.querySelector('.mode-card[data-mode="${id}"]').click()`);

@@ -49,7 +49,10 @@ test('race and rumble keep their player ranges and defaults', () => {
   const dm = findMode('deathmatch');
   assert.equal(dm.winMode, 'deathmatch');
   assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(dm, n)), [false, true, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {} });
+  const claw = findMode('claw');
+  assert.equal(claw.winMode, 'claw');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(claw, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 } });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {

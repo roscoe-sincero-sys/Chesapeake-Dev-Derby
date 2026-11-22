@@ -12,7 +12,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   const total = history.length;
 
   // Mode mix counts (in display order).
-  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, skip: 0, unknown: 0 };
+  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, claw: 0, skip: 0, unknown: 0 };
   const byKey = new Map();
 
   const ensure = (rawName) => {
@@ -27,6 +27,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
         race: 0,
         wrestle: 0,
         deathmatch: 0,
+        claw: 0,
         skip: 0,
         unknown: 0,
         lastDate: null,
@@ -42,7 +43,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   for (const name of rosterNames) ensure(name);
 
   history.forEach((h, idx) => {
-    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'skip' ? h.mode : 'unknown';
+    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'claw' || h.mode === 'skip' ? h.mode : 'unknown';
     modeCounts[mode]++;
     const entry = ensure(h.name);
     entry.total++;
@@ -107,6 +108,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
     race: { count: modeCounts.race, pct: pct(modeCounts.race) },
     wrestle: { count: modeCounts.wrestle, pct: pct(modeCounts.wrestle) },
     deathmatch: { count: modeCounts.deathmatch, pct: pct(modeCounts.deathmatch) },
+    claw: { count: modeCounts.claw, pct: pct(modeCounts.claw) },
     skip: { count: modeCounts.skip, pct: pct(modeCounts.skip) },
     unknown: { count: modeCounts.unknown, pct: pct(modeCounts.unknown) },
   };

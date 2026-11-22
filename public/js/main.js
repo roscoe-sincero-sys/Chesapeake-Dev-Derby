@@ -368,8 +368,9 @@ function syncStage() {
   if (!game) return;
   try {
     const names = selectRacers(state.roster, state.absent).map(show);
+    const sittingOut = state.winners.map((w) => show(w.name));
     const options = state.options[mode.id];
-    if (mode.stagePreview) mode.stagePreview(game, { names, options });
+    if (mode.stagePreview) mode.stagePreview(game, { names, options, sittingOut });
     else game.showFlyover();
   } catch (err) {
     console.warn('Lobby 3D stage preview unavailable; falling back to fly-over.', err);
@@ -696,6 +697,7 @@ async function start(mode) {
   sfx.unlock();
   await mode.start({
     names: storedNames.map(show),
+    sittingOut: state.winners.map((w) => show(w.name)),
     rng: seed === null ? Math.random : mulberry32(seed),
     game,
     hud,
