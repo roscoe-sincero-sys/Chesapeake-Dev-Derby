@@ -321,6 +321,35 @@ swiveling **RELEASE MANAGER** laser turret:
 
   *Code Freeze on a 1366 × 768 screen.*
 
+### Launchpad Roulette
+
+Choose **🚀 Launchpad Roulette** (2 to 30 players) for a 3D Kerbal-style rocket ignition spectacle on a coastal Chesapeake Bay launch complex (`public/js/launchpad-sim.js`, `public/js/launchpad.js`):
+
+- **Coastal Launch Complex & Responsive Pads:** every active teammate gets a detailed aerospace rocket (curved ogive fairing, Saturn V roll-pattern hull, strap-on SRB pods, parabolic engine nozzles, multi-layer exhaust plumes, and quirky flairs) arranged in a shallow arc (`2–10` players) or a staggered multi-row amphitheater (`11–30` players) beneath a glowing **MISSION: STANDUP** sign, surrounded by scenic Chesapeake Bay islands (with a lighthouse and spaceport radar dome) and drifting volumetric cumulus clouds.
+- **6 Comedic Failure Archetypes:** after the NASA-style **3… 2… 1… DEPLOY!** countdown, rockets suffer staggered malfunctions — Pad Fizzle (*"Oops. That was pr0dI. I needed pr0dL."*, *"16 chars secret is too big"*), Spiral Corkscrew (*"Failed to add ?returnUrl= to URL"*, *"800 columns is not enough"*), Sideways Veer (*"Rolled back the server clock"*, *"Failed to ping before flushing"*), Premature Staging (*"SSL Certs Ran Out of Fuel"*, *"Stabbed by Null pointer"*), Mid-Air Stall & Parachute (*"Common sense leak"*, *"Engine was voted off the team!"*), and Cloud-Deck Heartbreak (*"Blamed for not being clear"*, *"500 Internal Server Error"*) — until the sole survivor reaches **Prod Orbit** and deploys a tiny victory flag.
+- **Flight Length Scaling:** **10s–15s** (*Hotfix Launch* single-stage dash), **30s** (*Two-Stage Ascent* with mid-air **Stage Separation** `Local → Staging → Prod`), and **60s–120s** (*Orbital Gauntlet* climbing through `Dev Troposphere → QA Stratosphere → Prod Orbit`), with a dynamic daylight → twilight → starry-space skybox and synthesized Web Audio.
+
+  <p>
+    <img src="docs/launchpad-wide.png" width="600" alt="Launchpad Roulette on the coastal Chesapeake Bay launch complex: detailed aerospace rockets lifting off with glowing exhaust plumes beneath the MISSION: STANDUP sign, surrounded by Chesapeake Bay islands, a lighthouse, and volumetric cumulus clouds.">
+  </p>
+
+  *Launchpad Roulette on a 1366 × 768 screen.*
+
+### Jenga Connect
+
+Choose **🧱 Jenga Connect** (2 to 30 players) for a 3D collapsing-tower survival spectacle on top of a conference room table (`public/js/jenga-sim.js`, `public/js/jenga.js`):
+
+- **Conference Room Setting & Wall Displays:** all active teammates stand solidly atop a 3:1 maple/birch Jenga tower of laser-etched legacy software packages (`lamha.js`, `jquery-1.9.min.js`, `is-even`, `todo-fix-never`, `node_tables (200 GB)`, `temp-hotfix-1999`) resting on a walnut boardroom table. Wall 1 features a dry-erase whiteboard detailing the confidential **Jenga Connect SOC Audit Log Plan**, while Wall 2 mounts a live 4K status display tracking **Build Health**, **Structural Stability (%)**, and **Tower Lean (°)** with an inclinometer gauge.
+- **Automated `npm audit fix --force` Cursor & Grounded Hinge Physics:** a glowing 3D cursor slides blocks cleanly out lengthwise while the base stays flat on the table and upper tiers micro-shudder and creep, knocking outer stragglers off with dev-humor popups (*"Failed to rollback server clock"*, *"Failed to renew software license!"*, *"Failed to make WORD docs readible"*, *"Failed to complete a completed migration"*, *"Failed to explain it a sixth time"*).
+- **Fatal Keystone & `LTS-support` Climax:** a siren chirps as the camera cuts tight to a glowing crimson keystone (`blamed-for-not-being-clear`, `do-not-touch-utils-x`, `auth-v9-final2-draft7-actual4`, `core-business-dont-ask-why.php`, `load-bearing-hotfix`) before triggering a directional `0.35×` slow-motion collapse where the sole survivor lands safely on the glowing `LTS-support` block to lead standup.
+- **Duration Scaling:** **10s–15s** (*Friday Patch* — 12-tier tower, 3 rapid pulls), **30s** (*Major Version Bump* — 18-tier tower with Dependabot **Fake-Out Taps**), and **60s–120s** (*Full Monolith Migration* — 24-tier mega-tower with **Stack-On-Top Rebuilding**).
+
+  <p>
+    <img src="docs/jenga-wide.png" width="600" alt="Jenga Connect on a walnut conference room table: wooden package-labeled Jenga tower with developers perched on top, the Jenga Connect SOC Audit Log Plan whiteboard on the back wall, and the live Stability, Build Health, and Tower Lean TV display on the right wall.">
+  </p>
+
+  *Jenga Connect on a 1366 × 768 screen.*
+
 ### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest

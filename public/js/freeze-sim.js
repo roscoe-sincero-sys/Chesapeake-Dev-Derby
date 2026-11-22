@@ -40,7 +40,7 @@ export function freezeVariant(seconds) {
 export const FREEZE_EXCUSES = [
   'Blamed for not being clear!',
   'Made secret hotfixes!',
-  'Added ?ReturnUrl= to all URLs.',
+  'Added ?ReturnUrl= to URLs.',
   'Created four 800-columns tables.',
   'Rolled back the server clock!',
   'Voted off the team!',

@@ -1626,7 +1626,7 @@ button.exit { padding: 7px 12px; font-size: 13px; }
     bottom: 14px;
   }
   .lineup-drawer {
-    width: 268px;
+    width: 256px;
     max-height: 100%;
     display: flex;
     flex-direction: column;
@@ -1677,27 +1677,29 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   }
   #game-section {
     display: grid;
-    grid-template-columns: minmax(460px, 1.45fr) minmax(300px, 1fr);
+    grid-template-columns: minmax(580px, 1.8fr) minmax(320px, 1fr);
     gap: 12px;
     align-items: stretch;
   }
-  .mode-cards { gap: 6px; grid-template-columns: repeat(auto-fit, minmax(144px, 1fr)); }
+  .mode-cards { gap: 5px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
   .mode-card {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-items: center;
-    column-gap: 8px;
+    column-gap: 6px;
     row-gap: 1px;
-    min-height: 48px;
-    padding: 5px 10px;
+    min-height: 44px;
+    padding: 4px 8px;
   }
-  .mode-icon { grid-row: 1 / span 2; font-size: 20px; }
-  .mode-name { font-size: 13px; line-height: 1.2; padding-right: 16px; }
-  .mode-players { font-size: 12px; line-height: 1.2; }
-  .mode-check { top: 5px; right: 7px; font-size: 12px; }
+  .mode-icon { grid-row: 1 / span 2; font-size: 18px; }
+  .mode-name { font-size: 12.5px; line-height: 1.15; padding-right: 12px; }
+  .mode-players { font-size: 11px; line-height: 1.15; }
+  .mode-check { top: 4px; right: 6px; font-size: 11px; }
   .mode-options { margin-top: 0; }
-  .mode-config { padding: 7px 12px; gap: 5px; }
+  .mode-config { padding: 6px 10px; gap: 4px; }
+  .mode-tagline { font-size: 12px; line-height: 1.25; }
+  .range-option input[type="range"] { margin: 8px 0 6px; }
   .lobby-foot {
     position: static;
     margin: 0;
@@ -1767,6 +1769,8 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 .mix-claw { background: #38bdf8; }
 .mix-plinko { background: #51cf66; }
 .mix-freeze { background: #ff4d6d; }
+.mix-launchpad { background: #ff922b; }
+.mix-jenga { background: #c89b63; }
 
 .freeze-banner {
   position: fixed;

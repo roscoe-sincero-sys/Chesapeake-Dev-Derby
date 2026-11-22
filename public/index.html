@@ -214,6 +214,24 @@
         <li><b>60s–120s (Enterprise Deployment)</b> — long runway with Staging &amp; UAT checkpoints and slippery Tech Debt Ice patches.</li>
       </ul>
     </template>
+    <template id="guide-launchpad">
+      <p>Kerbal-style rocket ignition chaos on the Chesapeake Bay launch complex! Every active teammate gets a quirky low-poly rocket on the pads. After the <b>3… 2… 1… DEPLOY!</b> countdown, engines ignite and rockets sputter, corkscrew, veer sideways, stage early, stall, or pop into confetti at the cloud deck until the sole survivor reaches <b>Prod Orbit</b> to lead standup.</p>
+      <h3>Flight Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Hotfix Launch)</b> — single-stage mass ignition with rapid staggered failures straight to the cloud deck.</li>
+        <li><b>30s (Two-Stage Ascent)</b> — mid-air <b>Stage Separation</b> (<code>Local → Staging → Prod</code>) where boosters detach and decoys spin out.</li>
+        <li><b>60s–120s (Orbital Gauntlet)</b> — three atmospheric tiers (<code>Dev Troposphere → QA Stratosphere → Prod Orbit</code>) with dramatic final-two cloud-deck heartbreak.</li>
+      </ul>
+    </template>
+    <template id="guide-jenga">
+      <p><b>Jenga Connect</b> places all active developers atop a wooden Jenga monolith of legacy software packages (<code>lamha.js</code>, <code>jquery-1.9.min.js</code>, <code>node_tables (200 GB)</code>) on a conference room table. An automated <b><code>npm audit fix --force</code></b> cursor yanks load-bearing blocks out one by one while the wall monitor tracks <b>Stability</b>, <b>Build Health</b>, and <b>Tower Lean</b> — until a fatal crimson keystone (<code>do-not-touch-utils-x</code>, <code>load-bearing-hotfix</code>) triggers a <code>0.35×</code> slow-motion collapse. Last dev standing — landing safely on the glowing <code>LTS-support</code> block — leads standup.</p>
+      <h3>Collapse Timer Variants</h3>
+      <ul>
+        <li><b>10s–15s (Friday Patch)</b> — 12-tier tower, 3 rapid block pulls, fast transition into the slow-motion collapse.</li>
+        <li><b>30s (Major Version Bump)</b> — 18-tier tower, 6 pulls including <b>Fake-Out Taps</b> where Dependabot hesitates and switches targets.</li>
+        <li><b>60s–120s (Full Monolith Migration)</b> — 24-tier mega-tower with <b>Stack-On-Top Rebuilding</b> that drops pulled blocks onto the top platform until the fatal collapse.</li>
+      </ul>
+    </template>
 
     <!-- After Exit -->
     <main id="closed" class="panel closed" hidden>
@@ -235,6 +253,7 @@
       <div id="feed" aria-live="off"></div>
       <div id="plinko-ticker" class="plinko-ticker" aria-live="off" hidden></div>
       <div id="freeze-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
+      <div id="jenga-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
       <div id="countdown" aria-live="assertive"></div>
     </div>
 

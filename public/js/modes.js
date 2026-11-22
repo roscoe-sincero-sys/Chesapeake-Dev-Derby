@@ -43,6 +43,22 @@ import {
   DEFAULT_FREEZE_DURATION,
   normalizeFreezeDuration,
 } from './freeze-sim.js';
+import {
+  planLaunchMatch,
+  MIN_LAUNCH_PLAYERS,
+  MAX_LAUNCH_PLAYERS,
+  LAUNCH_DURATIONS,
+  DEFAULT_LAUNCH_DURATION,
+  normalizeLaunchDuration,
+} from './launchpad-sim.js';
+import {
+  planJengaMatch,
+  MIN_JENGA_PLAYERS,
+  MAX_JENGA_PLAYERS,
+  JENGA_DURATIONS,
+  DEFAULT_JENGA_DURATION,
+  normalizeJengaDuration,
+} from './jenga-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -210,6 +226,52 @@ export const MODES = [
     ready: (n) => `${n} developers on the runway — freeze on red or get zapped.`,
     stagePreview: (stage, { names, options }) => stage.showFreezeRunway(names, { duration: options.duration }),
     start: startFreeze,
+  },
+  {
+    id: 'launchpad',
+    winMode: 'launchpad',
+    icon: '🚀',
+    name: 'Launchpad Roulette',
+    verb: 'launch',
+    tagline: 'Kerbal-style rocket chaos — sole survivor to orbit leads.',
+    players: { min: MIN_LAUNCH_PLAYERS, max: MAX_LAUNCH_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Flight length',
+        steps: LAUNCH_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_LAUNCH_DURATION,
+        normalize: normalizeLaunchDuration,
+      },
+    ],
+    guide: 'launchpad',
+    ready: (n) => `${n} rockets on the Chesapeake pads — who makes it to Prod Orbit?`,
+    stagePreview: (stage, { names }) => stage.showLaunchpadComplex(names),
+    start: startLaunchpad,
+  },
+  {
+    id: 'jenga',
+    winMode: 'jenga',
+    icon: '🧱',
+    name: 'Jenga Connect',
+    verb: 'jenga',
+    tagline: 'Pull legacy packages — last dev off PROD DOWN leads.',
+    players: { min: MIN_JENGA_PLAYERS, max: MAX_JENGA_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Collapse timer',
+        steps: JENGA_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_JENGA_DURATION,
+        normalize: normalizeJengaDuration,
+      },
+    ],
+    guide: 'jenga',
+    ready: (n) => `${n} developers perched on the monolith — don’t touch the keystone!`,
+    stagePreview: (stage, { names }) => stage.showJengaTower(names),
+    start: startJenga,
   },
 ];
 
@@ -500,6 +562,7 @@ function startPlinko(ctx, { duration }) {
   const { game, hud } = ctx;
   const plinkoParams = new URLSearchParams(location.search);
   const effectiveDuration = plinkoParams.has('plinkoDuration') ? Number(plinkoParams.get('plinkoDuration')) || duration : duration;
+  hud.beginWrestle([]);
   const ticker = document.getElementById('plinko-ticker');
   if (ticker) {
     ticker.textContent = 'Backlog hopper ready…';
@@ -530,7 +593,6 @@ function startPlinko(ctx, { duration }) {
       ctx.saveWinner(winner.name);
     },
   });
-  hud.beginWrestle([]);
   ctx.showQuit('✕ Quit plinko');
 }
 
@@ -569,6 +631,7 @@ function startFreeze(ctx, { duration }) {
     banner.className = `freeze-banner freeze-${light.toLowerCase()}`;
     banner.hidden = false;
   };
+  hud.beginWrestle([]);
   setBanner('GREEN', ctx.names.length, ctx.names.length);
 
   game.startFreeze(ctx.names, {
@@ -603,6 +666,125 @@ function startFreeze(ctx, { duration }) {
       ctx.saveWinner(winner.name);
     },
   });
-  hud.beginWrestle([]);
   ctx.showQuit('✕ Quit freeze');
+}
+
+// ------------------------------------------------------------------ launchpad roulette
+
+function startLaunchpad(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planLaunchMatch(ctx.names, { duration, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      `DEPLOYED TO PROD — reached orbit in ${plan.duration.toFixed(1)}s (off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const launchParams = new URLSearchParams(location.search);
+  const effectiveDuration = launchParams.has('launchDuration')
+    ? Number(launchParams.get('launchDuration')) || duration
+    : duration;
+
+  game.startLaunchpad(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onCountdown: (text) => hud.countdown(text === 'DEPLOY!' ? 'GO' : text),
+    onEvent: (e) => {
+      if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'fail') hud.note(`💥 ${e.rocket.name}: “${e.popup}”`, true);
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      hud.callout(`🚀 ${winner.name} DEPLOYED TO PROD — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        `DEPLOYED TO PROD — LEADS STANDUP (${Math.round(plan.duration)}s orbit)`,
+        { kicker: 'Orbit achieved' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  hud.beginWrestle([]);
+  ctx.showQuit('✕ Quit launch');
+}
+
+// ------------------------------------------------------------------ dependency jenga
+
+function startJenga(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planJengaMatch(ctx.names, { duration, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      `Survived the Jenga Connect collapse in ${plan.duration.toFixed(1)}s (off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const jengaParams = new URLSearchParams(location.search);
+  const effectiveDuration = jengaParams.has('jengaDuration')
+    ? Number(jengaParams.get('jengaDuration')) || duration
+    : duration;
+  const banner = document.getElementById('jenga-banner');
+  const setBanner = (stability, rem, total) => {
+    if (!banner) return;
+    const tone = stability > 60 ? 'green' : stability > 30 ? 'yellow' : 'red';
+    banner.textContent = `🧱 STABILITY: ${stability}% · SURVIVORS: ${rem}/${total}`;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+  hud.beginWrestle([]);
+  setBanner(100, ctx.names.length, ctx.names.length);
+
+  game.startJenga(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.stability, e.remaining, e.total);
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'elim') {
+        hud.note(`💥 ${e.player.name} fell to PROD DOWN — “${e.excuse}”`, true);
+      }
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`🧱 ${winner.name} survived on LTS-support — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        `Last dev off PROD DOWN (${plan.variant.label} · ${plan.tiers} tiers)`,
+        { kicker: 'Leads today’s standup' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit jenga');
 }

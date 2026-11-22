@@ -128,8 +128,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 7);
-  assert.deepEqual(lobby.cards[6], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 9);
+  assert.deepEqual(lobby.cards[8], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
@@ -148,6 +148,10 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal((await evaluate(LOBBY)).focus, 'plinko');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'freeze');
+  await tab();
+  assert.equal((await evaluate(LOBBY)).focus, 'launchpad');
+  await tab();
+  assert.equal((await evaluate(LOBBY)).focus, 'jenga');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'arena');
   await enter();
@@ -184,7 +188,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[6], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[8], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -383,6 +387,14 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.querySelector('.mode-card[data-mode="freeze"]').click()`);
   assert.deepEqual(await stage(), { mode: 'freeze-runway', count: 4 });
 
+  // Launchpad Roulette stages the coastal Chesapeake Bay launch complex with rockets on the pads.
+  await evaluate(`document.querySelector('.mode-card[data-mode="launchpad"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'launchpad-complex', count: 4 });
+
+  // Dependency Jenga stages the wooden/neon dependency monolith above the PROD DOWN pit.
+  await evaluate(`document.querySelector('.mode-card[data-mode="jenga"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'jenga-tower', count: 4 });
+
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
   assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
@@ -459,6 +471,29 @@ test('Code Freeze runs Red Light Green Light survival sprint and crowns winner',
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /RELEASE|standing/);
 });
 
+test('Launchpad Roulette runs Kerbal-style rocket launch and crowns sole survivor in Prod Orbit', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=launchpad&seed=51&launchDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('results').hidden`, 25000, 'Launchpad Roulette winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /DEPLOYED TO PROD/);
+});
+
+test('Dependency Jenga pulls blocks, collapses in slow-mo, and crowns last dev off PROD DOWN', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=jenga&seed=61&jengaDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('jenga-banner').hidden`, 10000, 'Dependency Jenga stability banner');
+  await until(`!document.getElementById('results').hidden`, 25000, 'Dependency Jenga winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /PROD DOWN/);
+});
+
 test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
   const base = await startServer(t, NAMES);
   for (let i = 0; i < 40; i++) {
@@ -528,11 +563,11 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
-  test(`six modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
+  test(`eight modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
     const { evaluate } = await openLobby(t, { extra: 0, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`document.querySelector('.mode-card[data-mode="${id}"]').click()`);
@@ -555,7 +590,7 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
       assert.ok(!s.hscroll, `${at}: no sideways scrolling`);
       assert.ok(s.oneRow, `${at}: Just pick and Start in one row`);
       assert.deepEqual(s.shown, [id], `${at}: its options show, and no others`);
-      assert.equal(s.label, `▶ Start ${id}`);
+      assert.equal(s.label, `▶ Start ${id === 'launchpad' ? 'launch' : id}`);
       for (const card of s.cards) {
         assert.ok(card.w >= 140 && card.h >= 44, `${at}: card ${card.w} x ${card.h} is a big enough target`);
         assert.ok(!card.cut, `${at}: card text fits (wraps, not cut off)`);

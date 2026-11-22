@@ -15,6 +15,8 @@ import { DeathmatchMatch, DeathmatchStage } from './deathmatch.js';
 import { ClawMatch, ClawStage } from './claw.js';
 import { PlinkoMatch, PlinkoStage } from './plinko.js';
 import { FreezeMatch, FreezeStage } from './freeze.js';
+import { LaunchpadMatch, LaunchpadStage } from './launchpad.js';
+import { JengaMatch, JengaStage } from './jenga.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -135,6 +137,10 @@ export class Game {
     this.plinko = null;
     this.freezeStage = null;
     this.freeze = null;
+    this.launchpadStage = null;
+    this.launchpad = null;
+    this.jengaStage = null;
+    this.jenga = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -190,6 +196,10 @@ export class Game {
     this.plinkoStage?.resize(w / h);
     this.freeze?.resize(w / h);
     this.freezeStage?.resize(w / h);
+    this.launchpad?.resize(w / h);
+    this.launchpadStage?.resize(w / h);
+    this.jenga?.resize(w / h);
+    this.jengaStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -215,6 +225,14 @@ export class Game {
     if (this.freezeStage) {
       this.freezeStage.dispose();
       this.freezeStage = null;
+    }
+    if (this.launchpadStage) {
+      this.launchpadStage.dispose();
+      this.launchpadStage = null;
+    }
+    if (this.jengaStage) {
+      this.jengaStage.dispose();
+      this.jengaStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -255,6 +273,14 @@ export class Game {
     if (this.freezeStage) {
       this.freezeStage.dispose();
       this.freezeStage = null;
+    }
+    if (this.launchpadStage) {
+      this.launchpadStage.dispose();
+      this.launchpadStage = null;
+    }
+    if (this.jengaStage) {
+      this.jengaStage.dispose();
+      this.jengaStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -325,6 +351,14 @@ export class Game {
       this.freezeStage.dispose();
       this.freezeStage = null;
     }
+    if (this.launchpadStage) {
+      this.launchpadStage.dispose();
+      this.launchpadStage = null;
+    }
+    if (this.jengaStage) {
+      this.jengaStage.dispose();
+      this.jengaStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -346,10 +380,12 @@ export class Game {
 
   /** Stages the checked-in teammates inside the modernized QuakeWorld Standup Deathmatch arena. */
   showDeathmatchArena(names) {
-    if (this.wrestleStage) {
-      this.wrestleStage.dispose();
-      this.wrestleStage = null;
-    }
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -366,14 +402,12 @@ export class Game {
 
   /** Stages the checked-in teammates as settling gachapon capsules in the 3D Claw of Destiny cabinet. */
   showClawCabinet(names, { sittingOut = [] } = {}) {
-    if (this.wrestleStage) {
-      this.wrestleStage.dispose();
-      this.wrestleStage = null;
-    }
-    if (this.deathmatchStage) {
-      this.deathmatchStage.dispose();
-      this.deathmatchStage = null;
-    }
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -390,18 +424,12 @@ export class Game {
 
   /** Stages the checked-in teammates bouncing in The Backlog hopper on the tilted 3D Kanban Plinko board. */
   showPlinkoBoard(names, { duration = 30 } = {}) {
-    if (this.wrestleStage) {
-      this.wrestleStage.dispose();
-      this.wrestleStage = null;
-    }
-    if (this.deathmatchStage) {
-      this.deathmatchStage.dispose();
-      this.deathmatchStage = null;
-    }
-    if (this.clawStage) {
-      this.clawStage.dispose();
-      this.clawStage = null;
-    }
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -418,6 +446,28 @@ export class Game {
 
   /** Stages the checked-in teammates on the neon Code Freeze CI/CD runway. */
   showFreezeRunway(names, { duration = 30 } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'freeze-runway';
+    if (!this.freezeStage) {
+      this.freezeStage = new FreezeStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.freezeStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates on the Chesapeake Bay Launchpad Roulette pads. */
+  showLaunchpadComplex(names) {
     if (this.wrestleStage) {
       this.wrestleStage.dispose();
       this.wrestleStage = null;
@@ -434,6 +484,14 @@ export class Game {
       this.plinkoStage.dispose();
       this.plinkoStage = null;
     }
+    if (this.freezeStage) {
+      this.freezeStage.dispose();
+      this.freezeStage = null;
+    }
+    if (this.jengaStage) {
+      this.jengaStage.dispose();
+      this.jengaStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -441,11 +499,33 @@ export class Game {
       this.stageRacers = [];
       this.stageNames = [];
     }
-    this.stageMode = 'freeze-runway';
-    if (!this.freezeStage) {
-      this.freezeStage = new FreezeStage(window.innerWidth / window.innerHeight, names, { duration });
+    this.stageMode = 'launchpad-complex';
+    if (!this.launchpadStage) {
+      this.launchpadStage = new LaunchpadStage(window.innerWidth / window.innerHeight, names);
     }
-    this.freezeStage.setLineup(names);
+    this.launchpadStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates perched atop the 3D Dependency Jenga monolith. */
+  showJengaTower(names) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'jenga-tower';
+    if (!this.jengaStage) {
+      this.jengaStage = new JengaStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.jengaStage.setLineup(names);
   }
 
   /** Current live lobby stage summary (used by browser tests under ?test). */
@@ -482,10 +562,44 @@ export class Game {
         count: this.freezeStage.models.length,
       };
     }
+    if (this.stageMode === 'launchpad-complex' && this.launchpadStage) {
+      return {
+        mode: 'launchpad-complex',
+        count: this.launchpadStage.models.length,
+      };
+    }
+    if (this.stageMode === 'jenga-tower' && this.jengaStage) {
+      return {
+        mode: 'jenga-tower',
+        count: this.jengaStage.models.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts Dependency Jenga above the glowing PROD DOWN pit. */
+  startJenga(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.jenga = new JengaMatch(names, { ...options, sfx: this.sfx });
+    this.jenga.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'jenga';
+    return this.jenga.plan;
+  }
+
+  /** Starts Launchpad Roulette on the coastal Chesapeake Bay launch complex. */
+  startLaunchpad(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.launchpad = new LaunchpadMatch(names, { ...options, sfx: this.sfx });
+    this.launchpad.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'launchpad';
+    return this.launchpad.plan;
   }
 
   /** Starts Code Freeze on its own neon CI/CD runway. */
@@ -653,6 +767,14 @@ export class Game {
       this.freeze.dispose();
       this.freeze = null;
     }
+    if (this.launchpad) {
+      this.launchpad.dispose();
+      this.launchpad = null;
+    }
+    if (this.jenga) {
+      this.jenga.dispose();
+      this.jenga = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -741,6 +863,18 @@ export class Game {
       return;
     }
 
+    if (this.launchpad) {
+      this.launchpad.update(real);
+      this.renderer.render(this.launchpad.scene, this.launchpad.camera);
+      return;
+    }
+
+    if (this.jenga) {
+      this.jenga.update(real);
+      this.renderer.render(this.jenga.scene, this.jenga.camera);
+      return;
+    }
+
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
       if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -766,6 +900,16 @@ export class Game {
       if (this.stageMode === 'freeze-runway' && this.freezeStage) {
         this.freezeStage.update(real, reduced);
         this.renderer.render(this.freezeStage.scene, this.freezeStage.camera);
+        return;
+      }
+      if (this.stageMode === 'launchpad-complex' && this.launchpadStage) {
+        this.launchpadStage.update(real, reduced);
+        this.renderer.render(this.launchpadStage.scene, this.launchpadStage.camera);
+        return;
+      }
+      if (this.stageMode === 'jenga-tower' && this.jengaStage) {
+        this.jengaStage.update(real, reduced);
+        this.renderer.render(this.jengaStage.scene, this.jengaStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;

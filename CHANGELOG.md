@@ -7,6 +7,36 @@ to release.
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-22
+
+Launchpad Roulette (7th game mode) and Jenga Connect (8th game mode), by Google Gemini 4 Neon in Antigravity.
+
+### Added
+- **Launchpad Roulette (7th game mode):** a 3D Kerbal-style rocket ignition chaos mode (`2–30` players) on a
+  coastal Chesapeake Bay launch complex (`public/js/launchpad-sim.js`, `public/js/launchpad.js`), featuring
+  responsive pad formations (arc for `2–10`, multi-row amphitheater for `11–30`), scenic Chesapeake Bay
+  islands with a lighthouse and tracking radar dome, volumetric cumulus clouds, detailed aerospace rockets
+  with curved ogive fairings and multi-layer exhaust plumes, a `MISSION: STANDUP` LED sign, NASA-style
+  `3… 2… 1… DEPLOY!` countdown, 6 comedic failure archetypes with dev-themed popups, dynamic daylight →
+  twilight → starry-orbit skybox, orbit flag celebration, synthesized Web Audio, 10s–120s flight scaling
+  (*Hotfix Launch*, *Two-Stage Ascent*, *Orbital Gauntlet*), Winner History integration, and unit +
+  real-browser tests (`test/launchpad-sim.test.js`, `test/lobby-browser.test.js`).
+- **Jenga Connect (8th game mode):** a 3D collapsing-tower survival spectacle (`2–30` players) set atop a
+  walnut conference room table (`public/js/jenga-sim.js`, `public/js/jenga.js`) with authentic 3:1 maple/birch
+  labeled package blocks (`lamha.js`, `jquery-1.9.min.js`, `node_tables (200 GB)`), glowing crimson keystones
+  (`do-not-touch-utils-x`, `load-bearing-hotfix`), Wall 1 dry-erase whiteboard featuring the **Jenga Connect
+  SOC Audit Log Plan**, Wall 2 live 4K status display tracking **Build Health**, **Stability**, and **Tower
+  Lean**, automated `npm audit fix --force` 3D cursor, grounded hinge-tier wobble transitioning into `0.35×`
+  directional slow-motion collapse physics, `LTS-support` survival block, 10s–120s scaling (*Friday Patch*,
+  *Major Version Bump* with Fake-Out Taps, *Full Monolith Migration* with Stack-On-Top Rebuilding), synthesized
+  Web Audio, Winner History integration, and unit + real-browser tests (`test/jenga-sim.test.js`,
+  `test/lobby-browser.test.js`).
+- Added an in-game text catalog (`docs/in-game-text-catalog.md`) and mode design specs
+  (`docs/launchpad_roulette_game_mode_spec.md`, `docs/dependency_jenga_game_mode_spec.md`), refined desktop
+  4×2 mode-card dock proportions to support all 8 built-in modes above 50% open 3D stage at `1366×768`,
+  updated Standup Deathmatch chat banter & Code Freeze excuse wording, and refreshed `v1.13.0` README
+  screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`, `docs/launchpad-wide.png`, `docs/jenga-wide.png`).
+
 ## [1.12.0] - 2026-11-21
 
 Kanban Plinko (5th game mode) and Code Freeze (6th game mode), by Google Gemini 4 Neon in Antigravity.
