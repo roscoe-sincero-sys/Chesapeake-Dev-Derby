@@ -194,6 +194,26 @@
         <li><b>60s–120s (Elimination Pit)</b> — multi-drop arcade tension with near-misses until the final sudden-death grab decides the leader.</li>
       </ul>
     </template>
+    <template id="guide-plinko">
+      <p>True 2.5D vertical pinball down a tilted 3D Kanban board! Everyone starts in <b>The Backlog</b> hopper; when the <b>Sprint Kickoff</b> trapdoor opens, glowing marbles tumble through <b>In Progress</b>, <b>Code Review &amp; QA</b>, and <b>Deploy to Prod</b>. The first marble past the <b>LGTM</b> flippers into <b>PROD</b> leads standup.</p>
+      <h3>Obstacles &amp; Safeguards</h3>
+      <ul>
+        <li><b>Scope Creep Bumpers</b> — 1.4× neon pop-bumpers that launch marbles sideways.</li>
+        <li><b>Merge Conflict Spinners</b> — rotating 4-blade turnstiles that create QA pileups.</li>
+        <li><b>Tech Debt Sticky Pads</b> — amber friction strips that slow leaders so stragglers can overtake.</li>
+        <li><b>Moved to Next Sprint Warp Pipes</b> — pneumatic side tubes that vacuum marbles back to The Backlog.</li>
+        <li><b>LGTM Flippers &amp; Friday 4:55 PM Deploy</b> — rhythmic bottom flippers guard Prod, with an automatic Force-Push fallback so rounds always finish on time.</li>
+      </ul>
+    </template>
+    <template id="guide-freeze">
+      <p>Red Light, Green Light on a neon CI/CD sprint runway! Sprint on <b>GREEN (SPRINT OPEN)</b>, slam on the brakes on <b>YELLOW (PR IN REVIEW)</b>, and freeze solid on <b>RED (CODE FREEZE!)</b> as the swiveling <b>RELEASE MANAGER</b> sweeps a red laser across the floor. First across the finish line — or the last dev standing — leads standup.</p>
+      <h3>Duration Variants</h3>
+      <ul>
+        <li><b>10s–15s (Hotfix Dash)</b> — short runway, rapid freeze cycles, high zap rate.</li>
+        <li><b>30s (Standard Release)</b> — medium runway with occasional Yellow fake-outs.</li>
+        <li><b>60s–120s (Enterprise Deployment)</b> — long runway with Staging &amp; UAT checkpoints and slippery Tech Debt Ice patches.</li>
+      </ul>
+    </template>
 
     <!-- After Exit -->
     <main id="closed" class="panel closed" hidden>
@@ -213,6 +233,8 @@
       <button id="ring-toggle" type="button" aria-controls="ring-roster" aria-expanded="false">🤼 Wrestlers in the ring</button>
       <ol id="ring-roster" aria-label="Wrestlers in the ring"></ol>
       <div id="feed" aria-live="off"></div>
+      <div id="plinko-ticker" class="plinko-ticker" aria-live="off" hidden></div>
+      <div id="freeze-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
       <div id="countdown" aria-live="assertive"></div>
     </div>
 

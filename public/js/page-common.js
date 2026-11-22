@@ -45,6 +45,8 @@ export const MODE = {
   wrestle: '🤼 Wrestle',
   deathmatch: '🔫 Deathmatch',
   claw: '🕹️ Claw',
+  plinko: '🎰 Plinko',
+  freeze: '🚦 Code Freeze',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
@@ -53,6 +55,8 @@ export const MODE_COUNT = {
   wrestle: 'by wrestling',
   deathmatch: 'by deathmatch',
   claw: 'by claw',
+  plinko: 'by plinko',
+  freeze: 'by code freeze',
   skip: 'skipped',
 };
 

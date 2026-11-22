@@ -1677,13 +1677,25 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   }
   #game-section {
     display: grid;
-    grid-template-columns: minmax(596px, 1.85fr) minmax(300px, 1fr);
+    grid-template-columns: minmax(460px, 1.45fr) minmax(300px, 1fr);
     gap: 12px;
     align-items: stretch;
   }
-  .mode-cards { gap: 6px; }
-  .mode-card { min-height: 62px; padding: 7px 10px; }
-  .mode-icon { font-size: 22px; }
+  .mode-cards { gap: 6px; grid-template-columns: repeat(auto-fit, minmax(144px, 1fr)); }
+  .mode-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 1px;
+    min-height: 48px;
+    padding: 5px 10px;
+  }
+  .mode-icon { grid-row: 1 / span 2; font-size: 20px; }
+  .mode-name { font-size: 13px; line-height: 1.2; padding-right: 16px; }
+  .mode-players { font-size: 12px; line-height: 1.2; }
+  .mode-check { top: 5px; right: 7px; font-size: 12px; }
   .mode-options { margin-top: 0; }
   .mode-config { padding: 7px 12px; gap: 5px; }
   .lobby-foot {
@@ -1753,6 +1765,44 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 
 .mix-deathmatch { background: #ff6b6b; }
 .mix-claw { background: #38bdf8; }
+.mix-plinko { background: #51cf66; }
+.mix-freeze { background: #ff4d6d; }
+
+.freeze-banner {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 12;
+}
+.freeze-banner[hidden] { display: none; }
+.freeze-green { background: #102a20; color: #8ce99a; border: 2px solid #20c997; }
+.freeze-yellow { background: #33240a; color: #ffe066; border: 2px solid #f59f00; }
+.freeze-red { background: #3b0f18; color: #ffc9c9; border: 2px solid #ff2a55; }
+
+.plinko-ticker {
+  position: fixed;
+  top: 14px;
+  left: 16px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #14171f;
+  color: #8ce99a;
+  border: 1px solid #51cf66;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 12;
+}
+.plinko-ticker[hidden] { display: none; }
 
 /* Docked Google Meet preview chat card on the right side of the lobby stage */
 .dm-lobby-chat {
