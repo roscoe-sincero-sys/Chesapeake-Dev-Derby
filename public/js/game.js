@@ -13,6 +13,8 @@ import { WrestleMatch } from './wrestle.js';
 import { WrestleStage } from './wrestle-stage.js';
 import { DeathmatchMatch, DeathmatchStage } from './deathmatch.js';
 import { ClawMatch, ClawStage } from './claw.js';
+import { PlinkoMatch, PlinkoStage } from './plinko.js';
+import { FreezeMatch, FreezeStage } from './freeze.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -129,6 +131,10 @@ export class Game {
     this.deathmatch = null;
     this.clawStage = null;
     this.claw = null;
+    this.plinkoStage = null;
+    this.plinko = null;
+    this.freezeStage = null;
+    this.freeze = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -180,6 +186,10 @@ export class Game {
     this.deathmatchStage?.resize(w / h);
     this.claw?.resize(w / h);
     this.clawStage?.resize(w / h);
+    this.plinko?.resize(w / h);
+    this.plinkoStage?.resize(w / h);
+    this.freeze?.resize(w / h);
+    this.freezeStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -197,6 +207,14 @@ export class Game {
     if (this.clawStage) {
       this.clawStage.dispose();
       this.clawStage = null;
+    }
+    if (this.plinkoStage) {
+      this.plinkoStage.dispose();
+      this.plinkoStage = null;
+    }
+    if (this.freezeStage) {
+      this.freezeStage.dispose();
+      this.freezeStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -229,6 +247,14 @@ export class Game {
     if (this.clawStage) {
       this.clawStage.dispose();
       this.clawStage = null;
+    }
+    if (this.plinkoStage) {
+      this.plinkoStage.dispose();
+      this.plinkoStage = null;
+    }
+    if (this.freezeStage) {
+      this.freezeStage.dispose();
+      this.freezeStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -290,6 +316,14 @@ export class Game {
     if (this.clawStage) {
       this.clawStage.dispose();
       this.clawStage = null;
+    }
+    if (this.plinkoStage) {
+      this.plinkoStage.dispose();
+      this.plinkoStage = null;
+    }
+    if (this.freezeStage) {
+      this.freezeStage.dispose();
+      this.freezeStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -354,6 +388,66 @@ export class Game {
     this.clawStage.setLineup(names, sittingOut);
   }
 
+  /** Stages the checked-in teammates bouncing in The Backlog hopper on the tilted 3D Kanban Plinko board. */
+  showPlinkoBoard(names, { duration = 30 } = {}) {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
+    }
+    if (this.clawStage) {
+      this.clawStage.dispose();
+      this.clawStage = null;
+    }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'plinko-board';
+    if (!this.plinkoStage) {
+      this.plinkoStage = new PlinkoStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.plinkoStage.setLineup(names, { duration });
+  }
+
+  /** Stages the checked-in teammates on the neon Code Freeze CI/CD runway. */
+  showFreezeRunway(names, { duration = 30 } = {}) {
+    if (this.wrestleStage) {
+      this.wrestleStage.dispose();
+      this.wrestleStage = null;
+    }
+    if (this.deathmatchStage) {
+      this.deathmatchStage.dispose();
+      this.deathmatchStage = null;
+    }
+    if (this.clawStage) {
+      this.clawStage.dispose();
+      this.clawStage = null;
+    }
+    if (this.plinkoStage) {
+      this.plinkoStage.dispose();
+      this.plinkoStage = null;
+    }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'freeze-runway';
+    if (!this.freezeStage) {
+      this.freezeStage = new FreezeStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.freezeStage.setLineup(names);
+  }
+
   /** Current live lobby stage summary (used by browser tests under ?test). */
   stageState() {
     if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -376,10 +470,44 @@ export class Game {
         count: this.clawStage.bodies.length,
       };
     }
+    if (this.stageMode === 'plinko-board' && this.plinkoStage) {
+      return {
+        mode: 'plinko-board',
+        count: this.plinkoStage.marbles.length,
+      };
+    }
+    if (this.stageMode === 'freeze-runway' && this.freezeStage) {
+      return {
+        mode: 'freeze-runway',
+        count: this.freezeStage.models.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts Code Freeze on its own neon CI/CD runway. */
+  startFreeze(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.freeze = new FreezeMatch(names, { ...options, sfx: this.sfx });
+    this.freeze.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'freeze';
+    return this.freeze.sim;
+  }
+
+  /** Starts Kanban Plinko in its own 3D vertical pinball cabinet. */
+  startPlinko(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.plinko = new PlinkoMatch(names, { ...options, sfx: this.sfx });
+    this.plinko.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'plinko';
+    return this.plinko.sim;
   }
 
   /** Starts The Claw of Destiny in its own 3D arcade cabinet. */
@@ -517,6 +645,14 @@ export class Game {
       this.claw.dispose();
       this.claw = null;
     }
+    if (this.plinko) {
+      this.plinko.dispose();
+      this.plinko = null;
+    }
+    if (this.freeze) {
+      this.freeze.dispose();
+      this.freeze = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -593,6 +729,18 @@ export class Game {
       return;
     }
 
+    if (this.plinko) {
+      this.plinko.update(real);
+      this.renderer.render(this.plinko.scene, this.plinko.camera);
+      return;
+    }
+
+    if (this.freeze) {
+      this.freeze.update(real);
+      this.renderer.render(this.freeze.scene, this.freeze.camera);
+      return;
+    }
+
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
       if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -608,6 +756,16 @@ export class Game {
       if (this.stageMode === 'claw-cabinet' && this.clawStage) {
         this.clawStage.update(real, reduced);
         this.renderer.render(this.clawStage.scene, this.clawStage.camera);
+        return;
+      }
+      if (this.stageMode === 'plinko-board' && this.plinkoStage) {
+        this.plinkoStage.update(real, reduced);
+        this.renderer.render(this.plinkoStage.scene, this.plinkoStage.camera);
+        return;
+      }
+      if (this.stageMode === 'freeze-runway' && this.freezeStage) {
+        this.freezeStage.update(real, reduced);
+        this.renderer.render(this.freezeStage.scene, this.freezeStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;

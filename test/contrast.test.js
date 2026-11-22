@@ -111,6 +111,10 @@ const SURFACES = [
   ['.dm-leaderboard', ['#f8f9fa', '#f2b817', 'var(--muted)']],
   ['.dm-lb-row', ['#f8f9fa', 'var(--muted)', '#8ce99a']],
   ['.dm-lb-winner', ['#f8f9fa', '#f2b817', 'var(--muted)', '#8ce99a']],
+  ['.plinko-ticker', ['#8ce99a']],
+  ['.freeze-green', ['#8ce99a']],
+  ['.freeze-yellow', ['#ffe066']],
+  ['.freeze-red', ['#ffc9c9']],
 ];
 
 test('text on every panel surface reaches WCAG AA contrast, on a solid background', () => {

@@ -77,7 +77,7 @@ export class Sfx {
   }
 
   /** Plays a named effect. The same effect is not repeated within `gap` seconds. */
-  play(name, gap = 0.09) {
+  play(name, gap = 0.09, arg = 0) {
     if (!this.ctx || this.muted) return;
     const now = this.ctx.currentTime;
     if (now - (this.lastPlayed.get(name) ?? -1) < gap) return;
@@ -171,6 +171,44 @@ export class Sfx {
         this.tone(523, 0.12, { type: 'square', gain: 0.12, delay: 0 });
         this.tone(659, 0.12, { type: 'square', gain: 0.12, delay: 0.12 });
         this.tone(1047, 0.32, { type: 'square', gain: 0.14, delay: 0.24 });
+        break;
+      case 'plinkoPeg': {
+        const pitch = 520 + Math.max(0, Math.min(1, Number(arg) || 0)) * 460;
+        this.tone(pitch, 0.035, { type: 'triangle', gain: 0.06, slide: 60 });
+        break;
+      }
+      case 'plinkoBumper':
+        this.tone(320, 0.14, { type: 'sawtooth', gain: 0.11, slide: 340 });
+        break;
+      case 'plinkoWarp':
+        this.tone(240, 0.36, { type: 'sine', gain: 0.1, slide: 680 });
+        break;
+      case 'plinkoFlip':
+        this.tone(420, 0.06, { type: 'square', gain: 0.09, slide: 180 });
+        break;
+      case 'plinkoWin':
+        this.tone(1318, 0.55, { type: 'sine', gain: 0.16 });
+        this.tone(1760, 0.5, { type: 'triangle', gain: 0.1, delay: 0.08 });
+        this.tone(2093, 0.65, { type: 'sine', gain: 0.12, delay: 0.18 });
+        break;
+      case 'freezeTick':
+        this.tone(660, 0.09, { type: 'square', gain: 0.09, slide: 180 });
+        break;
+      case 'freezeWarn':
+        this.tone(540, 0.14, { type: 'sawtooth', gain: 0.1, slide: 240 });
+        break;
+      case 'freezeRed':
+        this.tone(140, 0.35, { type: 'sawtooth', gain: 0.14, slide: -40 });
+        break;
+      case 'freezeZap':
+        this.tone(1100, 0.16, { type: 'sawtooth', gain: 0.13, slide: -850 });
+        this.noise(0.14, { gain: 0.18, cutoff: 1800, delay: 0.02 });
+        break;
+      case 'freezeWin':
+        this.tone(523, 0.14, { type: 'square', gain: 0.12, delay: 0 });
+        this.tone(659, 0.14, { type: 'square', gain: 0.12, delay: 0.12 });
+        this.tone(784, 0.14, { type: 'square', gain: 0.12, delay: 0.24 });
+        this.tone(1047, 0.45, { type: 'square', gain: 0.14, delay: 0.36 });
         break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];

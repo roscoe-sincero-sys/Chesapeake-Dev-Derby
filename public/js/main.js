@@ -742,6 +742,8 @@ function backToLobby() {
   $('lobby').classList.remove('launching');
   game?.clearRace();
   $('reset-status').hidden = true;
+  if ($('plinko-ticker')) $('plinko-ticker').hidden = true;
+  if ($('freeze-banner')) $('freeze-banner').hidden = true;
   hud.end();
   $('quit').hidden = true;
   $('lobby').hidden = false;

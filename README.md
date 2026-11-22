@@ -275,6 +275,52 @@ duration slider:
 
   *The Claw of Destiny on a 1366 × 768 screen, with cooldown teammates relaxing on the VIP Lounge shelf.*
 
+### Kanban Plinko
+
+A 3D vertical pinball / pachinko gauntlet (2–30 players) powered by true 2.5D physics on a tilted 3D
+Kanban board:
+
+- **4 Vertical Swimlanes:** glowing developer marbles with motion trails and upright nameplates bounce
+  inside **1 · The Backlog** hopper until the **Sprint Kickoff** trapdoor drops them through
+  **2 · In Progress** (staggered metallic pegs & `1.4×` **Scope Creep Bumpers**), **3 · Code Review &
+  QA** (rotating 4-blade **Merge Conflict Spinners**, amber **Tech Debt Sticky Pads**, and pneumatic
+  **"Moved to Next Sprint" Warp Pipes**), and **4 · Deploy to Prod** (rhythmic **LGTM Flippers**
+  guarding the glowing **PROD / LEAD STANDUP** slot).
+- **Duration scaling & safeguards:** **10s–15s** (*Hotfix Drop* — short steep 2-tier sprint, no warp
+  pipes), **30s** (*Standard Sprint* — full 4-tier board with warp pipes & LGTM flippers), and
+  **60s–120s** (*Release Train* — multi-lap Dev → Stage → Prod marathon), backed by an Anti-Stuck
+  micro-nudge and the **Friday 4:55 PM Deploy** Force-Push fallback so rounds always finish on time.
+- **Smart Lead-Follow Camera & Live Leader Ticker:** pans smoothly down with the top 3 marbles, locks
+  onto Zone 4 for a photo finish, and displays a live leader ticker (e.g. `1st: Ada · In QA` and warp-pipe
+  `"was voted off the team."` alerts).
+
+  <p>
+    <img src="docs/plinko-wide.png" width="600" alt="Kanban Plinko 3D vertical pinball board: tilted dark Kanban cabinet with Backlog, In Progress, Code Review & QA, and Deploy to Prod swimlanes, glowing marbles with nameplates, neon Scope Creep bumpers, Merge Conflict spinners, and the Live Leader Ticker.">
+  </p>
+
+  *Kanban Plinko on a 1366 × 768 screen.*
+
+### Code Freeze
+
+A 3D Red Light, Green Light survival sprint (2–30 players) down a dark-mode neon CI/CD runway facing a
+swiveling **RELEASE MANAGER** laser turret:
+
+- **3-State Cycle:** **GREEN (`SPRINT OPEN`)** → **YELLOW (`PR IN REVIEW`)** braking warning → **RED
+  (`CODE FREEZE!`)** crimson laser sweep. Anyone still sliding gets zapped into binary particles with dev
+  excuses (*"Blamed for not being clear!"*, *"Made secret hotfixes!"*, *"Added ?ReturnUrl= to all URLs."*,
+  *"Created four 800-columns tables."*, *"Rolled back the server clock!"*, *"Voted off the team"*).
+- **Two Win Conditions:** first developer across the **RELEASE / LEAD STANDUP** finish tape, or the last
+  developer standing after a brutal freeze.
+- **Duration Scaling:** **10s–15s** (*Hotfix Dash*), **30s** (*Standard Release* with Yellow fake-outs),
+  and **60s–120s** (*Enterprise Deployment* with **Staging** & **UAT** checkpoints and slippery **Tech Debt
+  Ice** patches), plus an **Emergency Deploy!** timer guardrail so rounds always finish on time.
+
+  <p>
+    <img src="docs/freeze-wide.png" width="600" alt="Code Freeze 3D neon CI/CD sprint runway: developers sprinting and braking before the swiveling RELEASE MANAGER laser tower under the live SPRINT OPEN / CODE FREEZE status banner.">
+  </p>
+
+  *Code Freeze on a 1366 × 768 screen.*
+
 ### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest

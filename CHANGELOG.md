@@ -7,6 +7,30 @@ to release.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-21
+
+Kanban Plinko (5th game mode) and Code Freeze (6th game mode), by Google Gemini 4 Neon in Antigravity.
+
+### Added
+- **Kanban Plinko (5th game mode):** a 3D vertical pinball / pachinko gauntlet (`2–30` players) with true
+  2.5D physics (`public/js/plinko-sim.js`, `public/js/plinko.js`) down a tilted 3D vertical Kanban board
+  (**Backlog → In Progress → Code Review & QA → Deploy to Prod**), featuring **Scope Creep Bumpers**,
+  **Merge Conflict Spinners**, **Tech Debt Sticky Pads**, pneumatic **"Moved to Next Sprint" Warp Pipes**
+  (flashing `"was voted off the team."` on the live ticker), rhythmic **LGTM Flippers**, Smart Lead-Follow
+  Camera, Anti-Stuck Micro-Nudge, **Friday 4:55 PM Deploy** Force-Push fallback, synthesized pinball Web
+  Audio, and 10s–120s scaling (*Hotfix Drop*, *Standard Sprint*, *Release Train*).
+- **Code Freeze (6th game mode):** a 3D Red Light, Green Light survival sprint (`2–30` players) down a
+  neon CI/CD runway (`public/js/freeze-sim.js`, `public/js/freeze.js`) featuring a swiveling **RELEASE
+  MANAGER** laser turret, 3-state cycle (**GREEN `SPRINT OPEN`** / **YELLOW `PR IN REVIEW`** / **RED `CODE
+  FREEZE!`**), braking physics, Yellow fake-outs, **Staging** & **UAT** checkpoints, slippery **Tech Debt
+  Ice**, dev-themed elimination popups (including `"Voted off the team"`), dynamic Green/Red camera cuts,
+  Emergency Deploy guardrail, and synthesized Web Audio.
+- Upgraded the desktop mode-card dock to a compact 2-row horizontal grid supporting all 6 built-in modes
+  cleanly above 50% open 3D stage, integrated `plinko` and `freeze` into Winner History (`WIN_MODES`, Hall
+  of Fame stats, filters, Standings), added unit & real-browser tests (`test/plinko-sim.test.js`,
+  `test/freeze-sim.test.js`, `test/lobby-browser.test.js`), and refreshed `v1.12.0` README screenshots
+  (`docs/lobby-wide.png`, `docs/lobby-phone.png`, `docs/plinko-wide.png`, `docs/freeze-wide.png`).
+
 ## [1.11.0] - 2026-11-21
 
 The Claw of Destiny: 3D arcade claw machine game mode with choreographed physics and cropped developer

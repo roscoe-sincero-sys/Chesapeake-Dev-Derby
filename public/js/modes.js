@@ -27,6 +27,22 @@ import {
   DEFAULT_CLAW_DURATION,
   normalizeClawDuration,
 } from './claw-sim.js';
+import {
+  runPlinkoHeadless,
+  MIN_PLINKO_PLAYERS,
+  MAX_PLINKO_PLAYERS,
+  PLINKO_DURATIONS,
+  DEFAULT_PLINKO_DURATION,
+  normalizePlinkoDuration,
+} from './plinko-sim.js';
+import {
+  runFreezeHeadless,
+  MIN_FREEZE_PLAYERS,
+  MAX_FREEZE_PLAYERS,
+  FREEZE_DURATIONS,
+  DEFAULT_FREEZE_DURATION,
+  normalizeFreezeDuration,
+} from './freeze-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -148,6 +164,52 @@ export const MODES = [
     ready: (n) => `${n} dev capsules in the pit — who drops down the prize chute?`,
     stagePreview: (stage, { names, sittingOut }) => stage.showClawCabinet(names, { sittingOut }),
     start: startClaw,
+  },
+  {
+    id: 'plinko',
+    winMode: 'plinko',
+    icon: '🎰',
+    name: 'Kanban Plinko',
+    verb: 'plinko',
+    tagline: 'Vertical Kanban pinball — first marble to Prod leads.',
+    players: { min: MIN_PLINKO_PLAYERS, max: MAX_PLINKO_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Sprint length',
+        steps: PLINKO_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_PLINKO_DURATION,
+        normalize: normalizePlinkoDuration,
+      },
+    ],
+    guide: 'plinko',
+    ready: (n) => `${n} marbles in The Backlog — first to Deploy to Prod leads standup.`,
+    stagePreview: (stage, { names, options }) => stage.showPlinkoBoard(names, { duration: options.duration }),
+    start: startPlinko,
+  },
+  {
+    id: 'freeze',
+    winMode: 'freeze',
+    icon: '🚦',
+    name: 'Code Freeze',
+    verb: 'freeze',
+    tagline: 'Red Light, Green Light — first across or last standing leads.',
+    players: { min: MIN_FREEZE_PLAYERS, max: MAX_FREEZE_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Sprint length',
+        steps: FREEZE_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_FREEZE_DURATION,
+        normalize: normalizeFreezeDuration,
+      },
+    ],
+    guide: 'freeze',
+    ready: (n) => `${n} developers on the runway — freeze on red or get zapped.`,
+    stagePreview: (stage, { names, options }) => stage.showFreezeRunway(names, { duration: options.duration }),
+    start: startFreeze,
   },
 ];
 
@@ -411,4 +473,136 @@ function startClaw(ctx, { duration }) {
   });
   hud.beginWrestle([]);
   ctx.showQuit('✕ Quit claw');
+}
+
+// ------------------------------------------------------------------ kanban plinko
+
+function startPlinko(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runPlinkoHeadless(ctx.names, { duration, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      `Deployed to Prod in ${sim.time.toFixed(1)}s via Kanban Plinko (decided off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const plinkoParams = new URLSearchParams(location.search);
+  const effectiveDuration = plinkoParams.has('plinkoDuration') ? Number(plinkoParams.get('plinkoDuration')) || duration : duration;
+  const ticker = document.getElementById('plinko-ticker');
+  if (ticker) {
+    ticker.textContent = 'Backlog hopper ready…';
+    ticker.hidden = false;
+  }
+
+  game.startPlinko(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'leader' && ticker) ticker.textContent = e.text;
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (ticker) ticker.hidden = true;
+      hud.callout(`🚀 ${winner.name} deployed to Prod!`, 2200);
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1400,
+        `Threaded the LGTM flippers into Prod in ${sim.time.toFixed(1)}s`,
+        { kicker: 'Leads today’s standup' },
+      );
+      sim.standings().slice(1, 3).forEach((m, i) => hud.podium(i + 2, m.name));
+      ctx.saveWinner(winner.name);
+    },
+  });
+  hud.beginWrestle([]);
+  ctx.showQuit('✕ Quit plinko');
+}
+
+// ------------------------------------------------------------------ code freeze
+
+function startFreeze(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runFreezeHeadless(ctx.names, { duration, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.winReason === 'survivor'
+        ? `Last dev standing in Code Freeze (${sim.time.toFixed(1)}s, off-screen).`
+        : `Crossed the Release finish line in ${sim.time.toFixed(1)}s (off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const freezeParams = new URLSearchParams(location.search);
+  const effectiveDuration = freezeParams.has('freezeDuration') ? Number(freezeParams.get('freezeDuration')) || duration : duration;
+  const banner = document.getElementById('freeze-banner');
+  const setBanner = (light, rem, total) => {
+    if (!banner) return;
+    const label = light === 'GREEN' ? '🟢 SPRINT OPEN' : light === 'YELLOW' ? '🟡 PR IN REVIEW' : '🔴 CODE FREEZE!';
+    banner.textContent = `${label} · REMAINING: ${rem}/${total}`;
+    banner.className = `freeze-banner freeze-${light.toLowerCase()}`;
+    banner.hidden = false;
+  };
+  setBanner('GREEN', ctx.names.length, ctx.names.length);
+
+  game.startFreeze(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.light, e.remaining, e.total);
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'zap') {
+        setBanner('RED', e.remaining, e.total);
+        hud.note(`⚡ ${e.runner.name} zapped — “${e.excuse}”`, true);
+      }
+    },
+    onWinner: (winner, reason, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        reason === 'survivor' ? `🏆 ${winner.name} is the last dev standing!` : `🏁 ${winner.name} beat the Code Freeze!`,
+        2200,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1400,
+        reason === 'survivor'
+          ? `Last developer standing after ${sim.cycle} freeze cycles`
+          : `Crossed RELEASE / LEAD STANDUP in ${sim.time.toFixed(1)}s`,
+        { kicker: 'Leads today’s standup' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  hud.beginWrestle([]);
+  ctx.showQuit('✕ Quit freeze');
 }
