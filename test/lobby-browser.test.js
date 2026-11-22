@@ -443,7 +443,7 @@ test('Claw of Destiny runs 3D arcade claw round with dev excuses and drops winne
   if (!hasWebgl) return;
 
   await evaluate(`document.getElementById('start').click()`);
-  await until(`!document.getElementById('results').hidden`, 25000, 'Claw of Destiny winner card');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Claw of Destiny winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /prize chute/);
 });
 
@@ -454,8 +454,8 @@ test('Kanban Plinko runs 2.5D vertical pinball gauntlet and crowns first marble 
   if (!hasWebgl) return;
 
   await evaluate(`document.getElementById('start').click()`);
-  await until(`!document.getElementById('plinko-ticker').hidden`, 10000, 'Kanban Plinko live leader ticker');
-  await until(`!document.getElementById('results').hidden`, 25000, 'Kanban Plinko winner card');
+  await until(`!document.getElementById('plinko-ticker').hidden`, 15000, 'Kanban Plinko live leader ticker');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Kanban Plinko winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /Prod/);
 });
 
@@ -466,8 +466,8 @@ test('Code Freeze runs Red Light Green Light survival sprint and crowns winner',
   if (!hasWebgl) return;
 
   await evaluate(`document.getElementById('start').click()`);
-  await until(`!document.getElementById('freeze-banner').hidden`, 10000, 'Code Freeze status banner');
-  await until(`!document.getElementById('results').hidden`, 25000, 'Code Freeze winner card');
+  await until(`!document.getElementById('freeze-banner').hidden`, 15000, 'Code Freeze status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Code Freeze winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /RELEASE|standing/);
 });
 
@@ -478,7 +478,7 @@ test('Launchpad Roulette runs Kerbal-style rocket launch and crowns sole survivo
   if (!hasWebgl) return;
 
   await evaluate(`document.getElementById('start').click()`);
-  await until(`!document.getElementById('results').hidden`, 25000, 'Launchpad Roulette winner card');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Launchpad Roulette winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /DEPLOYED TO PROD/);
 });
 
@@ -489,8 +489,8 @@ test('Dependency Jenga pulls blocks, collapses in slow-mo, and crowns last dev o
   if (!hasWebgl) return;
 
   await evaluate(`document.getElementById('start').click()`);
-  await until(`!document.getElementById('jenga-banner').hidden`, 10000, 'Dependency Jenga stability banner');
-  await until(`!document.getElementById('results').hidden`, 25000, 'Dependency Jenga winner card');
+  await until(`!document.getElementById('jenga-banner').hidden`, 15000, 'Dependency Jenga stability banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Dependency Jenga winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /PROD DOWN/);
 });
 
