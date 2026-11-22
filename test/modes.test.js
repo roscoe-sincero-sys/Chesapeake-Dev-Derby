@@ -64,7 +64,22 @@ test('race and rumble keep their player ranges and defaults', () => {
   const jenga = findMode('jenga');
   assert.equal(jenga.winMode, 'jenga');
   assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(jenga, n)), [false, true, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 } });
+  const cannon = findMode('cannon');
+  assert.equal(cannon.winMode, 'cannon');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(cannon, n)), [false, true, true, true, false]);
+  const golf = findMode('golf');
+  assert.equal(golf.winMode, 'golf');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(golf, n)), [false, true, true, true, false]);
+  const rto = findMode('rto');
+  assert.equal(rto.winMode, 'rto');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(rto, n)), [false, true, true, true, false]);
+  const tumba = findMode('tumba');
+  assert.equal(tumba.winMode, 'tumba');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(tumba, n)), [false, true, true, true, false]);
+  const karang = findMode('karang');
+  assert.equal(karang.winMode, 'karang');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(karang, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' } });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {

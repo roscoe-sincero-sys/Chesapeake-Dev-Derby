@@ -350,6 +350,76 @@ Choose **🧱 Jenga Connect** (2 to 30 players) for a 3D collapsing-tower surviv
 
   *Jenga Connect on a 1366 × 768 screen.*
 
+### Deploy Cannon
+
+Choose **💣 Deploy Cannon** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D human-cannonball artillery volley over the Chesapeake Bay (`public/js/cannon-sim.js`, `public/js/cannon.js`):
+
+- **Chesapeake Bay Pier & Brass Battery:** active teammates peek out of gleaming brass circus cannons wearing tiny aviator goggles (arranged in a curved pier arc for `2–12` players or a two-tier stadium parapet for `13–30`), beneath a whipping striped windsock (`CROSSWIND: 24 KTS — SCOPE CREEP`), aimed at a bobbing concentric bullseye barge (`DEV → QA → STAGING → PROD / LEAD STANDUP`).
+- **6 Reverse-Solved Flight Mishaps:** on **`SHIP IT!`**, rolling-thunder cannon booms launch the team across the bay — with Pier Duds (*"Failed to renew software license"*, *"Failed to renew SSL cert"*), Overshoots (*"16 chars is too long for a password"*, *"Added managerial genius' unrequested feature"*), Crosswind Drifts (*"Blamed for not being clear"*, *"Failed to read Iklauti-ji's mind"*), Seagull Interceptions (*"Blocked by own-party API"*, *"Blocked by common sense"*), Emergency Chutes (*"Busy completing an already completed data migration"*, *"Busy scrolling 800 columns"*), and Rim-Bounce Heartbreaks (*"Blocked by BadalBhadak"*) — until the winner sticks the dead-center golden **`PROD`** bullseye in `0.4×` slow-motion **Barge Cam**.
+- **Salvo Scaling:** **10s–15s** (*Hotfix Volley* simultaneous barrage), **30s** (*Two-Stage Qualification* with Salvo 1 & sudden-death Salvo 2 at a drifting barge), and **60s–120s** (*Artillery Showcase* staggered launches at a weaving barge with a live **Closest to Bullseye** tracker).
+
+  <p>
+    <img src="docs/cannon-wide.png" width="600" alt="Deploy Cannon on the Chesapeake Bay pier: gleaming brass circus cannons firing a simultaneous human-cannonball volley toward the bobbing concentric PROD bullseye barge surrounded by Bay islands and clouds.">
+  </p>
+
+  *Deploy Cannon on a 1366 × 768 screen.*
+
+### Standup Mini-Golf
+
+Choose **⛳ Standup Mini-Golf** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for 3D simultaneous putt-putt chaos floating over the Chesapeake Bay (`public/js/golf-sim.js`, `public/js/golf.js`):
+
+- **Floating Chesapeake Putt-Putt Course:** all active teammates tee off simultaneously as dimpled, team-striped golf balls on mowed emerald astroturf framed by weathered timber marina rails, 8 Chesapeake Bay islands, a striped lighthouse, drifting volumetric cumulus clouds, and bobbing Derby sailboats.
+- **2.5D Rolling Physics & 6 Dev Hazards:** piecewise heightmap slopes up to the elevated **`PROD / LEAD STANDUP`** green, elastic ball-to-ball caroms, coastal Dutch clapboard **Sprint Review Windmills** with lattice sails, steel **BadalJwala Firewall Gates**, raked **Procurement Sand Traps**, **Legacy Code Water Hazards**, fluted chrome **Scope Creep Bumpers**, and the **"One Quick Idea" Detour Boost**.
+- **Cup Capture, Lip-Outs & Course Scaling:** fast shots lip-out around the rim while **Cup Cam** zooms in on the animated popping flagstick, backed by automated follow-up putts, a live **Distance-to-Pin** banner, a **Friday Afternoon Gimme** fallback breeze, and 10s–120s scaling (*Par-1 Hole-in-One Dash*, *Par-3 Floating Course*, *3-Hole Chesapeake Championship*).
+
+  <p>
+    <img src="docs/golf-wide.png" width="600" alt="Standup Mini-Golf floating over the Chesapeake Bay: dimpled golf balls rolling down mowed astroturf past a Dutch Sprint Review Windmill, chrome Scope Creep bumpers, Bay islands, lighthouse, and sailboats.">
+  </p>
+
+  *Standup Mini-Golf on a 1366 × 768 screen.*
+
+### RTO Mini-Golf
+
+Choose **🏢 RTO Mini-Golf** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for the *Return-to-Office Mandate Open* indoor office cubicle putt-putt chaos (`public/js/rto-sim.js`, `public/js/rto.js`):
+
+- **Moody After-Hours IT Floor & Bobblehead Capsules:** Claw-of-Destiny developer portrait bobbleheads inside glossy rolling gachapon capsules tee off simultaneously down a duct-taped emerald putting mat over speckled gray office carpet, lit by recessed parabolic-louver ceiling troffers and venetian-blind sunset windows, flanked by cubicles with glowing IDE monitors, sticky notes, and propped-open 42U server racks.
+- **6 Workplace Obstacles & Mug Finish:** dodge spinning 5-caster **Ergonomic Desk Chairs**, wedge **3-Ring Binder Ramps**, yellow floor cable protectors, pulsing **BadalJwala Jammed Copiers**, sticky **Spilled Iced Coffee Puddles** with **Wet Floor** signs, the **`?ReturnUrl=`** security detour, and stacked **Retired Hardware Bumpers** (CRTs, Dell towers, copy-paper reams) to clink into the oversized tipped-over **`WORLD'S OKAYEST DEVELOPER`** ceramic coffee mug.
+- **Course Scaling:** **10s–15s** (*Hallway Hotfix Dash*), **30s** (*Return-to-Office Mandate Open*), and **60s–120s** (*3-Hole "Instead of Raises" Championship*) with an **HVAC Draft / Friday 4:55 PM Gimme** breeze.
+
+  <p>
+    <img src="docs/rto-wide.png" width="600" alt="RTO Mini-Golf on an after-hours IT cubicle floor: developer bobblehead capsules rolling down a duct-taped putting mat past spinning ergonomic desk chairs, spilled iced coffee, and retired hardware toward the tipped-over coffee mug.">
+  </p>
+
+  *RTO Mini-Golf on a 1366 × 768 screen.*
+
+### Tumba Lata
+
+Choose **🩴 Tumba Lata** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D *Slipper-Slinging Server Raid* adapted from the classic Bisayan street game (`public/js/tumba-sim.js`, `public/js/tumba.js`):
+
+- **Twilight Fiesta Street & `SARI-SARI DEV SHOP`:** active teammates line up behind the glowing cyan chalk *badlis* holding contoured 3D rubber *tsinelas* flip-flops under swaying crisscross *banderitas*, warm streetlamps, and a neon **`SARI-SARI DEV SHOP`** storefront while an overworked, caffeinated AI **Bantay** guards the shiny ribbed **`PROD SERVER`** tin can.
+- **Two-Act Street Chaos (`BATO!` → Scramble → Hunting Mode):** on **`BATO!`**, a simultaneous rainbow volley of spinning flip-flops blasts **`PROD SERVER`** flying across the asphalt (`60 ms` hit-stop). Everyone sprints out to snatch their slipper and race back behind the *badlis* before the Bantay slams the can back upright, flashes the streetlamps red (**`PROD RESTORED — HUNTING MODE!`**), and tags the final straggler in slow motion to crown the new **Bantay**.
+- **Round Scaling:** **10s–15s** (*Street Blitz* single volley), **30s** (*Classic Barangay Round* with `CAFFEINE BOOST x2`), and **60s–120s** (*Fiesta Elimination* 3-volley showdown).
+
+  <p>
+    <img src="docs/tumba-wide.png" width="600" alt="Tumba Lata on a glowing twilight fiesta street: crisscross banderitas, neon SARI-SARI DEV SHOP storefront, bobblehead runners behind the chalk badlis hurling tsinelas at the PROD SERVER tin can guarded by the Bantay.">
+  </p>
+
+  *Tumba Lata on a 1366 × 768 screen.*
+
+### Karang Derby
+
+Choose **🎋 Karang Derby** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D Cebuano bamboo stilt wobble race down a moonlit twilight fiesta boulevard (`public/js/karang-sim.js`, `public/js/karang.js`):
+
+- **Bamboo (`Kawayan`) & Coconut-Shell (`Bagol 🥥`) Stilts:** toggle between tall segmented bamboo poles and nostalgic coconut-shell *bagol* stilts under a realistic full moon, glowing paper lanterns, low-hanging *banderitas*, and cheering crowd barricades.
+- **Inverted-Pendulum Wobble & Fiesta Hazards:** bobblehead stilt-walkers with color-shifting **Balance Meter** halos windmill their arms through **PanganodSilab 500 Crosswind** gusts, spilled-coffee slicks, snapped legacy bamboo poles, and low-hanging clotheslines—culminating in a `0.45×` slow-motion photo-finish teeter across the glowing **`FINISH · LEAD STANDUP`** ribbon.
+- **Course Scaling:** **10s–15s** (*Barangay Sprint*), **30s** (*Fiesta Obstacle Derby* with stilt-recovery climbs), and **60s–120s** (*Grand Cebu-Chesapeake Relay*).
+
+  <p>
+    <img src="docs/karang-wide.png" width="600" alt="Karang Derby on a moonlit twilight fiesta boulevard: bobblehead stilt-walkers teetering on tall segmented bamboo stilts beneath a glowing full moon, paper lanterns, and crisscross banderitas.">
+  </p>
+
+  *Karang Derby on a 1366 × 768 screen.*
+
 ### Winner history (Hall of Fame)
 
 Every result is also added to **[`data/history.json`](data/history.json)**, which keeps them all (the newest

@@ -256,6 +256,88 @@ export class Sfx {
         this.tone(784, 0.13, { type: 'triangle', gain: 0.13, delay: 0.22 });
         this.tone(1047, 0.5, { type: 'triangle', gain: 0.15, delay: 0.33 });
         break;
+      case 'cannonFuse':
+        this.noise(0.55, { gain: 0.1, cutoff: 4200 });
+        break;
+      case 'cannonBoom':
+        this.tone(115, 0.28, { type: 'sine', gain: 0.24, slide: -75 });
+        this.noise(0.22, { gain: 0.2, cutoff: 750 });
+        break;
+      case 'cannonWhistle':
+        this.tone(860, 0.38, { type: 'sine', gain: 0.08, slide: -480 });
+        break;
+      case 'cannonSquawk':
+        this.tone(1280, 0.12, { type: 'sawtooth', gain: 0.1, slide: -320, delay: 0 });
+        this.tone(1160, 0.14, { type: 'sawtooth', gain: 0.09, slide: -380, delay: 0.12 });
+        break;
+      case 'cannonSplash':
+        this.noise(0.32, { gain: 0.18, cutoff: 1300 });
+        this.tone(240, 0.18, { type: 'sine', gain: 0.1, slide: -150 });
+        break;
+      case 'cannonBullseye':
+        this.tone(880, 0.28, { type: 'triangle', gain: 0.16, delay: 0 });
+        this.tone(1108, 0.22, { type: 'triangle', gain: 0.14, delay: 0.12 });
+        this.tone(1318, 0.55, { type: 'sine', gain: 0.16, delay: 0.24 });
+        break;
+      case 'golfPutt':
+        this.tone(240, 0.08, { type: 'triangle', gain: 0.15, slide: -90 });
+        this.noise(0.04, { gain: 0.08, cutoff: 1800 });
+        break;
+      case 'golfClack':
+        this.tone(680, 0.05, { type: 'triangle', gain: 0.11, slide: -220 });
+        break;
+      case 'golfBumper':
+        this.tone(540, 0.12, { type: 'sine', gain: 0.14, slide: 280 });
+        break;
+      case 'golfSand':
+        this.noise(0.18, { gain: 0.1, cutoff: 2600 });
+        break;
+      case 'golfSplash':
+        this.noise(0.28, { gain: 0.16, cutoff: 1400 });
+        this.tone(280, 0.14, { type: 'sine', gain: 0.09, slide: -160 });
+        break;
+      case 'golfCup':
+        this.tone(720, 0.06, { type: 'square', gain: 0.09, delay: 0 });
+        this.tone(540, 0.06, { type: 'square', gain: 0.09, delay: 0.06 });
+        this.tone(880, 0.22, { type: 'triangle', gain: 0.15, delay: 0.14 });
+        this.tone(1108, 0.22, { type: 'triangle', gain: 0.14, delay: 0.25 });
+        this.tone(1318, 0.5, { type: 'sine', gain: 0.16, delay: 0.36 });
+        break;
+      case 'tumbaThrow':
+        this.noise(0.14, { gain: 0.14, cutoff: 1900 });
+        this.tone(420, 0.12, { type: 'triangle', gain: 0.11, slide: -210 });
+        break;
+      case 'tumbaClang':
+        // Bright metallic TING-KLANG-KLANG tin can bounce resonances
+        this.tone(1480, 0.14, { type: 'square', gain: 0.11, slide: -120, delay: 0 });
+        this.tone(1920, 0.12, { type: 'triangle', gain: 0.12, delay: 0.06 });
+        this.tone(1620, 0.1, { type: 'square', gain: 0.09, delay: 0.16 });
+        this.tone(1340, 0.08, { type: 'triangle', gain: 0.08, delay: 0.26 });
+        break;
+      case 'tumbaRestore':
+        this.tone(980, 0.09, { type: 'square', gain: 0.12, delay: 0 });
+        this.tone(740, 0.18, { type: 'sawtooth', gain: 0.11, slide: 420, delay: 0.08 });
+        break;
+      case 'tumbaTag':
+        this.tone(587, 0.14, { type: 'triangle', gain: 0.14, delay: 0 });
+        this.tone(880, 0.14, { type: 'triangle', gain: 0.15, delay: 0.1 });
+        this.tone(1174, 0.35, { type: 'sine', gain: 0.16, delay: 0.2 });
+        break;
+      case 'karangClack':
+        // Hollow bamboo woodblock clack
+        this.tone(620, 0.045, { type: 'triangle', gain: 0.12, slide: -140 });
+        this.noise(0.025, { gain: 0.07, cutoff: 2400 });
+        break;
+      case 'karangSnap':
+        // Crisp dry bamboo SNAP + comedic slide-whistle tumble
+        this.noise(0.08, { gain: 0.18, cutoff: 3600 });
+        this.tone(920, 0.32, { type: 'sine', gain: 0.1, slide: -640, delay: 0.05 });
+        break;
+      case 'karangWin':
+        this.tone(659, 0.14, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(880, 0.14, { type: 'triangle', gain: 0.15, delay: 0.1 });
+        this.tone(1318, 0.42, { type: 'sine', gain: 0.16, delay: 0.2 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

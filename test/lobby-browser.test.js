@@ -128,15 +128,17 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 9);
-  assert.deepEqual(lobby.cards[8], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 14);
+  assert.deepEqual(lobby.cards[13], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('button')]
     .filter((b) => !b.textContent.trim() && !b.getAttribute('aria-label') && !b.getAttribute('aria-labelledby')).map((b) => b.outerHTML)`), []);
 
-  // Tab reaches every card in turn, not only the selected one; Enter on a card only selects it.
+  // Tab reaches every visible card on page 1; with 9 modes the ◀ 1 / 2 ▶ pager reveals page 2 (Arena).
+  assert.equal(await evaluate(`document.getElementById('mode-pager').hidden`), false, 'pager shows for 9 modes');
+  assert.equal(await evaluate(`document.getElementById('mode-page-label').textContent`), '1 / 2');
   await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').focus()`);
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'rumble');
@@ -152,8 +154,10 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal((await evaluate(LOBBY)).focus, 'launchpad');
   await tab();
   assert.equal((await evaluate(LOBBY)).focus, 'jenga');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'arena');
+  // Flip to page 2 via the Next button; Arena is now visible and focusable.
+  await evaluate(`document.getElementById('mode-next').click()`);
+  assert.equal(await evaluate(`document.getElementById('mode-page-label').textContent`), '2 / 2');
+  await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').focus()`);
   await enter();
   lobby = await evaluate(LOBBY);
   assert.equal(lobby.selected, 'arena');
@@ -188,7 +192,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[8], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[13], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -242,7 +246,9 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '6 playing');
   assert.deepEqual(await evaluate(map), ['lighthouse']);
 
-  // Back to the race: attendance is shared, and the race's options are still its own.
+  // Back to the race: flip to page 1 via Prev button, then click Race (attendance is shared).
+  await evaluate(`document.getElementById('mode-prev').click()`);
+  assert.equal(await evaluate(`document.getElementById('mode-page-label').textContent`), '1 / 2');
   await evaluate(`document.querySelector('.mode-card[data-mode="race"]').click()`);
   lobby = await evaluate(LOBBY);
   assert.equal(lobby.start, '▶ Start race');
@@ -364,9 +370,11 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   }
   await load();
 
-  // A third mode without a stagePreview hook (Arena) falls back cleanly to the Chesapeake Bay fly-over.
+  // A third mode without a stagePreview hook (Arena, on page 2) falls back cleanly to the Chesapeake Bay fly-over.
+  await evaluate(`document.getElementById('mode-next').click()`);
   await evaluate(`document.querySelector('.mode-card[data-mode="arena"]').click()`);
   assert.deepEqual(await stage(), { mode: 'flyover', count: 0 });
+  await evaluate(`document.getElementById('mode-prev').click()`);
 
   // Standup Deathmatch stages its QuakeWorld 3D arena and opens the live lobby In-call messages preview.
   await evaluate(`document.querySelector('.mode-card[data-mode="deathmatch"]').click()`);
@@ -394,6 +402,27 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   // Dependency Jenga stages the wooden/neon dependency monolith above the PROD DOWN pit.
   await evaluate(`document.querySelector('.mode-card[data-mode="jenga"]').click()`);
   assert.deepEqual(await stage(), { mode: 'jenga-tower', count: 4 });
+
+  // Deploy Cannon (page 2 of the carousel) stages brass cannons along the Chesapeake Bay pier.
+  await evaluate(`document.getElementById('mode-next').click()`);
+  await evaluate(`document.querySelector('.mode-card[data-mode="cannon"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'cannon-pier', count: 4 });
+
+  // Standup Mini-Golf (page 2 of the carousel) stages golf balls on the floating emerald putt-putt tee.
+  await evaluate(`document.querySelector('.mode-card[data-mode="golf"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'golf-course', count: 4 });
+
+  // RTO Mini-Golf (page 2 of the carousel) stages golf balls on the indoor office cubicle tee.
+  await evaluate(`document.querySelector('.mode-card[data-mode="rto"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'rto-course', count: 4 });
+
+  // Tumba Lata (page 2 of the carousel) stages street runners behind the glowing chalk badlis.
+  await evaluate(`document.querySelector('.mode-card[data-mode="tumba"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'tumba-street', count: 4 });
+
+  // Karang Derby (page 2 of the carousel) hoists teammates onto bamboo stilts on the fiesta boulevard.
+  await evaluate(`document.querySelector('.mode-card[data-mode="karang"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'karang-boulevard', count: 4 });
 
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
@@ -494,6 +523,30 @@ test('Dependency Jenga pulls blocks, collapses in slow-mo, and crowns last dev o
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /PROD DOWN/);
 });
 
+test('Deploy Cannon fires brass cannonball volley and crowns bullseye winner on PROD barge', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=cannon&seed=83&cannonDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('cannon-banner').hidden`, 15000, 'Deploy Cannon wind/closest banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Deploy Cannon winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /SHIPPED TO PROD/);
+});
+
+test('Standup Mini-Golf tees off simultaneously and sinks the winner in the PROD cup', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=golf&seed=91&golfDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('golf-banner').hidden`, 15000, 'Standup Mini-Golf distance banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Standup Mini-Golf winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /PROD cup/);
+});
+
 test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and mouse-wheel scrolling on long history', { skip, timeout: 120000 }, async (t) => {
   const base = await startServer(t, NAMES);
   for (let i = 0; i < 40; i++) {
@@ -563,14 +616,18 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
-  test(`eight modes, one with a long name, fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
+  test(`thirteen modes fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
     const { evaluate } = await openLobby(t, { extra: 0, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang']);
     const starts = new Set();
     for (const id of ids) {
-      await evaluate(`document.querySelector('.mode-card[data-mode="${id}"]').click()`);
+      await evaluate(`(() => {
+        const card = document.querySelector('.mode-card[data-mode="${id}"]');
+        if (card.hidden) document.getElementById('mode-next').click();
+        card.click();
+      })()`);
       const s = await evaluate(`(() => {
         const box = (el) => el.getBoundingClientRect();
         const lobby = document.getElementById('lobby');
@@ -581,7 +638,7 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
           start: [Math.round(start.left), Math.round(start.top), Math.round(start.width), Math.round(start.height)],
           pick: [Math.round(pick.width), Math.round(pick.height)],
           oneRow: Math.abs(start.top - pick.top) < 2,
-          cards: [...document.querySelectorAll('.mode-card')].map((c) => ({ w: c.offsetWidth, h: c.offsetHeight, cut: c.scrollWidth > c.clientWidth + 1 })),
+          cards: [...document.querySelectorAll('.mode-card')].filter((c) => !c.hidden).map((c) => ({ w: c.offsetWidth, h: c.offsetHeight, cut: c.scrollWidth > c.clientWidth + 1 })),
           shown: [...document.querySelectorAll('.mode-config')].filter((p) => getComputedStyle(p).visibility === 'visible').map((p) => p.dataset.mode),
           label: document.getElementById('start').textContent,
         };
@@ -590,7 +647,8 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
       assert.ok(!s.hscroll, `${at}: no sideways scrolling`);
       assert.ok(s.oneRow, `${at}: Just pick and Start in one row`);
       assert.deepEqual(s.shown, [id], `${at}: its options show, and no others`);
-      assert.equal(s.label, `▶ Start ${id === 'launchpad' ? 'launch' : id}`);
+      const verb = { launchpad: 'launch', rto: 'putt', tumba: 'play', karang: 'race' }[id] ?? id;
+      assert.equal(s.label, `▶ Start ${verb}`);
       for (const card of s.cards) {
         assert.ok(card.w >= 140 && card.h >= 44, `${at}: card ${card.w} x ${card.h} is a big enough target`);
         assert.ok(!card.cut, `${at}: card text fits (wraps, not cut off)`);
@@ -601,3 +659,79 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
     assert.equal(starts.size, 1, `Start stays in one place whichever mode is selected: ${[...starts].join(' | ')}`);
   });
 }
+
+test('Paged 2-row carousel keeps 17 modes (3 pages) above 50% open 3D stage at 1366 x 768', { skip, timeout: 120000 }, async (t) => {
+  const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
+  const { evaluate } = await openLobby(t, { extra: 4, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const check = () => evaluate(`(() => {
+    const stage = document.querySelector('.lobby-stage').getBoundingClientRect();
+    const drawer = document.getElementById('roster-section').getBoundingClientRect();
+    const openWidth = Math.max(0, stage.width - drawer.width - 36);
+    const visibleCards = [...document.querySelectorAll('.mode-card')].filter((c) => !c.hidden);
+    return {
+      total: document.querySelectorAll('.mode-card').length,
+      visible: visibleCards.length,
+      pagerHidden: document.getElementById('mode-pager').hidden,
+      pageLabel: document.getElementById('mode-page-label').textContent,
+      prevDisabled: document.getElementById('mode-prev').disabled,
+      nextDisabled: document.getElementById('mode-next').disabled,
+      openRatio: (openWidth * stage.height) / (innerWidth * innerHeight),
+      cardsFit: visibleCards.every((c) => c.offsetWidth >= 140 && c.offsetHeight >= 44),
+    };
+  })()`);
+
+  const p1 = await check();
+  assert.equal(p1.total, 17);
+  assert.equal(p1.visible, 8);
+  assert.equal(p1.pagerHidden, false);
+  assert.equal(p1.pageLabel, '1 / 3');
+  assert.equal(p1.prevDisabled, true);
+  assert.equal(p1.nextDisabled, false);
+  assert.ok(p1.openRatio >= 0.5, `17 modes still keep >= 50% open 3D stage (got ${(p1.openRatio * 100).toFixed(1)}%)`);
+  assert.equal(p1.cardsFit, true);
+
+  await evaluate(`document.getElementById('mode-next').click()`);
+  const p2 = await check();
+  assert.equal(p2.visible, 8);
+  assert.equal(p2.pageLabel, '2 / 3');
+  assert.equal(p2.prevDisabled, false);
+  assert.equal(p2.nextDisabled, false);
+  assert.ok(p2.openRatio >= 0.5, `page 2 keeps >= 50% open 3D stage (got ${(p2.openRatio * 100).toFixed(1)}%)`);
+  assert.equal(p2.cardsFit, true);
+});
+
+test('RTO Mini-Golf tees off in the indoor cubicle floor and sinks the winner in the coffee mug', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=rto&seed=2026&rtoDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('rto-banner').hidden`, 15000, 'RTO Mini-Golf distance banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'RTO Mini-Golf winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /World’s Okayest Developer mug/);
+});
+
+test('Tumba Lata hurls tsinelas at PROD SERVER, scrambles, and tags the new Bantay', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=tumba&seed=2026&tumbaDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('tumba-banner').hidden`, 15000, 'Tumba Lata status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Tumba Lata winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /Tagged inches shy of the badlis/);
+});
+
+test('Karang Derby hoists devs onto stilts and crowns the photo-finish winner at the ribbon', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=karang&seed=2026&karangDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('karang-banner').hidden`, 15000, 'Karang Derby status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Karang Derby winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /snapped the Karang ribbon/);
+});

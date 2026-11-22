@@ -17,6 +17,11 @@ import { PlinkoMatch, PlinkoStage } from './plinko.js';
 import { FreezeMatch, FreezeStage } from './freeze.js';
 import { LaunchpadMatch, LaunchpadStage } from './launchpad.js';
 import { JengaMatch, JengaStage } from './jenga.js';
+import { CannonMatch, CannonStage } from './cannon.js';
+import { GolfMatch, GolfStage } from './golf.js';
+import { RtoMatch, RtoStage } from './rto.js';
+import { TumbaMatch, TumbaStage } from './tumba.js';
+import { KarangMatch, KarangStage } from './karang.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -141,6 +146,16 @@ export class Game {
     this.launchpad = null;
     this.jengaStage = null;
     this.jenga = null;
+    this.cannonStage = null;
+    this.cannon = null;
+    this.golfStage = null;
+    this.golf = null;
+    this.rtoStage = null;
+    this.rto = null;
+    this.tumbaStage = null;
+    this.tumba = null;
+    this.karangStage = null;
+    this.karang = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -200,6 +215,16 @@ export class Game {
     this.launchpadStage?.resize(w / h);
     this.jenga?.resize(w / h);
     this.jengaStage?.resize(w / h);
+    this.cannon?.resize(w / h);
+    this.cannonStage?.resize(w / h);
+    this.golf?.resize(w / h);
+    this.golfStage?.resize(w / h);
+    this.rto?.resize(w / h);
+    this.rtoStage?.resize(w / h);
+    this.tumba?.resize(w / h);
+    this.tumbaStage?.resize(w / h);
+    this.karang?.resize(w / h);
+    this.karangStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -233,6 +258,26 @@ export class Game {
     if (this.jengaStage) {
       this.jengaStage.dispose();
       this.jengaStage = null;
+    }
+    if (this.cannonStage) {
+      this.cannonStage.dispose();
+      this.cannonStage = null;
+    }
+    if (this.golfStage) {
+      this.golfStage.dispose();
+      this.golfStage = null;
+    }
+    if (this.rtoStage) {
+      this.rtoStage.dispose();
+      this.rtoStage = null;
+    }
+    if (this.tumbaStage) {
+      this.tumbaStage.dispose();
+      this.tumbaStage = null;
+    }
+    if (this.karangStage) {
+      this.karangStage.dispose();
+      this.karangStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -281,6 +326,26 @@ export class Game {
     if (this.jengaStage) {
       this.jengaStage.dispose();
       this.jengaStage = null;
+    }
+    if (this.cannonStage) {
+      this.cannonStage.dispose();
+      this.cannonStage = null;
+    }
+    if (this.golfStage) {
+      this.golfStage.dispose();
+      this.golfStage = null;
+    }
+    if (this.rtoStage) {
+      this.rtoStage.dispose();
+      this.rtoStage = null;
+    }
+    if (this.tumbaStage) {
+      this.tumbaStage.dispose();
+      this.tumbaStage = null;
+    }
+    if (this.karangStage) {
+      this.karangStage.dispose();
+      this.karangStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -359,6 +424,26 @@ export class Game {
       this.jengaStage.dispose();
       this.jengaStage = null;
     }
+    if (this.cannonStage) {
+      this.cannonStage.dispose();
+      this.cannonStage = null;
+    }
+    if (this.golfStage) {
+      this.golfStage.dispose();
+      this.golfStage = null;
+    }
+    if (this.rtoStage) {
+      this.rtoStage.dispose();
+      this.rtoStage = null;
+    }
+    if (this.tumbaStage) {
+      this.tumbaStage.dispose();
+      this.tumbaStage = null;
+    }
+    if (this.karangStage) {
+      this.karangStage.dispose();
+      this.karangStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -386,6 +471,11 @@ export class Game {
     if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
     if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
     if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -408,6 +498,11 @@ export class Game {
     if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
     if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
     if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -430,6 +525,11 @@ export class Game {
     if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
     if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
     if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -452,6 +552,11 @@ export class Game {
     if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
     if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
     if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -492,6 +597,26 @@ export class Game {
       this.jengaStage.dispose();
       this.jengaStage = null;
     }
+    if (this.cannonStage) {
+      this.cannonStage.dispose();
+      this.cannonStage = null;
+    }
+    if (this.golfStage) {
+      this.golfStage.dispose();
+      this.golfStage = null;
+    }
+    if (this.rtoStage) {
+      this.rtoStage.dispose();
+      this.rtoStage = null;
+    }
+    if (this.tumbaStage) {
+      this.tumbaStage.dispose();
+      this.tumbaStage = null;
+    }
+    if (this.karangStage) {
+      this.karangStage.dispose();
+      this.karangStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -514,6 +639,11 @@ export class Game {
     if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
     if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
     if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -526,6 +656,138 @@ export class Game {
       this.jengaStage = new JengaStage(window.innerWidth / window.innerHeight, names);
     }
     this.jengaStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates loaded into brass cannons on the Chesapeake Bay pier. */
+  showCannonPier(names) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'cannon-pier';
+    if (!this.cannonStage) {
+      this.cannonStage = new CannonStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.cannonStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates as golf balls on the floating Chesapeake Bay putt-putt tee. */
+  showGolfCourse(names, { duration = 15 } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'golf-course';
+    if (!this.golfStage) {
+      this.golfStage = new GolfStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.golfStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates as golf balls on the indoor office cubicle putt-putt tee. */
+  showRtoCourse(names, { duration = 15 } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'rto-course';
+    if (!this.rtoStage) {
+      this.rtoStage = new RtoStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.rtoStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates behind the glowing chalk badlis on the twilight fiesta street. */
+  showTumbaStreet(names) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'tumba-street';
+    if (!this.tumbaStage) {
+      this.tumbaStage = new TumbaStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.tumbaStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates hoisted onto bamboo/bagol stilts on the twilight fiesta boulevard. */
+  showKarangBoulevard(names, { duration = 15, stilts = 'bamboo' } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'karang-boulevard';
+    if (!this.karangStage) {
+      this.karangStage = new KarangStage(window.innerWidth / window.innerHeight, names, { duration, stilts });
+    }
+    this.karangStage.setLineup(names, { stilts });
   }
 
   /** Current live lobby stage summary (used by browser tests under ?test). */
@@ -574,10 +836,95 @@ export class Game {
         count: this.jengaStage.models.length,
       };
     }
+    if (this.stageMode === 'cannon-pier' && this.cannonStage) {
+      return {
+        mode: 'cannon-pier',
+        count: this.cannonStage.models.length,
+      };
+    }
+    if (this.stageMode === 'golf-course' && this.golfStage) {
+      return {
+        mode: 'golf-course',
+        count: this.golfStage.models.length,
+      };
+    }
+    if (this.stageMode === 'rto-course' && this.rtoStage) {
+      return {
+        mode: 'rto-course',
+        count: this.rtoStage.models.length,
+      };
+    }
+    if (this.stageMode === 'tumba-street' && this.tumbaStage) {
+      return {
+        mode: 'tumba-street',
+        count: this.tumbaStage.models.length,
+      };
+    }
+    if (this.stageMode === 'karang-boulevard' && this.karangStage) {
+      return {
+        mode: 'karang-boulevard',
+        count: this.karangStage.models.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts Karang Derby on the twilight Cebu-meets-Chesapeake fiesta boulevard. */
+  startKarang(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.karang = new KarangMatch(names, { ...options, sfx: this.sfx });
+    this.karang.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'karang';
+    return this.karang.plan;
+  }
+
+  /** Starts Tumba Lata on the twilight fiesta street. */
+  startTumba(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.tumba = new TumbaMatch(names, { ...options, sfx: this.sfx });
+    this.tumba.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'tumba';
+    return this.tumba.plan;
+  }
+
+  /** Starts RTO Mini-Golf on the indoor office cubicle putt-putt floor. */
+  startRto(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.rto = new RtoMatch(names, { ...options, sfx: this.sfx });
+    this.rto.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'rto';
+    return this.rto.sim;
+  }
+
+  /** Starts Standup Mini-Golf on the floating Chesapeake Bay putt-putt course. */
+  startGolf(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.golf = new GolfMatch(names, { ...options, sfx: this.sfx });
+    this.golf.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'golf';
+    return this.golf.sim;
+  }
+
+  /** Starts Deploy Cannon human cannonball volley over the Chesapeake Bay. */
+  startCannon(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.cannon = new CannonMatch(names, { ...options, sfx: this.sfx });
+    this.cannon.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'cannon';
+    return this.cannon.plan;
   }
 
   /** Starts Dependency Jenga above the glowing PROD DOWN pit. */
@@ -775,6 +1122,26 @@ export class Game {
       this.jenga.dispose();
       this.jenga = null;
     }
+    if (this.cannon) {
+      this.cannon.dispose();
+      this.cannon = null;
+    }
+    if (this.golf) {
+      this.golf.dispose();
+      this.golf = null;
+    }
+    if (this.rto) {
+      this.rto.dispose();
+      this.rto = null;
+    }
+    if (this.tumba) {
+      this.tumba.dispose();
+      this.tumba = null;
+    }
+    if (this.karang) {
+      this.karang.dispose();
+      this.karang = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -875,6 +1242,33 @@ export class Game {
       return;
     }
 
+    if (this.cannon) {
+      this.cannon.update(real);
+      this.renderer.render(this.cannon.scene, this.cannon.camera);
+      return;
+    }
+
+    if (this.golf) {
+      this.golf.update(real);
+      this.renderer.render(this.golf.scene, this.golf.camera);
+      return;
+    }
+    if (this.rto) {
+      this.rto.update(real);
+      this.renderer.render(this.rto.scene, this.rto.camera);
+      return;
+    }
+    if (this.tumba) {
+      this.tumba.update(real);
+      this.renderer.render(this.tumba.scene, this.tumba.camera);
+      return;
+    }
+    if (this.karang) {
+      this.karang.update(real);
+      this.renderer.render(this.karang.scene, this.karang.camera);
+      return;
+    }
+
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
       if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -910,6 +1304,31 @@ export class Game {
       if (this.stageMode === 'jenga-tower' && this.jengaStage) {
         this.jengaStage.update(real, reduced);
         this.renderer.render(this.jengaStage.scene, this.jengaStage.camera);
+        return;
+      }
+      if (this.stageMode === 'cannon-pier' && this.cannonStage) {
+        this.cannonStage.update(real, reduced);
+        this.renderer.render(this.cannonStage.scene, this.cannonStage.camera);
+        return;
+      }
+      if (this.stageMode === 'golf-course' && this.golfStage) {
+        this.golfStage.update(real, reduced);
+        this.renderer.render(this.golfStage.scene, this.golfStage.camera);
+        return;
+      }
+      if (this.stageMode === 'rto-course' && this.rtoStage) {
+        this.rtoStage.update(real, reduced);
+        this.renderer.render(this.rtoStage.scene, this.rtoStage.camera);
+        return;
+      }
+      if (this.stageMode === 'tumba-street' && this.tumbaStage) {
+        this.tumbaStage.update(real, reduced);
+        this.renderer.render(this.tumbaStage.scene, this.tumbaStage.camera);
+        return;
+      }
+      if (this.stageMode === 'karang-boulevard' && this.karangStage) {
+        this.karangStage.update(real, reduced);
+        this.renderer.render(this.karangStage.scene, this.karangStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;

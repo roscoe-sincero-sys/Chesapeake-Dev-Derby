@@ -5,7 +5,54 @@ All notable changes to Chesapeake Dev Derby are recorded here. The project uses
 `package.json` and is shown next to the app's name in the lobby. See *Versioning* in the README for how
 to release.
 
-## [Unreleased]
+## [1.14.0] - 2026-11-22
+
+Paged 2-Row Mode Carousel plus 5 new 3D game modes — **Deploy Cannon**, **Standup Mini-Golf**, **RTO Mini-Golf**, **Tumba Lata**, and **Karang Derby** (13 built-in modes total), by Google Gemini 4 Neon in Antigravity.
+
+### Added
+- **Paged 2-Row Mode Carousel (`◀ 1 / N ▶`):** added keyboard-friendly Prev/Next paging controls to the
+  lobby mode picker (`8` cards per page) with auto-flip to the active mode on load, selection, and
+  **Surprise me**, keeping desktop `1366×768` open 3D stage `≥50%` for 9–24+ modes.
+- **Deploy Cannon (9th game mode):** a 3D human-cannonball volley (`2–30` players) with reverse-solved
+  parabolic ballistics (`public/js/cannon-sim.js`, `public/js/cannon.js`) from gleaming brass circus cannons
+  on a Chesapeake Bay pier toward a bobbing concentric bullseye barge (`DEV → QA → STAGING → PROD`),
+  surrounded by Chesapeake Bay islands, lighthouse, and volumetric clouds, featuring 6 comedic flight mishaps,
+  `0.4×` slow-mo **Barge Cam**, expanding water splash rings, 10s–120s salvo scaling, synthesized Web Audio,
+  Winner History integration, and unit + browser tests (`test/cannon-sim.test.js`, `test/lobby-browser.test.js`).
+- **Standup Mini-Golf (10th game mode):** 3D simultaneous putt-putt (`2–30` players) on a floating emerald
+  Chesapeake Bay resort course (`public/js/golf-sim.js`, `public/js/golf.js`) surrounded by 8 Bay islands,
+  a striped lighthouse, volumetric cumulus clouds, and shared Derby sculpted sailboats (`buildSailboat` in
+  `public/js/scenery.js`), featuring 2.5D heightmap slope physics, dimpled rolling golf balls, mowed astroturf,
+  weathered timber rails, Dutch clapboard **Sprint Review Windmills** with wooden lattice canvas sails,
+  steel **BadalJwala Firewall Gates**, raked **Procurement Sand Traps**, **Legacy Code Water Hazards**,
+  Lathe-turned chrome **Scope Creep Bumpers**, **Cup Cam**, **Friday Afternoon Gimme** breeze, 10s–120s scaling,
+  synthesized Web Audio, and unit + browser tests (`test/golf-sim.test.js`, `test/lobby-browser.test.js`).
+- **RTO Mini-Golf (11th game mode):** 3D indoor office cubicle putt-putt (`2–30` players) on a moody
+  after-hours IT floor (`public/js/rto-sim.js`, `public/js/rto.js`) featuring **Claw of Destiny** developer
+  bobblehead gachapon capsules rolling down duct-taped emerald putting mats over speckled office carpet,
+  acoustic drop ceiling with recessed parabolic-louver fluorescent troffers, venetian-blind sunset windows,
+  cubicle farms with glowing IDE monitors & sticky notes, propped-open 42U server racks with catenary
+  ethernet cables, spinning 5-caster ergonomic desk chairs, wedge 3-ring binder ramps, floor cable protectors,
+  **BadalJwala Jammed Copier** gates, spilled iced coffee puddles with painted **Wet Floor** signs,
+  `?ReturnUrl=` security detour, retired hardware bumpers (CRT monitors, Dell towers, copy-paper reams),
+  and an oversized tipped-over **`WORLD'S OKAYEST DEVELOPER`** ceramic coffee mug (`test/rto-sim.test.js`,
+  `test/lobby-browser.test.js`).
+- **Tumba Lata (12th game mode):** 3D twilight Filipino fiesta street-game raid (`2–30` players;
+  `public/js/tumba-sim.js`, `public/js/tumba.js`) with swaying crisscross *banderitas*, warm streetlamps
+  that flash red during **HUNTING MODE**, a neon **`SARI-SARI DEV SHOP`** storefront, glowing cyan chalk
+  *badlis* & circle, shiny ribbed **`PROD SERVER`** tin can, caffeinated AI **Bantay**, sculpted contoured
+  3D *tsinelas* flip-flops with curved rubber Y-straps, bobblehead street runners, `60 ms` impact hit-stop,
+  slow-mo tag cam, 10s–120s volley scaling, synthesized Web Audio, and unit + browser tests
+  (`test/tumba-sim.test.js`, `test/lobby-browser.test.js`).
+- **Karang Derby (13th game mode):** 3D twilight Cebu-meets-Chesapeake bamboo stilt wobble race (`2–30`
+  players; `public/js/karang-sim.js`, `public/js/karang.js`) with a **Bamboo | Bagol 🥥** stilt toggle,
+  inverted-pendulum wobble physics, bobblehead stilt-walkers with color-shifting **Balance Meter** halos,
+  low-hanging *banderitas*, spilled-coffee slicks, glowing orange **PanganodSilab 500 Crosswind** streaks,
+  a realistic full moon with lunar *maria*, craters, Tycho rays, atmospheric halo & twilight starfield,
+  `0.45×` slow-motion ribbon-cam finish, synthesized Web Audio, and unit + browser tests
+  (`test/karang-sim.test.js`, `test/lobby-browser.test.js`).
+- Refreshed `v1.14.0` README screenshots (`docs/lobby-wide.png`, `docs/lobby-phone.png`, `docs/cannon-wide.png`,
+  `docs/golf-wide.png`, `docs/rto-wide.png`, `docs/tumba-wide.png`, `docs/karang-wide.png`).
 
 ## [1.13.0] - 2026-11-22
 
