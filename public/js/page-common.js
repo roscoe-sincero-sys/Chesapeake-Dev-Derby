@@ -47,6 +47,8 @@ export const MODE = {
   claw: '🕹️ Claw',
   plinko: '🎰 Plinko',
   freeze: '🚦 Code Freeze',
+  launchpad: '🚀 Launchpad',
+  jenga: '🧱 Jenga Connect',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
@@ -57,6 +59,8 @@ export const MODE_COUNT = {
   claw: 'by claw',
   plinko: 'by plinko',
   freeze: 'by code freeze',
+  launchpad: 'by launchpad',
+  jenga: 'by jenga',
   skip: 'skipped',
 };
 

@@ -210,6 +210,52 @@ export class Sfx {
         this.tone(784, 0.14, { type: 'square', gain: 0.12, delay: 0.24 });
         this.tone(1047, 0.45, { type: 'square', gain: 0.14, delay: 0.36 });
         break;
+      case 'launchBeep':
+        this.tone(880, 0.14, { type: 'sine', gain: 0.13 });
+        break;
+      case 'launchRoar':
+        this.noise(1.1, { gain: 0.28, cutoff: 650 });
+        this.tone(120, 0.7, { type: 'sawtooth', gain: 0.12, slide: 180 });
+        break;
+      case 'launchWhistle':
+        this.tone(940, 0.42, { type: 'sine', gain: 0.1, slide: -660 });
+        break;
+      case 'launchPop':
+        this.noise(0.16, { gain: 0.22, cutoff: 1800 });
+        this.tone(260, 0.12, { type: 'triangle', gain: 0.11, slide: -140 });
+        break;
+      case 'launchOrbit':
+        this.tone(440, 0.4, { type: 'triangle', gain: 0.12, delay: 0 });
+        this.tone(554, 0.4, { type: 'triangle', gain: 0.12, delay: 0.08 });
+        this.tone(659, 0.65, { type: 'sine', gain: 0.14, delay: 0.16 });
+        break;
+      case 'jengaScrape':
+        this.noise(0.28, { gain: 0.16, cutoff: 950 });
+        this.tone(180, 0.34, { type: 'sawtooth', gain: 0.08, slide: 110 });
+        break;
+      case 'jengaSiren':
+        this.tone(860, 0.16, { type: 'square', gain: 0.11, slide: 240, delay: 0 });
+        this.tone(860, 0.16, { type: 'square', gain: 0.11, slide: 240, delay: 0.22 });
+        break;
+      case 'jengaHeartbeat':
+        this.tone(72, 0.16, { type: 'sine', gain: 0.2, slide: -24, delay: 0 });
+        this.tone(64, 0.18, { type: 'sine', gain: 0.16, slide: -18, delay: 0.18 });
+        break;
+      case 'jengaCollapse':
+        this.tone(110, 0.75, { type: 'sine', gain: 0.26, slide: -72 });
+        this.noise(0.65, { gain: 0.24, cutoff: 1400, delay: 0.05 });
+        this.tone(320, 0.1, { type: 'triangle', gain: 0.11, delay: 0.18 });
+        this.tone(240, 0.12, { type: 'triangle', gain: 0.11, delay: 0.32 });
+        break;
+      case 'jengaFall':
+        this.tone(780, 0.36, { type: 'sine', gain: 0.09, slide: -540 });
+        break;
+      case 'jengaWin':
+        this.tone(523, 0.13, { type: 'triangle', gain: 0.13, delay: 0 });
+        this.tone(659, 0.13, { type: 'triangle', gain: 0.13, delay: 0.11 });
+        this.tone(784, 0.13, { type: 'triangle', gain: 0.13, delay: 0.22 });
+        this.tone(1047, 0.5, { type: 'triangle', gain: 0.15, delay: 0.33 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

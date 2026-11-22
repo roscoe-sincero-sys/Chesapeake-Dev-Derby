@@ -58,7 +58,13 @@ test('race and rumble keep their player ranges and defaults', () => {
   const freeze = findMode('freeze');
   assert.equal(freeze.winMode, 'freeze');
   assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(freeze, n)), [false, true, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 } });
+  const launchpad = findMode('launchpad');
+  assert.equal(launchpad.winMode, 'launchpad');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(launchpad, n)), [false, true, true, true, false]);
+  const jenga = findMode('jenga');
+  assert.equal(jenga.winMode, 'jenga');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(jenga, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 } });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {

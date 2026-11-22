@@ -521,6 +521,10 @@ export class Hud {
     this.root.hidden = true;
     this.root.classList.remove('results-open', 'wrestling', 'roster-open');
     $('ring-roster').replaceChildren();
+    for (const id of ['plinko-ticker', 'freeze-banner', 'jenga-banner']) {
+      const el = $(id);
+      if (el) el.hidden = true;
+    }
     this.results.hidden = true;
     this.board.replaceChildren();
     this.dots.replaceChildren();
