@@ -93,7 +93,14 @@
         <section id="game-section" class="lobby-area">
           <fieldset class="mode-picker">
             <legend class="area-title">Pick a game</legend>
-            <button id="surprise-mode" type="button" class="surprise-btn" aria-label="Surprise me: pick a random eligible game">🎲 Surprise me</button>
+            <div class="mode-picker-tools">
+              <div id="mode-pager" class="mode-pager" role="group" aria-label="Game pages" hidden>
+                <button id="mode-prev" type="button" class="pager-btn" aria-label="Previous games page">◀</button>
+                <span id="mode-page-label" class="pager-label" aria-live="polite">1 / 1</span>
+                <button id="mode-next" type="button" class="pager-btn" aria-label="Next games page">▶</button>
+              </div>
+              <button id="surprise-mode" type="button" class="surprise-btn" aria-label="Surprise me: pick a random eligible game">🎲 Surprise me</button>
+            </div>
             <div id="mode-cards" class="mode-cards"></div>
           </fieldset>
           <div id="mode-options" class="mode-options"></div>
@@ -232,6 +239,51 @@
         <li><b>60s–120s (Full Monolith Migration)</b> — 24-tier mega-tower with <b>Stack-On-Top Rebuilding</b> that drops pulled blocks onto the top platform until the fatal collapse.</li>
       </ul>
     </template>
+    <template id="guide-cannon">
+      <p><b>Deploy Cannon</b> lines up gleaming brass circus cannons along a Chesapeake Bay pier, each loaded with an active developer wearing tiny aviator goggles. On <b>SHIP IT!</b>, the entire battery fires across the water toward a bobbing concentric bullseye barge (<code>DEV → QA → STAGING → PROD</code>). Dodging pier duds, crosswind gusts, rogue seagulls, cocktail umbrellas, and rim-bounce heartbreaks, whoever lands dead-center on <b>PROD</b> leads standup.</p>
+      <h3>Salvo Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Hotfix Volley)</b> — single simultaneous rolling-thunder barrage at a stationary bullseye barge.</li>
+        <li><b>30s (Two-Stage Qualification)</b> — Salvo 1 narrows the pack; finalists reload for a sudden-death shot at a drifting barge.</li>
+        <li><b>60s–120s (Artillery Showcase)</b> — staggered launches at a weaving barge with a live <b>Closest to Bullseye</b> tracker.</li>
+      </ul>
+    </template>
+    <template id="guide-golf">
+      <p><b>Standup Mini-Golf</b> puts every active teammate on a floating 3D emerald putt-putt course over the Chesapeake Bay. On <b>TEE OFF!</b>, everyone putts simultaneously—bouncing off timber rails, caroming off rivals, and dodging spinning <b>Sprint Review Windmills</b>, pulsing <b>BadalJwala Firewall Gates</b>, <b>Procurement Sand Traps</b>, <b>Legacy Code Water Hazards</b>, and neon <b>Scope Creep Bumpers</b>. First ball down the golden <b>PROD</b> cup leads standup.</p>
+      <h3>Course Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Par-1 Hole-in-One Dash)</b> — compact straightaway with a windmill, bumpers, and gentle funnel into the cup.</li>
+        <li><b>30s (Par-3 Floating Course)</b> — full floating course with split water shortcut, firewall gate, sand bunkers, and auto-putts.</li>
+        <li><b>60s–120s (3-Hole Chesapeake Championship)</b> — extended multi-zone championship course with dual windmills and a Friday Afternoon Gimme breeze.</li>
+      </ul>
+    </template>
+    <template id="guide-rto">
+      <p><b>RTO Mini-Golf</b>—nicknamed the <em>Return-to-Office Mandate Open</em>—turns a dim, late-afternoon IT cubicle floor into a duct-taped indoor putt-putt course. Everyone tees off simultaneously at the horn, ramping over 3-ring binders and yellow floor cable protectors, dodging spinning <b>Ergonomic Desk Chairs</b>, pulsing <b>BadalJwala Jammed Copiers</b>, sticky <b>Spilled Iced Coffee Puddles</b>, the dreaded <b>?ReturnUrl=</b> security detour, and stacked <b>Retired Hardware Bumpers</b>. First ball to clink into the tipped-over <b>World’s Okayest Developer</b> coffee mug leads standup.</p>
+      <h3>Course Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Hallway Hotfix Dash)</b> — compact single-aisle sprint with a binder ramp, spinning desk chair, and funnel straight into the mug.</li>
+        <li><b>30s (Return-to-Office Mandate Open)</b> — full cubicle maze with the jammed copier gate, spilled coffee puddles, <code>?ReturnUrl=</code> detour, and under-desk cable abyss.</li>
+        <li><b>60s–120s (3-Hole “Instead of Raises” Championship)</b> — extended indoor floor with dual spinning chairs, extra hardware bumpers, and an HVAC Draft / Friday 4:55 PM Gimme breeze.</li>
+      </ul>
+    </template>
+    <template id="guide-tumba">
+      <p><b>Tumba Lata</b> (<em>Slipper-Slinging Server Raid</em>) adapts the classic Bisayan street game onto a glowing twilight fiesta street lined with <em>banderitas</em> and a neon <b>SARI-SARI DEV SHOP</b>. On <b>BATO!</b>, every active teammate hurls their neon <em>tsinelas</em> at the shiny <b>PROD SERVER</b> tin can. Once it goes clattering down the asphalt, everyone sprints into the street to snatch their slippers and race back behind the glowing chalk <em>badlis</em> before the caffeinated <b>Bantay</b> sets <b>PROD SERVER</b> upright again. Whoever gets tagged out in the open becomes the new <b>Bantay</b>—and leads standup.</p>
+      <h3>Round Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Street Blitz)</b> — single synchronized volley, guaranteed can knockdown, frantic scramble, and dramatic tag at the <em>badlis</em>.</li>
+        <li><b>30s (Classic Barangay Round)</b> — 2 rapid volleys where the Bantay chugs 3-in-1 coffee (<code>CAFFEINE BOOST x2</code>) for the decisive final chase.</li>
+        <li><b>60s–120s (Fiesta Elimination)</b> — 3 multi-round fiesta volleys building up to a final slow-motion tag.</li>
+      </ul>
+    </template>
+    <template id="guide-karang">
+      <p><b>Karang Derby</b> (<em>3D Bamboo Stilt Wobble Race</em>) hoists every active teammate onto tall segmented bamboo poles (<em>kawayan</em>)—or nostalgic coconut-shell <b>Bagol</b> stilts—down a glowing twilight Cebu-meets-Chesapeake fiesta boulevard. On <b>DAGAN!</b>, devs teeter, stomp, and windmill their arms through low-hanging <em>banderitas</em>, spilled-coffee slicks, snapped legacy bamboo poles, and <b>PanganodSilab 500 Crosswinds</b>. The steadiest stilt-walker to snap the glowing finish ribbon leads standup.</p>
+      <h3>Course Length Variants</h3>
+      <ul>
+        <li><b>10s–15s (Barangay Sprint)</b> — chaotic 64-meter stilt dash with a slow-motion photo-finish teeter across the tape.</li>
+        <li><b>30s (Fiesta Obstacle Derby)</b> — extended boulevard where fallen devs can reboot back onto their stilts for comeback rallies.</li>
+        <li><b>60s–120s (Grand Cebu-Chesapeake Relay)</b> — full-length twilight fiesta circuit culminating in a dramatic ribbon-cam finish.</li>
+      </ul>
+    </template>
 
     <!-- After Exit -->
     <main id="closed" class="panel closed" hidden>
@@ -254,6 +306,11 @@
       <div id="plinko-ticker" class="plinko-ticker" aria-live="off" hidden></div>
       <div id="freeze-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
       <div id="jenga-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
+      <div id="cannon-banner" class="freeze-banner freeze-yellow" aria-live="off" hidden></div>
+      <div id="golf-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
+      <div id="rto-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
+      <div id="tumba-banner" class="freeze-banner freeze-yellow" aria-live="off" hidden></div>
+      <div id="karang-banner" class="freeze-banner freeze-green" aria-live="off" hidden></div>
       <div id="countdown" aria-live="assertive"></div>
     </div>
 

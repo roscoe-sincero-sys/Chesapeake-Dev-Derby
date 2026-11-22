@@ -523,10 +523,34 @@ function el(tag, className, text) {
   return node;
 }
 
-/** Selects a mode (it doesn't start it): shows its options and updates Start. Focus stays put. */
+const MODES_PER_PAGE = 8;
+let modePage = 0;
+
+/** Updates which 8-card page of game modes is shown and refreshes the ◀ 1 / N ▶ pager controls. */
+function setModePage(page) {
+  const totalPages = Math.max(1, Math.ceil(MODES.length / MODES_PER_PAGE));
+  modePage = Math.max(0, Math.min(totalPages - 1, page));
+  const start = modePage * MODES_PER_PAGE;
+  const end = start + MODES_PER_PAGE;
+  const cards = [...$('mode-cards').children];
+  cards.forEach((card, i) => {
+    card.hidden = i < start || i >= end;
+  });
+  const pager = $('mode-pager');
+  if (pager) {
+    pager.hidden = totalPages <= 1;
+    $('mode-page-label').textContent = `${modePage + 1} / ${totalPages}`;
+    $('mode-prev').disabled = modePage === 0;
+    $('mode-next').disabled = modePage >= totalPages - 1;
+  }
+}
+
+/** Selects a mode (it doesn't start it): flips to its page, shows its options, and updates Start. Focus stays put. */
 function selectMode(id) {
   state.mode = findMode(id).id;
   saveLobbySettings();
+  const idx = MODES.findIndex((m) => m.id === state.mode);
+  if (idx >= 0) setModePage(Math.floor(idx / MODES_PER_PAGE));
   for (const card of $('mode-cards').children) card.setAttribute('aria-pressed', String(card.dataset.mode === state.mode));
   for (const panel of $('mode-options').children) {
     const inactive = panel.dataset.mode !== state.mode;
@@ -669,6 +693,18 @@ function renderModes() {
     $('mode-cards').append(card);
     $('mode-options').append(renderOptions(mode));
   }
+  $('mode-prev')?.addEventListener('click', () => {
+    setModePage(modePage - 1);
+    sfx.unlock();
+    sfx.play('tick', 0.04);
+  });
+  $('mode-next')?.addEventListener('click', () => {
+    setModePage(modePage + 1);
+    sfx.unlock();
+    sfx.play('tick', 0.04);
+  });
+  const activeIdx = Math.max(0, MODES.findIndex((m) => m.id === state.mode));
+  setModePage(Math.floor(activeIdx / MODES_PER_PAGE));
 }
 
 function setAll(present) {

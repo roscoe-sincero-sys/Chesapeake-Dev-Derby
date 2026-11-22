@@ -294,7 +294,7 @@ function buildLighthouse() {
 }
 
 let hullGeometry;
-function buildSailboat(sailColor) {
+export function buildSailboat(sailColor) {
   if (!hullGeometry) {
     // Waterline and gunwale rings: pointed bow, broad shoulders, narrow transom.
     const outline = [[0, -3.4], [0.58, -2.6], [0.9, -0.8], [0.8, 1.8], [0.55, 2.6], [-0.55, 2.6], [-0.8, 1.8], [-0.9, -0.8], [-0.58, -2.6]];

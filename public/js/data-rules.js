@@ -8,7 +8,7 @@ export const MAX_NAME_LENGTH = 40;
 /** The full history keeps this many results (years of daily meetings) before dropping the oldest. */
 export const MAX_HISTORY = 5000;
 /** How a winner was chosen. */
-export const WIN_MODES = ['race', 'skip', 'wrestle', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga'];
+export const WIN_MODES = ['race', 'skip', 'wrestle', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang'];
 
 /**
  * Words that calendar apps put on their own line in a pasted attendee list (role, response, or

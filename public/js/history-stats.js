@@ -12,7 +12,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   const total = history.length;
 
   // Mode mix counts (in display order).
-  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, claw: 0, plinko: 0, freeze: 0, launchpad: 0, jenga: 0, skip: 0, unknown: 0 };
+  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, claw: 0, plinko: 0, freeze: 0, launchpad: 0, jenga: 0, cannon: 0, golf: 0, rto: 0, tumba: 0, karang: 0, skip: 0, unknown: 0 };
   const byKey = new Map();
 
   const ensure = (rawName) => {
@@ -32,6 +32,11 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
         freeze: 0,
         launchpad: 0,
         jenga: 0,
+        cannon: 0,
+        golf: 0,
+        rto: 0,
+        tumba: 0,
+        karang: 0,
         skip: 0,
         unknown: 0,
         lastDate: null,
@@ -47,7 +52,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   for (const name of rosterNames) ensure(name);
 
   history.forEach((h, idx) => {
-    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'claw' || h.mode === 'plinko' || h.mode === 'freeze' || h.mode === 'launchpad' || h.mode === 'jenga' || h.mode === 'skip' ? h.mode : 'unknown';
+    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'claw' || h.mode === 'plinko' || h.mode === 'freeze' || h.mode === 'launchpad' || h.mode === 'jenga' || h.mode === 'cannon' || h.mode === 'golf' || h.mode === 'rto' || h.mode === 'tumba' || h.mode === 'karang' || h.mode === 'skip' ? h.mode : 'unknown';
     modeCounts[mode]++;
     const entry = ensure(h.name);
     entry.total++;
@@ -117,6 +122,11 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
     freeze: { count: modeCounts.freeze, pct: pct(modeCounts.freeze) },
     launchpad: { count: modeCounts.launchpad, pct: pct(modeCounts.launchpad) },
     jenga: { count: modeCounts.jenga, pct: pct(modeCounts.jenga) },
+    cannon: { count: modeCounts.cannon, pct: pct(modeCounts.cannon) },
+    golf: { count: modeCounts.golf, pct: pct(modeCounts.golf) },
+    rto: { count: modeCounts.rto, pct: pct(modeCounts.rto) },
+    tumba: { count: modeCounts.tumba, pct: pct(modeCounts.tumba) },
+    karang: { count: modeCounts.karang, pct: pct(modeCounts.karang) },
     skip: { count: modeCounts.skip, pct: pct(modeCounts.skip) },
     unknown: { count: modeCounts.unknown, pct: pct(modeCounts.unknown) },
   };

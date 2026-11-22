@@ -59,6 +59,47 @@ import {
   DEFAULT_JENGA_DURATION,
   normalizeJengaDuration,
 } from './jenga-sim.js';
+import {
+  planCannonMatch,
+  MIN_CANNON_PLAYERS,
+  MAX_CANNON_PLAYERS,
+  CANNON_DURATIONS,
+  DEFAULT_CANNON_DURATION,
+  normalizeCannonDuration,
+} from './cannon-sim.js';
+import {
+  runGolfHeadless,
+  MIN_GOLF_PLAYERS,
+  MAX_GOLF_PLAYERS,
+  GOLF_DURATIONS,
+  DEFAULT_GOLF_DURATION,
+  normalizeGolfDuration,
+} from './golf-sim.js';
+import {
+  runRtoHeadless,
+  MIN_RTO_PLAYERS,
+  MAX_RTO_PLAYERS,
+  RTO_DURATIONS,
+  DEFAULT_RTO_DURATION,
+  normalizeRtoDuration,
+} from './rto-sim.js';
+import {
+  planTumbaMatch,
+  MIN_TUMBA_PLAYERS,
+  MAX_TUMBA_PLAYERS,
+  TUMBA_DURATIONS,
+  DEFAULT_TUMBA_DURATION,
+  normalizeTumbaDuration,
+} from './tumba-sim.js';
+import {
+  planKarangMatch,
+  MIN_KARANG_PLAYERS,
+  MAX_KARANG_PLAYERS,
+  KARANG_DURATIONS,
+  DEFAULT_KARANG_DURATION,
+  DEFAULT_KARANG_STILTS,
+  normalizeKarangDuration,
+} from './karang-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -272,6 +313,128 @@ export const MODES = [
     ready: (n) => `${n} developers perched on the monolith — don’t touch the keystone!`,
     stagePreview: (stage, { names }) => stage.showJengaTower(names),
     start: startJenga,
+  },
+  {
+    id: 'cannon',
+    winMode: 'cannon',
+    icon: '💣',
+    name: 'Deploy Cannon',
+    verb: 'cannon',
+    tagline: 'Human cannonball volley — closest to the PROD bullseye leads.',
+    players: { min: MIN_CANNON_PLAYERS, max: MAX_CANNON_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Salvo length',
+        steps: CANNON_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_CANNON_DURATION,
+        normalize: normalizeCannonDuration,
+      },
+    ],
+    guide: 'cannon',
+    ready: (n) => `${n} developers loaded in brass cannons — SHIP IT toward PROD!`,
+    stagePreview: (stage, { names }) => stage.showCannonPier(names),
+    start: startCannon,
+  },
+  {
+    id: 'golf',
+    winMode: 'golf',
+    icon: '⛳',
+    name: 'Standup Mini-Golf',
+    verb: 'golf',
+    tagline: 'Simultaneous putt-putt chaos — first ball in PROD leads.',
+    players: { min: MIN_GOLF_PLAYERS, max: MAX_GOLF_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Course length',
+        steps: GOLF_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_GOLF_DURATION,
+        normalize: normalizeGolfDuration,
+      },
+    ],
+    guide: 'golf',
+    ready: (n) => `${n} golf balls on the BACKLOG tee — first in the PROD cup leads!`,
+    stagePreview: (stage, { names, options }) => stage.showGolfCourse(names, { duration: options.duration }),
+    start: startGolf,
+  },
+  {
+    id: 'rto',
+    winMode: 'rto',
+    icon: '🏢',
+    name: 'RTO Mini-Golf',
+    verb: 'putt',
+    tagline: 'Indoor cubicle putt-putt — first into the coffee mug leads.',
+    players: { min: MIN_RTO_PLAYERS, max: MAX_RTO_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Course length',
+        steps: RTO_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_RTO_DURATION,
+        normalize: normalizeRtoDuration,
+      },
+    ],
+    guide: 'rto',
+    ready: (n) => `${n} golf balls on the duct-taped cubicle tee — first in the coffee mug leads!`,
+    stagePreview: (stage, { names, options }) => stage.showRtoCourse(names, { duration: options.duration }),
+    start: startRto,
+  },
+  {
+    id: 'tumba',
+    winMode: 'tumba',
+    icon: '🩴',
+    name: 'Tumba Lata',
+    verb: 'play',
+    tagline: 'Slipper-slinging server raid — tagged dev becomes Bantay.',
+    players: { min: MIN_TUMBA_PLAYERS, max: MAX_TUMBA_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Round length',
+        steps: TUMBA_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_TUMBA_DURATION,
+        normalize: normalizeTumbaDuration,
+      },
+    ],
+    guide: 'tumba',
+    ready: (n) => `${n} devs lined up at the badlis with neon tsinelas — BATO!`,
+    stagePreview: (stage, { names }) => stage.showTumbaStreet(names),
+    start: startTumba,
+  },
+  {
+    id: 'karang',
+    winMode: 'karang',
+    icon: '🎋',
+    name: 'Karang Derby',
+    verb: 'race',
+    tagline: 'Bamboo stilt wobble race — steadiest across the tape leads.',
+    players: { min: MIN_KARANG_PLAYERS, max: MAX_KARANG_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Course length',
+        steps: KARANG_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_KARANG_DURATION,
+        normalize: normalizeKarangDuration,
+      },
+      {
+        id: 'stilts',
+        type: 'segmented',
+        label: 'Stilts',
+        default: DEFAULT_KARANG_STILTS,
+        choices: [{ value: 'bamboo', label: 'Bamboo' }, { value: 'bagol', label: 'Bagol 🥥' }],
+      },
+    ],
+    guide: 'karang',
+    ready: (n) => `${n} devs hoisted onto bamboo stilts — SAKA NA, DAGAN!`,
+    stagePreview: (stage, { names, options }) => stage.showKarangBoulevard(names, { duration: options.duration, stilts: options.stilts }),
+    start: startKarang,
   },
 ];
 
@@ -787,4 +950,325 @@ function startJenga(ctx, { duration }) {
     },
   });
   ctx.showQuit('✕ Quit jenga');
+}
+
+// ------------------------------------------------------------------ deploy cannon
+
+function startCannon(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planCannonMatch(ctx.names, { duration, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      `SHIPPED TO PROD — dead-center bullseye in ${plan.duration.toFixed(1)}s (off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const cannonParams = new URLSearchParams(location.search);
+  const effectiveDuration = cannonParams.has('cannonDuration')
+    ? Number(cannonParams.get('cannonDuration')) || duration
+    : duration;
+  const banner = document.getElementById('cannon-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('💣 LOADING BRASS BATTERY…', 'yellow');
+
+  game.startCannon(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'miss') hud.note(`💦 ${e.shot.name}: “${e.popup}”`, true);
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`🎯 ${winner.name} SHIPPED TO PROD — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        `SHIPPED TO PROD — dead-center bullseye (${plan.variant.label})`,
+        { kicker: 'Bullseye achieved' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit cannon');
+}
+
+// ------------------------------------------------------------------ standup mini-golf
+
+function startGolf(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runGolfHeadless(ctx.names, { duration, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      `Sunk in the PROD cup in ${sim.time.toFixed(1)}s (${winner.strokes} strokes, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const golfParams = new URLSearchParams(location.search);
+  const effectiveDuration = golfParams.has('golfDuration')
+    ? Number(golfParams.get('golfDuration')) || duration
+    : duration;
+  const banner = document.getElementById('golf-banner');
+  const setBanner = (text) => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('⛳ BACKLOG TEE READY — AIMING PUTTERS…');
+
+  game.startGolf(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'leader') setBanner(e.text);
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'hazard') hud.note(`⛳ ${e.ball.name}: “${e.popup}”`, true);
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`⛳ ${winner.name} sunk it in PROD — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        `Sunk in the PROD cup in ${sim.time.toFixed(1)}s (${winner.strokes} stroke${winner.strokes === 1 ? '' : 's'})`,
+        { kicker: 'Hole-in-PROD' },
+      );
+      sim.standings().slice(1, 3).forEach((b, i) => hud.podium(i + 2, b.name));
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit golf');
+}
+
+// ------------------------------------------------------------------ rto mini-golf
+
+function startRto(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runRtoHeadless(ctx.names, { duration, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      `Clinked into the coffee mug in ${sim.time.toFixed(1)}s (${winner.strokes} strokes, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const rtoParams = new URLSearchParams(location.search);
+  const effectiveDuration = rtoParams.has('rtoDuration')
+    ? Number(rtoParams.get('rtoDuration')) || duration
+    : duration;
+  const banner = document.getElementById('rto-banner');
+  const setBanner = (text) => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('🏢 CUBICLE TEE READY — AIMING PUTTERS…');
+
+  game.startRto(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'leader') setBanner(e.text);
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+      else if (e.type === 'hazard') hud.note(`🏢 ${e.ball.name}: “${e.popup}”`, true);
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`🏢 ${winner.name} clinked into the coffee mug — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        `Clinked into World’s Okayest Developer mug in ${sim.time.toFixed(1)}s (${winner.strokes} stroke${winner.strokes === 1 ? '' : 's'})`,
+        { kicker: 'RTO Mandate Champion' },
+      );
+      sim.standings().slice(1, 3).forEach((b, i) => hud.podium(i + 2, b.name));
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit RTO golf');
+}
+
+// ------------------------------------------------------------------ tumba lata
+
+function startTumba(ctx, { duration }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planTumbaMatch(ctx.names, { duration, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      `TAG! You’re the new Bantay — leads standup (${plan.variant.label}, off-screen).`,
+      { kicker: 'New Bantay' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const tumbaParams = new URLSearchParams(location.search);
+  const effectiveDuration = tumbaParams.has('tumbaDuration')
+    ? Number(tumbaParams.get('tumbaDuration')) || duration
+    : duration;
+  const banner = document.getElementById('tumba-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('🩴 LINE UP AT THE BADLIS — GET READY TO BATO!', 'yellow');
+
+  game.startTumba(ctx.names, {
+    duration: effectiveDuration,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`🩴 TAG! ${winner.name} IS THE NEW BANTAY — LEAD STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        `TAG! Tagged inches shy of the badlis (${plan.variant.label})`,
+        { kicker: 'New Bantay — Leads Standup' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Tumba Lata');
+}
+
+// ------------------------------------------------------------------ karang derby
+
+function startKarang(ctx, { duration, stilts }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planKarangMatch(ctx.names, { duration, stilts, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      `STILL STANDING — crossed the Karang finish tape (${plan.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const karangParams = new URLSearchParams(location.search);
+  const effectiveDuration = karangParams.has('karangDuration')
+    ? Number(karangParams.get('karangDuration')) || duration
+    : duration;
+  const banner = document.getElementById('karang-banner');
+  const setBanner = (text, tone = 'green') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('🎋 SAKA NA! MOUNTING BAMBOO STILTS…', 'yellow');
+
+  game.startKarang(ctx.names, {
+    duration: effectiveDuration,
+    stilts,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'green');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(`🎋 ${winner.name} STILL STANDING — LEADS STANDUP!`, 2400);
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        `STILL STANDING — snapped the Karang ribbon on ${plan.stilts === 'bagol' ? 'Bagol coconut stilts' : 'bamboo stilts'} (${plan.variant.label})`,
+        { kicker: 'Karang Derby Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Karang');
 }
