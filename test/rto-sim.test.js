@@ -80,6 +80,6 @@ test('RTO Mini-Golf catalog contains all spec dev-humor hazard popups', () => {
   assert.ok(RTO_HAZARD_POPUPS.detour.includes('URL edits banned. Fix: add ?ReturnUrl='));
   assert.ok(RTO_HAZARD_POPUPS.copier.includes('BadalJwala 500 Internal Error'));
   assert.ok(RTO_HAZARD_POPUPS.coffee.includes('Waiting on developer poll results'));
-  assert.ok(RTO_HAZARD_POPUPS.hardware.includes("Failed to read Iklauti-ji's mind"));
+  assert.ok(RTO_HAZARD_POPUPS.hardware.includes("Failed to read Ekmaatra-ji's mind"));
   assert.ok(RTO_HAZARD_POPUPS.abyss.includes('Rolling back server clock broke login'));
 });

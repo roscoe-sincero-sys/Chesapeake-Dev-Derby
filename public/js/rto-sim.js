@@ -81,7 +81,7 @@ export const RTO_HAZARD_POPUPS = {
   ],
   copier: ['BadalJwala 500 Internal Error', 'Scrolling 800 columns now'],
   coffee: ['Waiting on developer poll results', 'Waiting to be blamed for not being clear'],
-  hardware: ["Manager's pet feature", 'Unrequested feature broke prod', "Failed to read Iklauti-ji's mind"],
+  hardware: ["Manager's pet feature", 'Unrequested feature broke prod', "Failed to read Ekmaatra-ji's mind"],
   abyss: ['userLogin and eventLog broke audit logs', 'Rolling back server clock broke login'],
 };
 

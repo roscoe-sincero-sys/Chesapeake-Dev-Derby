@@ -58,10 +58,10 @@ export const JENGA_EXCUSES = [
   'Failed to rollback server clock',
   'Failed to renew software license!',
   'Failed to make WORD docs readible',
-  'Failed to complete a completed migration',
+  'Failed to complete an already completed migration',
   'Failed to explain it a sixth time',
   'Blamed for not being clear',
-  '16-char passwords deprecated in v2',
+  '16+ char passwords deprecated in v2',
 ];
 
 export const CURSOR_LABELS = ['npm audit fix --force', 'DEPENDABOT', 'npm update --legacy-peer-deps'];

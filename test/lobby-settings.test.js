@@ -14,8 +14,8 @@ function store(initial = null) {
 const browser = (session = store(), local = store()) => ({ session: () => session, local: () => local, tab: session, kept: local });
 
 /** Settings with every option at its default, except those given. */
-function settings({ absent = [], mode = 'race', speed = 2, models = 'classic', duration = 15, plinkoDuration = 30, freezeDuration = 30, launchDuration = 15, jengaDuration = 15, cannonDuration = 15, golfDuration = 15, rtoDuration = 15, tumbaDuration = 15, karangDuration = 15, karangStilts = 'bamboo' } = {}) {
-  return { absent: new Set(absent), mode, options: { race: { speed }, rumble: { models }, deathmatch: {}, claw: { duration }, plinko: { duration: plinkoDuration }, freeze: { duration: freezeDuration }, launchpad: { duration: launchDuration }, jenga: { duration: jengaDuration }, cannon: { duration: cannonDuration }, golf: { duration: golfDuration }, rto: { duration: rtoDuration }, tumba: { duration: tumbaDuration }, karang: { duration: karangDuration, stilts: karangStilts } } };
+function settings({ absent = [], mode = 'race', speed = 2, models = 'classic', duration = 15, plinkoDuration = 30, freezeDuration = 30, launchDuration = 15, jengaDuration = 15, cannonDuration = 15, golfDuration = 15, rtoDuration = 15, tumbaDuration = 15, karangDuration = 15, karangStilts = 'bamboo', tubigDuration = 15, tubigRule = 'champion', dominoDuration = 15, dominoRule = 'champion', poleDuration = 15, poleRule = 'summit', tawDuration = 15, tawRule = 'champion' } = {}) {
+  return { absent: new Set(absent), mode, options: { race: { speed }, rumble: { models }, deathmatch: {}, claw: { duration }, plinko: { duration: plinkoDuration }, freeze: { duration: freezeDuration }, launchpad: { duration: launchDuration }, jenga: { duration: jengaDuration }, cannon: { duration: cannonDuration }, golf: { duration: golfDuration }, rto: { duration: rtoDuration }, tumba: { duration: tumbaDuration }, karang: { duration: karangDuration, stilts: karangStilts }, tubig: { duration: tubigDuration, rule: tubigRule }, domino: { duration: dominoDuration, rule: dominoRule }, pole: { duration: poleDuration, rule: poleRule }, taw: { duration: tawDuration, rule: tawRule } } };
 }
 
 test('attendance is kept for the tab, and the game and its options for the browser', () => {
@@ -25,7 +25,7 @@ test('attendance is kept for the tab, and the game and its options for the brows
   assert.deepEqual(restored, settings({ absent: ['ada', 'grace'], mode: 'rumble', speed: 8, models: 'hd' }));
   assert.deepEqual(selectRacers(buildRoster(['Ada', 'Grace', 'Linus', 'Hedy'], []), restored.absent), ['Linus', 'Hedy']);
   assert.deepEqual(JSON.parse(b.tab.value), { absent: ['ada', 'grace'] });
-  assert.deepEqual(JSON.parse(b.kept.value), { mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' } } });
+  assert.deepEqual(JSON.parse(b.kept.value), { mode: 'rumble', options: { race: { speed: 8 }, rumble: { models: 'hd' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' }, tubig: { duration: 15, rule: 'champion' }, domino: { duration: 15, rule: 'champion' }, pole: { duration: 15, rule: 'summit' }, taw: { duration: 15, rule: 'champion' } } });
 });
 
 test('a new tab (tomorrow’s meeting) keeps the game and its options, with everyone present again', () => {

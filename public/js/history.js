@@ -51,14 +51,14 @@ function renderStats(stats) {
   const mix = stats.modeMix;
   const bar = $('stat-mix-bar');
   bar.replaceChildren();
-  for (const [key, cls] of [['race', 'mix-race'], ['wrestle', 'mix-wrestle'], ['deathmatch', 'mix-deathmatch'], ['claw', 'mix-claw'], ['plinko', 'mix-plinko'], ['freeze', 'mix-freeze'], ['launchpad', 'mix-launchpad'], ['jenga', 'mix-jenga'], ['cannon', 'mix-cannon'], ['golf', 'mix-golf'], ['rto', 'mix-rto'], ['tumba', 'mix-tumba'], ['karang', 'mix-karang'], ['skip', 'mix-skip'], ['unknown', 'mix-unknown']]) {
+  for (const [key, cls] of [['race', 'mix-race'], ['wrestle', 'mix-wrestle'], ['deathmatch', 'mix-deathmatch'], ['claw', 'mix-claw'], ['plinko', 'mix-plinko'], ['freeze', 'mix-freeze'], ['launchpad', 'mix-launchpad'], ['jenga', 'mix-jenga'], ['cannon', 'mix-cannon'], ['golf', 'mix-golf'], ['rto', 'mix-rto'], ['tumba', 'mix-tumba'], ['karang', 'mix-karang'], ['tubig', 'mix-tubig'], ['domino', 'mix-domino'], ['pole', 'mix-pole'], ['taw', 'mix-taw'], ['skip', 'mix-skip'], ['unknown', 'mix-unknown']]) {
     if (!mix[key].count) continue;
     const seg = document.createElement('span');
     seg.className = `mix-seg ${cls}`;
     seg.style.flexGrow = String(mix[key].count);
     bar.append(seg);
   }
-  $('stat-mix-sub').textContent = `🏁 ${mix.race.count} · 🤼 ${mix.wrestle.count} · 🔫 ${mix.deathmatch.count} · 🕹️ ${mix.claw.count} · 🎰 ${mix.plinko.count} · 🚦 ${mix.freeze.count} · 🚀 ${mix.launchpad.count} · 🧱 ${mix.jenga.count} · 💣 ${mix.cannon.count} · ⛳ ${mix.golf.count} · 🏢 ${mix.rto.count} · 🩴 ${mix.tumba.count} · 🎋 ${mix.karang.count} · 🎲 ${mix.skip.count}`;
+  $('stat-mix-sub').textContent = `🏁 ${mix.race.count} · 🤼 ${mix.wrestle.count} · 🔫 ${mix.deathmatch.count} · 🕹️ ${mix.claw.count} · 🎰 ${mix.plinko.count} · 🚦 ${mix.freeze.count} · 🚀 ${mix.launchpad.count} · 🧱 ${mix.jenga.count} · 💣 ${mix.cannon.count} · ⛳ ${mix.golf.count} · 🏢 ${mix.rto.count} · 🩴 ${mix.tumba.count} · 🎋 ${mix.karang.count} · 💧 ${mix.tubig.count} · 🁣 ${mix.domino.count} · 🌴 ${mix.pole.count} · 🔮 ${mix.taw.count} · 🎲 ${mix.skip.count}`;
 }
 
 function makeNameCell(rawName, sittingOut) {
@@ -133,6 +133,10 @@ function renderTables() {
         cell(String(row.rto), 'num'),
         cell(String(row.tumba), 'num'),
         cell(String(row.karang), 'num'),
+        cell(String(row.tubig), 'num'),
+        cell(String(row.domino), 'num'),
+        cell(String(row.pole), 'num'),
+        cell(String(row.taw), 'num'),
         cell(String(row.skip), 'num'),
         cell(row.total ? day : '—'),
       );

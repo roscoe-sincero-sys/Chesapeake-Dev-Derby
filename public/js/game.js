@@ -22,6 +22,10 @@ import { GolfMatch, GolfStage } from './golf.js';
 import { RtoMatch, RtoStage } from './rto.js';
 import { TumbaMatch, TumbaStage } from './tumba.js';
 import { KarangMatch, KarangStage } from './karang.js';
+import { TubigMatch, TubigStage } from './tubig.js';
+import { DominoMatch, DominoStage } from './domino.js';
+import { PoleMatch, PoleStage } from './pole.js';
+import { TawMatch, TawStage } from './taw.js';
 import { readFlyover, writeFlyover } from './flyover-handoff.js';
 
 /** This tab's sessionStorage, or null where the browser blocks it. */
@@ -156,6 +160,14 @@ export class Game {
     this.tumba = null;
     this.karangStage = null;
     this.karang = null;
+    this.tubigStage = null;
+    this.tubig = null;
+    this.dominoStage = null;
+    this.domino = null;
+    this.poleStage = null;
+    this.pole = null;
+    this.tawStage = null;
+    this.taw = null;
     // Carry on the 3D stage where the previous page left it (lobby ↔ Edit team list ↔ Full history),
     // instead of starting again from the beginning on each page.
     this.resumeFlyover();
@@ -225,6 +237,14 @@ export class Game {
     this.tumbaStage?.resize(w / h);
     this.karang?.resize(w / h);
     this.karangStage?.resize(w / h);
+    this.tubig?.resize(w / h);
+    this.tubigStage?.resize(w / h);
+    this.domino?.resize(w / h);
+    this.dominoStage?.resize(w / h);
+    this.pole?.resize(w / h);
+    this.poleStage?.resize(w / h);
+    this.taw?.resize(w / h);
+    this.tawStage?.resize(w / h);
   }
 
   // ------------------------------------------------------------ live 3D lobby stage (#123)
@@ -278,6 +298,22 @@ export class Game {
     if (this.karangStage) {
       this.karangStage.dispose();
       this.karangStage = null;
+    }
+    if (this.tubigStage) {
+      this.tubigStage.dispose();
+      this.tubigStage = null;
+    }
+    if (this.dominoStage) {
+      this.dominoStage.dispose();
+      this.dominoStage = null;
+    }
+    if (this.poleStage) {
+      this.poleStage.dispose();
+      this.poleStage = null;
+    }
+    if (this.tawStage) {
+      this.tawStage.dispose();
+      this.tawStage = null;
     }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
@@ -346,6 +382,22 @@ export class Game {
     if (this.karangStage) {
       this.karangStage.dispose();
       this.karangStage = null;
+    }
+    if (this.tubigStage) {
+      this.tubigStage.dispose();
+      this.tubigStage = null;
+    }
+    if (this.dominoStage) {
+      this.dominoStage.dispose();
+      this.dominoStage = null;
+    }
+    if (this.poleStage) {
+      this.poleStage.dispose();
+      this.poleStage = null;
+    }
+    if (this.tawStage) {
+      this.tawStage.dispose();
+      this.tawStage = null;
     }
     const prevNames = new Set(this.stageNames);
     const sameMode = this.stageMode === 'race-grid';
@@ -444,6 +496,18 @@ export class Game {
       this.karangStage.dispose();
       this.karangStage = null;
     }
+    if (this.tubigStage) {
+      this.tubigStage.dispose();
+      this.tubigStage = null;
+    }
+    if (this.dominoStage) {
+      this.dominoStage.dispose();
+      this.dominoStage = null;
+    }
+    if (this.poleStage) {
+      this.poleStage.dispose();
+      this.poleStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -476,6 +540,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -503,6 +570,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -530,6 +600,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -557,6 +630,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -617,6 +693,18 @@ export class Game {
       this.karangStage.dispose();
       this.karangStage = null;
     }
+    if (this.tubigStage) {
+      this.tubigStage.dispose();
+      this.tubigStage = null;
+    }
+    if (this.dominoStage) {
+      this.dominoStage.dispose();
+      this.dominoStage = null;
+    }
+    if (this.poleStage) {
+      this.poleStage.dispose();
+      this.poleStage = null;
+    }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -644,6 +732,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -671,6 +762,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -698,6 +792,9 @@ export class Game {
     if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
     if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
     if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
     if (this.stageGroup) {
       this.scene.remove(this.stageGroup);
       for (const r of this.stageRacers) r.visual.dispose();
@@ -790,6 +887,124 @@ export class Game {
     this.karangStage.setLineup(names, { stilts });
   }
 
+  /** Stages the checked-in teammates on the glowing twilight Tubig-Tubig water court. */
+  showTubigCourt(names, { duration = 15, rule = 'champion' } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'tubig-court';
+    if (!this.tubigStage) {
+      this.tubigStage = new TubigStage(window.innerWidth / window.innerHeight, names, { duration, rule });
+    }
+    this.tubigStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates on the scarred mahogany Rum-Shop Domino tabletop. */
+  showDominoTable(names) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'domino-table';
+    if (!this.dominoStage) {
+      this.dominoStage = new DominoStage(window.innerWidth / window.innerHeight, names);
+    }
+    this.dominoStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates around the Mashramani greasy pole mud pit. */
+  showGreasyPole(names, { duration = 15 } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'greasy-pole';
+    if (!this.poleStage) {
+      this.poleStage = new PoleStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.poleStage.setLineup(names);
+  }
+
+  /** Stages the checked-in teammates as glass marbles inside the schoolyard chalk ring. */
+  showTawRing(names, { duration = 15 } = {}) {
+    if (this.wrestleStage) { this.wrestleStage.dispose(); this.wrestleStage = null; }
+    if (this.deathmatchStage) { this.deathmatchStage.dispose(); this.deathmatchStage = null; }
+    if (this.clawStage) { this.clawStage.dispose(); this.clawStage = null; }
+    if (this.plinkoStage) { this.plinkoStage.dispose(); this.plinkoStage = null; }
+    if (this.freezeStage) { this.freezeStage.dispose(); this.freezeStage = null; }
+    if (this.launchpadStage) { this.launchpadStage.dispose(); this.launchpadStage = null; }
+    if (this.jengaStage) { this.jengaStage.dispose(); this.jengaStage = null; }
+    if (this.cannonStage) { this.cannonStage.dispose(); this.cannonStage = null; }
+    if (this.golfStage) { this.golfStage.dispose(); this.golfStage = null; }
+    if (this.rtoStage) { this.rtoStage.dispose(); this.rtoStage = null; }
+    if (this.tumbaStage) { this.tumbaStage.dispose(); this.tumbaStage = null; }
+    if (this.karangStage) { this.karangStage.dispose(); this.karangStage = null; }
+    if (this.tubigStage) { this.tubigStage.dispose(); this.tubigStage = null; }
+    if (this.dominoStage) { this.dominoStage.dispose(); this.dominoStage = null; }
+    if (this.poleStage) { this.poleStage.dispose(); this.poleStage = null; }
+    if (this.stageGroup) {
+      this.scene.remove(this.stageGroup);
+      for (const r of this.stageRacers) r.visual.dispose();
+      this.stageGroup = null;
+      this.stageRacers = [];
+      this.stageNames = [];
+    }
+    this.stageMode = 'taw-ring';
+    if (!this.tawStage) {
+      this.tawStage = new TawStage(window.innerWidth / window.innerHeight, names, { duration });
+    }
+    this.tawStage.setLineup(names);
+  }
+
   /** Current live lobby stage summary (used by browser tests under ?test). */
   stageState() {
     if (this.stageMode === 'wrestle-ring' && this.wrestleStage) {
@@ -866,10 +1081,78 @@ export class Game {
         count: this.karangStage.models.length,
       };
     }
+    if (this.stageMode === 'tubig-court' && this.tubigStage) {
+      return {
+        mode: 'tubig-court',
+        count: this.tubigStage.models.length,
+      };
+    }
+    if (this.stageMode === 'domino-table' && this.dominoStage) {
+      return {
+        mode: 'domino-table',
+        count: this.dominoStage.models.length,
+      };
+    }
+    if (this.stageMode === 'greasy-pole' && this.poleStage) {
+      return {
+        mode: 'greasy-pole',
+        count: this.poleStage.models.length,
+      };
+    }
+    if (this.stageMode === 'taw-ring' && this.tawStage) {
+      return {
+        mode: 'taw-ring',
+        count: this.tawStage.models.length,
+      };
+    }
     if (this.stageMode === 'race-grid') {
       return { mode: 'race-grid', count: this.stageRacers.length };
     }
     return { mode: 'flyover', count: 0 };
+  }
+
+  /** Starts Schoolyard Taw Knockout inside the shrinking chalk ring. */
+  startTaw(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.taw = new TawMatch(names, { ...options, sfx: this.sfx });
+    this.taw.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'taw';
+    return this.taw.sim;
+  }
+
+  /** Starts Greasy Pole Scramble in the twilight Mashramani carnival square. */
+  startPole(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.pole = new PoleMatch(names, { ...options, sfx: this.sfx });
+    this.pole.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'pole';
+    return this.pole.sim;
+  }
+
+  /** Starts Rum-Shop Domino Slam on the scarred mahogany tabletop. */
+  startDomino(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.domino = new DominoMatch(names, { ...options, sfx: this.sfx });
+    this.domino.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'domino';
+    return this.domino.sim;
+  }
+
+  /** Starts Tubig-Tubig Gauntlet on the twilight water-grid street court. */
+  startTubig(names, options = {}) {
+    this.clearStage();
+    this.clearRace();
+    this.showcase.group.visible = false;
+    this.tubig = new TubigMatch(names, { ...options, sfx: this.sfx });
+    this.tubig.resize(window.innerWidth / window.innerHeight);
+    this.phase = 'tubig';
+    return this.tubig.plan;
   }
 
   /** Starts Karang Derby on the twilight Cebu-meets-Chesapeake fiesta boulevard. */
@@ -1142,6 +1425,22 @@ export class Game {
       this.karang.dispose();
       this.karang = null;
     }
+    if (this.tubig) {
+      this.tubig.dispose();
+      this.tubig = null;
+    }
+    if (this.domino) {
+      this.domino.dispose();
+      this.domino = null;
+    }
+    if (this.pole) {
+      this.pole.dispose();
+      this.pole = null;
+    }
+    if (this.taw) {
+      this.taw.dispose();
+      this.taw = null;
+    }
     if (this.raceGroup) {
       this.scene.remove(this.raceGroup);
       for (const v of this.visuals) v.dispose();
@@ -1268,6 +1567,26 @@ export class Game {
       this.renderer.render(this.karang.scene, this.karang.camera);
       return;
     }
+    if (this.tubig) {
+      this.tubig.update(real);
+      this.renderer.render(this.tubig.scene, this.tubig.camera);
+      return;
+    }
+    if (this.domino) {
+      this.domino.update(real);
+      this.renderer.render(this.domino.scene, this.domino.camera);
+      return;
+    }
+    if (this.pole) {
+      this.pole.update(real);
+      this.renderer.render(this.pole.scene, this.pole.camera);
+      return;
+    }
+    if (this.taw) {
+      this.taw.update(real);
+      this.renderer.render(this.taw.scene, this.taw.camera);
+      return;
+    }
 
     if (this.phase === 'lobby') {
       const reduced = Boolean(this.reducedMotion?.matches);
@@ -1329,6 +1648,26 @@ export class Game {
       if (this.stageMode === 'karang-boulevard' && this.karangStage) {
         this.karangStage.update(real, reduced);
         this.renderer.render(this.karangStage.scene, this.karangStage.camera);
+        return;
+      }
+      if (this.stageMode === 'tubig-court' && this.tubigStage) {
+        this.tubigStage.update(real, reduced);
+        this.renderer.render(this.tubigStage.scene, this.tubigStage.camera);
+        return;
+      }
+      if (this.stageMode === 'domino-table' && this.dominoStage) {
+        this.dominoStage.update(real, reduced);
+        this.renderer.render(this.dominoStage.scene, this.dominoStage.camera);
+        return;
+      }
+      if (this.stageMode === 'greasy-pole' && this.poleStage) {
+        this.poleStage.update(real, reduced);
+        this.renderer.render(this.poleStage.scene, this.poleStage.camera);
+        return;
+      }
+      if (this.stageMode === 'taw-ring' && this.tawStage) {
+        this.tawStage.update(real, reduced);
+        this.renderer.render(this.tawStage.scene, this.tawStage.camera);
         return;
       }
       if (!reduced) this.flyT += real;

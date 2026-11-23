@@ -523,15 +523,25 @@ function el(tag, className, text) {
   return node;
 }
 
-const MODES_PER_PAGE = 8;
 let modePage = 0;
 
-/** Updates which 8-card page of game modes is shown and refreshes the ◀ 1 / N ▶ pager controls. */
+/** Responsive cards per page matching CSS breakpoints: 8 on phones, 12 on laptops (4x3), 15 on 1600px+ (5x3), 18 on 1840px+ (6x3). */
+function modesPerPage() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (h <= 500 || w < 1000) return 8;
+  if (w >= 1840) return 18;
+  if (w >= 1600) return 15;
+  return 12;
+}
+
+/** Updates which page of game modes is shown and refreshes the ◀ 1 / N ▶ pager controls. */
 function setModePage(page) {
-  const totalPages = Math.max(1, Math.ceil(MODES.length / MODES_PER_PAGE));
+  const perPage = modesPerPage();
+  const totalPages = Math.max(1, Math.ceil(MODES.length / perPage));
   modePage = Math.max(0, Math.min(totalPages - 1, page));
-  const start = modePage * MODES_PER_PAGE;
-  const end = start + MODES_PER_PAGE;
+  const start = modePage * perPage;
+  const end = start + perPage;
   const cards = [...$('mode-cards').children];
   cards.forEach((card, i) => {
     card.hidden = i < start || i >= end;
@@ -550,7 +560,7 @@ function selectMode(id) {
   state.mode = findMode(id).id;
   saveLobbySettings();
   const idx = MODES.findIndex((m) => m.id === state.mode);
-  if (idx >= 0) setModePage(Math.floor(idx / MODES_PER_PAGE));
+  if (idx >= 0) setModePage(Math.floor(idx / modesPerPage()));
   for (const card of $('mode-cards').children) card.setAttribute('aria-pressed', String(card.dataset.mode === state.mode));
   for (const panel of $('mode-options').children) {
     const inactive = panel.dataset.mode !== state.mode;
@@ -704,7 +714,11 @@ function renderModes() {
     sfx.play('tick', 0.04);
   });
   const activeIdx = Math.max(0, MODES.findIndex((m) => m.id === state.mode));
-  setModePage(Math.floor(activeIdx / MODES_PER_PAGE));
+  setModePage(Math.floor(activeIdx / modesPerPage()));
+  window.addEventListener('resize', () => {
+    const idx = Math.max(0, MODES.findIndex((m) => m.id === state.mode));
+    setModePage(Math.floor(idx / modesPerPage()));
+  });
 }
 
 function setAll(present) {

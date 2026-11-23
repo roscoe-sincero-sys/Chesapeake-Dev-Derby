@@ -988,6 +988,7 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 .mix-seg { min-width: 4px; }
 .mix-race { background: var(--gold); }
 .mix-wrestle { background: var(--orange); }
+.mix-taw { background: #7950f2; }
 .mix-skip { background: #8ab4f8; }
 .mix-unknown { background: #4b5870; }
 
@@ -1449,10 +1450,10 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 
 /* Mode cards: one button each, pressed when selected, so Tab reaches every card. */
 .mode-picker { position: relative; margin: 0; padding: 0; border: none; min-width: 0; }
-.mode-picker legend { margin-bottom: 10px; }
+.mode-picker legend { margin-bottom: 12px; }
 .mode-picker-tools {
   position: absolute;
-  top: -27px;
+  top: -32px;
   right: 0;
   display: inline-flex;
   align-items: center;
@@ -1595,9 +1596,18 @@ button.exit { padding: 7px 12px; font-size: 13px; }
    and until it ended, the hidden game's controls would still be in the Tab order. */
 .mode-config.inactive { visibility: hidden; opacity: 0; transition: none; }
 .mode-tagline { margin: 6px 0 0; font-size: 14px; }
-.option-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
-.option-label { font-weight: 650; }
-.option-value { margin-left: auto; color: var(--gold); font: 700 15px var(--mono); }
+.option-head { display: flex; align-items: baseline; flex-wrap: nowrap; gap: 8px; min-width: 0; }
+.option-label { font-weight: 650; flex: none; white-space: nowrap; }
+.option-value {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--gold);
+  font: 700 13.5px var(--mono);
+}
 .range-option { margin: 0; }
 
 /* Segmented toggle (Classic | HD): a native radio group drawn as pills. */
@@ -1721,9 +1731,9 @@ button.exit { padding: 7px 12px; font-size: 13px; }
     gap: 12px;
     align-items: stretch;
   }
-  .mode-picker legend { margin-bottom: 6px; }
-  .mode-picker-tools { top: -24px; }
-  .mode-cards { gap: 4px; grid-template-columns: repeat(4, minmax(140px, 1fr)); align-content: start; min-height: 92px; }
+  .mode-picker legend { margin-bottom: 10px; }
+  .mode-picker-tools { top: -30px; }
+  .mode-cards { gap: 4px; grid-template-columns: repeat(4, minmax(140px, 1fr)); align-content: start; min-height: 140px; }
   .mode-card {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -1761,6 +1771,16 @@ button.exit { padding: 7px 12px; font-size: 13px; }
   .lobby-actions { margin-left: 0; gap: 8px; justify-content: flex-end; }
   .lobby-actions button.secondary { padding-inline: 10px; font-size: 13px; }
   .lobby-actions button.primary { min-width: 236px; padding-inline: 12px; }
+}
+
+/* Wide desktop monitors: expand the 3-row mode grid to 5 columns (15 cards/page) or 6 columns (18 cards/page). */
+@media (min-width: 1600px) and (min-height: 501px) {
+  #game-section { grid-template-columns: minmax(720px, 2.2fr) minmax(300px, 1fr); }
+  .mode-cards { grid-template-columns: repeat(5, minmax(140px, 1fr)); }
+}
+@media (min-width: 1840px) and (min-height: 501px) {
+  #game-section { grid-template-columns: minmax(870px, 2.5fr) minmax(300px, 1fr); }
+  .mode-cards { grid-template-columns: repeat(6, minmax(140px, 1fr)); }
 }
 
 /* Phones (and phones on their side): the team list folds into a summary row, the readiness line joins
@@ -1821,6 +1841,9 @@ button.exit { padding: 7px 12px; font-size: 13px; }
 .mix-rto { background: #4dabf7; }
 .mix-tumba { background: #ff6b6b; }
 .mix-karang { background: #94d82d; }
+.mix-tubig { background: #22b8cf; }
+.mix-domino { background: #f08c00; }
+.mix-pole { background: #099268; }
 
 .freeze-banner {
   position: fixed;

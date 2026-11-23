@@ -43,7 +43,7 @@ export const GOLF_HAZARD_POPUPS = {
   firewall: ['BadalJwala 500 Error', '16-chars is too long'],
   sand: ['Waiting on developer poll results', 'Waiting on approval'],
   water: ['userLogin and eventLog broke audit logs', 'Unrequested feature broke prod'],
-  bumper: ["Manager's pet feature", "Failed to read Iklauti-ji's mind"],
+  bumper: ["Manager's pet feature", "Failed to read Ekmaatra's mind"],
   detour: ['Anti-URL-tampering security feature broke links—solved by tampering with the URL (?ReturnUrl=)'],
 };
 

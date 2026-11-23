@@ -54,6 +54,10 @@ export const MODE = {
   rto: '🏢 RTO Mini-Golf',
   tumba: '🩴 Tumba Lata',
   karang: '🎋 Karang Derby',
+  tubig: '💧 Tubig-Tubig',
+  domino: '🁣 Domino Slam',
+  pole: '🌴 Greasy Pole',
+  taw: '🔮 Taw Knockout',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
@@ -71,6 +75,10 @@ export const MODE_COUNT = {
   rto: 'by RTO mini-golf',
   tumba: 'by Tumba Lata',
   karang: 'by Karang Derby',
+  tubig: 'by Tubig-Tubig',
+  domino: 'by Domino Slam',
+  pole: 'by Greasy Pole',
+  taw: 'by Taw Knockout',
   skip: 'skipped',
 };
 

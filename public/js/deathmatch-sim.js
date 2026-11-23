@@ -450,6 +450,19 @@ export const LOBBY_PROD_SYNC_SCRIPT = [
   { sender: '{C}', text: '(has left the meeting)' },
   { sender: '{B}', text: '(has left the meeting)' },  
   { sender: '{A}', text: 'Great teamwork everyone.' },  
+  { sender: '{A}', text: 'Does anyone know what a group policy push is?' },   
+  { sender: '{A}', text: 'Nobody.  Great. I\'ll be pushing one out that will change' },  
+  { sender: '{A}', text: 'permissions of service accounts for all SQL Servers.' }, 
+  { sender: '{A}', text: 'I won\'t test on just one server.  Doing all of them.' },   
+  { sender: '{A}', text: 'So the next time any of them reboots, it won\'t start up.' },    
+  { sender: '{A}', text: 'It is my ekmaatra timebomb. Fix the ones that blow up.' },  
+  { sender: '{A}', text: 'What do you think?' },
+  { sender: '{A}', text: 'Folks won\'t find out for weeks after the push. It\'s staggered.' },  
+  { sender: '{A}', text: '{B}?' },  
+  { sender: '{A}', text: '{C}?' },  
+  { sender: '{A}', text: '{D}?' },    
+  { sender: '{A}', text: 'Hello?' },  
+  { sender: '{A}', text: '(has left the meeting)' }, 
 ];
 
 

@@ -79,7 +79,19 @@ test('race and rumble keep their player ranges and defaults', () => {
   const karang = findMode('karang');
   assert.equal(karang.winMode, 'karang');
   assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(karang, n)), [false, true, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' } });
+  const tubig = findMode('tubig');
+  assert.equal(tubig.winMode, 'tubig');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(tubig, n)), [false, true, true, true, false]);
+  const domino = findMode('domino');
+  assert.equal(domino.winMode, 'domino');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(domino, n)), [false, true, true, true, false]);
+  const pole = findMode('pole');
+  assert.equal(pole.winMode, 'pole');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(pole, n)), [false, true, true, true, false]);
+  const taw = findMode('taw');
+  assert.equal(taw.winMode, 'taw');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(taw, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' }, tubig: { duration: 15, rule: 'champion' }, domino: { duration: 15, rule: 'champion' }, pole: { duration: 15, rule: 'summit' }, taw: { duration: 15, rule: 'champion' } });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {

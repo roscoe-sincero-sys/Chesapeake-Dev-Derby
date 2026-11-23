@@ -128,32 +128,22 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 14);
-  assert.deepEqual(lobby.cards[13], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 18);
+  assert.deepEqual(lobby.cards[17], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('button')]
     .filter((b) => !b.textContent.trim() && !b.getAttribute('aria-label') && !b.getAttribute('aria-labelledby')).map((b) => b.outerHTML)`), []);
 
-  // Tab reaches every visible card on page 1; with 9 modes the ◀ 1 / 2 ▶ pager reveals page 2 (Arena).
-  assert.equal(await evaluate(`document.getElementById('mode-pager').hidden`), false, 'pager shows for 9 modes');
+  // Tab reaches every visible card on page 1 (12 cards on laptop 4x3); ◀ 1 / 2 ▶ reveals page 2 (Karang + Arena).
+  assert.equal(await evaluate(`document.getElementById('mode-pager').hidden`), false, 'pager shows for 14 modes');
   assert.equal(await evaluate(`document.getElementById('mode-page-label').textContent`), '1 / 2');
   await evaluate(`document.querySelector('.mode-card[aria-pressed="true"]').focus()`);
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'rumble');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'deathmatch');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'claw');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'plinko');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'freeze');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'launchpad');
-  await tab();
-  assert.equal((await evaluate(LOBBY)).focus, 'jenga');
+  for (const expected of ['rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba']) {
+    await tab();
+    assert.equal((await evaluate(LOBBY)).focus, expected);
+  }
   // Flip to page 2 via the Next button; Arena is now visible and focusable.
   await evaluate(`document.getElementById('mode-next').click()`);
   assert.equal(await evaluate(`document.getElementById('mode-page-label').textContent`), '2 / 2');
@@ -192,7 +182,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[13], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[17], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -424,6 +414,22 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.querySelector('.mode-card[data-mode="karang"]').click()`);
   assert.deepEqual(await stage(), { mode: 'karang-boulevard', count: 4 });
 
+  // Tubig-Tubig Gauntlet (page 2 of the carousel) stages runners on the glowing water-line court.
+  await evaluate(`document.querySelector('.mode-card[data-mode="tubig"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'tubig-court', count: 4 });
+
+  // Rum-Shop Domino Slam (page 2 of the carousel) stages devs on the mahogany tabletop.
+  await evaluate(`document.querySelector('.mode-card[data-mode="domino"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'domino-table', count: 4 });
+
+  // Greasy Pole Scramble (page 2 of the carousel) stages climbers around the Mashramani mud pit.
+  await evaluate(`document.querySelector('.mode-card[data-mode="pole"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'greasy-pole', count: 4 });
+
+  // Schoolyard Taw Knockout (page 2 of the carousel) clusters glass marbles inside the chalk ring.
+  await evaluate(`document.querySelector('.mode-card[data-mode="taw"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'taw-ring', count: 4 });
+
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
   assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
@@ -616,11 +622,11 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
-  test(`thirteen modes fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
+  test(`seventeen modes fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
     const { evaluate } = await openLobby(t, { extra: 0, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang', 'tubig', 'domino', 'pole', 'taw']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`(() => {
@@ -647,7 +653,7 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
       assert.ok(!s.hscroll, `${at}: no sideways scrolling`);
       assert.ok(s.oneRow, `${at}: Just pick and Start in one row`);
       assert.deepEqual(s.shown, [id], `${at}: its options show, and no others`);
-      const verb = { launchpad: 'launch', rto: 'putt', tumba: 'play', karang: 'race' }[id] ?? id;
+      const verb = { launchpad: 'launch', rto: 'putt', tumba: 'play', karang: 'race', tubig: 'dash', domino: 'slam', pole: 'climb', taw: 'pitch' }[id] ?? id;
       assert.equal(s.label, `▶ Start ${verb}`);
       for (const card of s.cards) {
         assert.ok(card.w >= 140 && card.h >= 44, `${at}: card ${card.w} x ${card.h} is a big enough target`);
@@ -660,9 +666,9 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
   });
 }
 
-test('Paged 2-row carousel keeps 17 modes (3 pages) above 50% open 3D stage at 1366 x 768', { skip, timeout: 120000 }, async (t) => {
+test('Responsive 3-row carousel shows 12/page at 1366 x 768 (>= 50% open stage) and all 18 on 1 page at 1920 x 1080', { skip, timeout: 120000 }, async (t) => {
   const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
-  const { evaluate } = await openLobby(t, { extra: 4, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const { evaluate } = await openLobby(t, { extra: 1, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
   const check = () => evaluate(`(() => {
     const stage = document.querySelector('.lobby-stage').getBoundingClientRect();
     const drawer = document.getElementById('roster-section').getBoundingClientRect();
@@ -681,23 +687,39 @@ test('Paged 2-row carousel keeps 17 modes (3 pages) above 50% open 3D stage at 1
   })()`);
 
   const p1 = await check();
-  assert.equal(p1.total, 17);
-  assert.equal(p1.visible, 8);
+  assert.equal(p1.total, 18);
+  assert.equal(p1.visible, 12);
   assert.equal(p1.pagerHidden, false);
-  assert.equal(p1.pageLabel, '1 / 3');
+  assert.equal(p1.pageLabel, '1 / 2');
   assert.equal(p1.prevDisabled, true);
   assert.equal(p1.nextDisabled, false);
-  assert.ok(p1.openRatio >= 0.5, `17 modes still keep >= 50% open 3D stage (got ${(p1.openRatio * 100).toFixed(1)}%)`);
+  assert.ok(p1.openRatio >= 0.5, `12/page at 1366x768 keeps >= 50% open 3D stage (got ${(p1.openRatio * 100).toFixed(1)}%)`);
   assert.equal(p1.cardsFit, true);
 
   await evaluate(`document.getElementById('mode-next').click()`);
   const p2 = await check();
-  assert.equal(p2.visible, 8);
-  assert.equal(p2.pageLabel, '2 / 3');
+  assert.equal(p2.visible, 6);
+  assert.equal(p2.pageLabel, '2 / 2');
   assert.equal(p2.prevDisabled, false);
-  assert.equal(p2.nextDisabled, false);
+  assert.equal(p2.nextDisabled, true);
   assert.ok(p2.openRatio >= 0.5, `page 2 keeps >= 50% open 3D stage (got ${(p2.openRatio * 100).toFixed(1)}%)`);
   assert.equal(p2.cardsFit, true);
+
+  // At 1920 x 1080 (6x3 = 18/page), all 18 modes fit on a single page with pager hidden!
+  const wide = await openLobby(t, { extra: 1, names, width: 1920, height: 1080, mobile: false, reducedMotion: true });
+  const w1 = await wide.evaluate(`(() => {
+    const visibleCards = [...document.querySelectorAll('.mode-card')].filter((c) => !c.hidden);
+    return {
+      total: document.querySelectorAll('.mode-card').length,
+      visible: visibleCards.length,
+      pagerHidden: document.getElementById('mode-pager').hidden,
+      cardsFit: visibleCards.every((c) => c.offsetWidth >= 140 && c.offsetHeight >= 44),
+    };
+  })()`);
+  assert.equal(w1.total, 18);
+  assert.equal(w1.visible, 18);
+  assert.equal(w1.pagerHidden, true);
+  assert.equal(w1.cardsFit, true);
 });
 
 test('RTO Mini-Golf tees off in the indoor cubicle floor and sinks the winner in the coffee mug', { skip, timeout: 120000 }, async (t) => {
@@ -734,4 +756,52 @@ test('Karang Derby hoists devs onto stilts and crowns the photo-finish winner at
   await until(`!document.getElementById('karang-banner').hidden`, 15000, 'Karang Derby status banner');
   await until(`!document.getElementById('results').hidden`, 60000, 'Karang Derby winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /snapped the Karang ribbon/);
+});
+
+test('Tubig-Tubig Gauntlet dashes across water lines to STAGING and back to crown the survivor', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=tubig&seed=2026&tubigDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('tubig-banner').hidden`, 15000, 'Tubig-Tubig status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Tubig-Tubig winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /CLEARED ALL GATES/);
+});
+
+test('Rum-Shop Domino Slam drops colossal tiles and crowns the last dev on the table', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=domino&seed=2026&dominoDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('domino-banner').hidden`, 15000, 'Domino Slam status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Domino Slam winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /LAST ON THE TABLE/);
+});
+
+test('Greasy Pole Scramble climbs the Mashramani pole and crowns the summit winner', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=pole&seed=2026&poleDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('pole-banner').hidden`, 15000, 'Greasy Pole status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Greasy Pole winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /SUMMIT CHAMPION/);
+});
+
+test('Schoolyard Taw Knockout ricochets glass marbles in the shrinking chalk ring and crowns the last marble standing', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=taw&seed=2026&tawDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('taw-banner').hidden`, 15000, 'Taw Knockout status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Taw Knockout winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /LAST MARBLE STANDING/);
 });
