@@ -109,7 +109,7 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
    options appear beside the cards:
    - the race has a **Race length** slider: about 120, 60 (default), 30, 15 or 10 seconds of racing, not
      counting the short countdown;
-   - Rumble has **Models: Classic | HD** and **Preview wrestlers** (see [Let’s Rumble](#lets-rumble)).
+   - Rumble has **Models: Classic | HD** and **Preview wrestlers** (see [Let’s Rumble](docs/game-modes.md#2--lets-rumble)).
 
    **How to play** opens a pop-up dialog explaining that game without expanding the dock. If the number
    checked doesn't suit the selected game, its card says so in red ("2–12 players · 14 checked"), Start is
@@ -139,286 +139,37 @@ To use a different port: `PORT=5000 npm start` (PowerShell: `$env:PORT=5000; npm
 
 Quitting a race before anyone finishes saves nothing. Press **M** (or the speaker button) to mute.
 
-### Let’s Rumble
+### Game modes (23 built-in)
 
-A second way to pick: select the **🤼 Let’s Rumble** card, then **▶ Start rumble**. Its **Models** option
-chooses **Classic** (the original character models, the default) or **HD** (the new detailed models); the
-match is the same either way. Rumble supports **2 to 12** checked teammates and follows the same selection
-and winner-history rules. With more or fewer checked, its card and the line beside Start say how many,
-and Start stays disabled until the team fits.
+Chesapeake Dev Derby ships with **23 built-in 3D game modes** selectable from the lobby's paged mode carousel (or **🎲 Surprise me**). Every mode supports **2–30** players (except **Let's Rumble** at **2–12**) and uses the same fair random selection, attendance checkboxes, and three-pick cooldown rules.
 
-The checked teammates enter the **Kurukshetra Battle Royal** ring as Mahabharata wrestlers, each with
-their name floating above them. During the match the corner button reads **Quit match** (it saves nothing).
+See **[docs/game-modes.md](docs/game-modes.md)** for full descriptions, rules, hazards, duration variants, and screenshots for every mode:
 
-Each wrestler is dealt one of 12 characters, and nobody in a match shares one (a match has at most
-12 wrestlers). Their styles show in how they move, throw and get out of trouble:
-
-**Character studio:** the HD option uses free, skinned Quaternius bodies with custom costumes
-and equipment for all twelve characters. Open **Preview wrestlers** in Rumble's options, or visit [`character-prototype.html`](public/character-prototype.html), and select any two
-warriors. Choose poses, orbit/zoom, inspect equipment from behind, compare the original models,
-or watch a match with reversible roles. Preview matches never save meeting results. Original
-models remain the HD fallback if assets cannot load; **Classic** always selects the originals, even
-after HD assets have loaded. See [studio notes](docs/wrestling-prototype.md)
-and [docs/models.md](docs/models.md), the step-by-step guide to recreating Arjuna using free tools and assets.
-
-**Performance test:** open [`wrestling-performance.html`](public/wrestling-performance.html) or use
-**Run all 12 · performance test** in the studio. It runs a complete match with all twelve models,
-compares with ten, and shows/downloads frame timing. The twelve-character limit was validated in
-repeated hardware-accelerated 1080p runs; see [the measured results](docs/wrestling-performance.md).
-
-| Character | Look | Style |
+| # | Mode | Summary |
 | --- | --- | --- |
-| Bhima | broadest of all, saffron dhoti, iron mace | two-handed overhead toss |
-| Jarasandha | maroon and gold, full beard, ruby crown, the seam where he was joined | pulls opponents back to the centre |
-| Duryodhana | royal blue, jewelled crown, golden mace, red cape | plays to the crowd after a ring-out |
-| Kichaka | heavy bruiser in forest green, sword on his back | muscles opponents over the ropes |
-| Arjuna | lean, yellow pitambara, Gandiva bow and quiver | slips free at the ropes |
-| Karna | golden kavacha armour with a sun emblem, big kundala earrings | turns a charge into a sideways throw |
-| Abhimanyu | young and quick, sky blue, round shield | ducks out low when cornered |
-| Ghatotkacha | towering half-rakshasa, wild hair, small tusks, glowing amulet | flickers like an illusion, then throws overhead |
-| Hidimbi | green choli and skirt, long braid, nose ring, tiara | changes form mid-grapple and slips free |
-| Dushasana | Kaurava green, short beard, golden mace | crowds opponents into the ropes |
-| Shikhandi | violet, pointed crown, round shield | catches charging wrestlers off balance |
-| Satyaki | teal, a peacock feather in his crown, sword | fast, and lives on the ropes |
-
-**The crowd** fills four tiers around the ring: low-poly fans of every build, sitting, standing, leaning
-forward, arms crossed, clapping or with both hands up, in caps, turbans, buns and Maryland scarves. They
-react: the section nearest a ring-out leans back with hands up, the section by a close call leans in, a
-few fans stand and cheer a beat after Duryodhana plays to the crowd, and everyone is on their feet for
-the winner. Fifteen hand-lettered signs are held up around the stands, from "HANUMAN WAS HERE" to
-"WE HAVE 2 MINUTES LEFT. WHO’S LEADING?"; four of them name a wrestler from the match (a different one
-each while there are enough wrestlers).
-
-It is a battle royal: everyone starts in the ring, and you're out when you go over the top rope and land
-on the floor. The last one left **leads today's standup**.
-
-1. **Ring introduction.** A high, angled view of the ring; the camera orbits as the bell rings.
-2. **Ring-outs.** Everyone in the ring is fighting at once: each wrestler squares off with someone,
-   trading lock-ups, forearm shots and shoves, reeling back from a hard shot, reversing a tie-up, running
-   the ropes for a shoulder tackle or hoisting someone across the chest for a body slam, and breaks away now and then to find someone
-   new (an odd one out joins a fight two on one, from the side). Each character has a favourite: Bhima,
-   Ghatotkacha and Jarasandha slam, Satyaki rebounds off the ropes, Kichaka and Dushasana shove, and
-   Arjuna, Hidimbi, Abhimanyu, Karna and Shikhandi reverse. Fights keep their own part of the mat.
-   Ring-outs come at uneven intervals, and now and then two go over the same side at once, at opposite
-   ends of the rope ("Roscoe and Ada are out!"). The camera circles the middle of the ring at a steady
-   distance, height and speed, as it does around the winner at the end; when a throw starts it turns a
-   little to watch that side, and gradually widens the shot if needed, so the rope, the landing and the whole body
-   stay in the picture until the wrestler has sat up, with "Roscoe is out!" on screen and their name
-   crossed off the list. Thrown wrestlers go cleanly over the top rope, never through it. When Satyaki
-   throws someone out and there's room, he runs to the ropes on another side, comes off them and
-   tackles them over; otherwise the feed says he drove them over, matching what you saw. On a phone or
-   a short screen the list of wrestlers folds into a count ("🤼 8 of 12 in the ring") that you can tap
-   to open. Ring-out messages never cover it or the Mute and Quit buttons, keep clear of the landings
-   they announce, and always fit on screen: long ones wrap, and they move again when you open the list,
-   turn the phone, or the camera brings a landing underneath.
-3. **Final two.** The camera eases into a closer orbit as the pair fight, one of them has a close call at
-   the ropes, then the last throw. The winner gets the same results card as the race ("Leads today’s standup"), is saved to the
-   winner history as **wrestle**, and sits out the next three picks like any other winner.
-
-**Fair, with its own pacing.** The elimination order is drawn uniformly at random when the bell rings,
-so every wrestler has the same chance; when and where each ring-out happens never changes who wins. The
-match has its own pacing: about 15 seconds for 2 wrestlers, and about 45 to 75 seconds for 12 (a minute
-on average), whatever the **Race length** slider says (the slider is only for races).
-
-### Standup Deathmatch
-
-A modernized Quake / QuakeWorld deathmatch presented as a shared screen inside a Google Meet daily
-standup (2–30 players):
-
-- **Google Meet presentation:** the shared screen renders the live 3D QuakeWorld arena while the
-  right-hand **In-call messages** sidebar streams real-time team chat (2.5s–4.5s spacing) and the bottom
-  Google Meet bar displays the real local clock and participant count. In the lobby, selecting Standup
-  Deathmatch stages the 3D arena alongside the lobby chat script from `docs/in-call-messages.md` with
-  real current timestamps.
-- **4-line Quake console:** top-left monospace obituary console showing live frags and powerup pickups.
-- **14 developers, bespoke weapons & powerups:** Maya (Kubernetes Pod Cannon), Walter (prod1/prodl/prodI
-  Tri-Barrel), Zoe (Works-On-My-Machine Railgun), Finn (Volt-Can Lightning Gun), Bruno (Thock-9000 Keycap
-  Grenade Launcher), Aman (Orbital Force-Push Rocket Launcher), Priya (Meeting-About-Blockers Plasma
-  Rifle), Mei (Cat-Ear Dedicated Server Shotgun), Alex (37-Tab BFG-200GB), Ben (Regression Invader
-  Nailgun), Elliot (Triple-Synonym Scattergun), Sam (Cappuccino Dependency Mortar), Ray ($10M Glare
-  Beam), and Chevron (Silent Hotfix Disintegrator), plus Quake-style powerups (**Quad Deploy**,
-  **Cardboard Glare Shield**, **On-Mute Invisibility**, **Cappuccino Overclock**, and **Mega-Ticket
-  200HP**).
-- **Signature clock rollback:** Player 1 spawns with **0:10** left; at **0:02** a classic standup
-  interruption triggers a server clock rollback to **0:45** followed by the license/time-travel exchange.
-- **0:00 Frag Leaderboard:** single-column for fewer than 16 invitees, two-column for 16+. NPC meeting
-  crashers join the chat and arena but are strictly excluded from the leaderboard and can never lead.
-
-  <p>
-    <img src="docs/deathmatch-wide.png" width="600" alt="Standup Deathmatch in a Google Meet call: a shared screen showing the 3D QuakeWorld arena with developer avatars, the 4-line Quake obituary console in the top-left, the match clock, the full-height In-call messages panel on the right, and the Google Meet control bar along the bottom.">
-  </p>
-
-  *Standup Deathmatch on a 1366 × 768 screen inside the Google Meet call frame.*
-
-### The Claw of Destiny
-
-A 3D arcade claw machine (2–30 players) powered by choreographed physics and scaled to the 10s–120s
-duration slider:
-
-- **Arcade cabinet & bobblehead capsules:** every active teammate drops into a glass arcade cabinet
-  (**STANDUP-O-MATIC** or **THE ALGORITHM**) as a clear gachapon capsule containing their 3D bobblehead
-  (using the 14 developer reference faces), paired with an animated 3D joystick synced to the overhead
-  X/Z gantry, a glowing **INSERT STORY POINTS** coin slot, a **VIP LOUNGE** shelf outside the glass,
-  and a downward scanning spotlight that makes nearby capsules rattle.
-- **Choreographed 4-phase suspense:** the overhead **THE STANDUP** claw hunts with fake-outs, scoops
-  the fairly pre-rolled winner plus 1–3 decoys, drops decoys one by one with dev excuses (*"Blocked by
-  Common Sense"*, *"In another meeting"*, *"SSL Certs Expired"*, *"Was not clear"*, *"Had URL Modified"*,
-  *"Testing in production"*, *"Rolling back server clock"*, *"Busy scrolling 800 columns"*), and cuts to
-  a dramatic low-angle **Chute Cam** as the sole survivor drops down the glowing prize chute.
-- **Scales with round length:** **10s–15s** (*Quick Grab*), **30s** (*Rigged Arcade* — Attempt 1 drops a
-  dev 90% of the way with *"500 Internal Server Error"*, Attempt 2 lands the winner), and **60s–120s**
-  (*Elimination Pit* — multi-drop tension ending in a sudden-death grab).
-
-  <p>
-    <img src="docs/claw-wide.png" width="600" alt="The Claw of Destiny 3D arcade claw machine: illuminated STANDUP-O-MATIC marquee, clear gachapon capsules with developer reference-portrait bobbleheads, THE STANDUP claw descending into the pile, animated arcade joystick, INSERT STORY POINTS coin slot, and sitting-out teammates on the VIP LOUNGE shelf.">
-  </p>
-
-  *The Claw of Destiny on a 1366 × 768 screen, with cooldown teammates relaxing on the VIP Lounge shelf.*
-
-### Kanban Plinko
-
-A 3D vertical pinball / pachinko gauntlet (2–30 players) powered by true 2.5D physics on a tilted 3D
-Kanban board:
-
-- **4 Vertical Swimlanes:** glowing developer marbles with motion trails and upright nameplates bounce
-  inside **1 · The Backlog** hopper until the **Sprint Kickoff** trapdoor drops them through
-  **2 · In Progress** (staggered metallic pegs & `1.4×` **Scope Creep Bumpers**), **3 · Code Review &
-  QA** (rotating 4-blade **Merge Conflict Spinners**, amber **Tech Debt Sticky Pads**, and pneumatic
-  **"Moved to Next Sprint" Warp Pipes**), and **4 · Deploy to Prod** (rhythmic **LGTM Flippers**
-  guarding the glowing **PROD / LEAD STANDUP** slot).
-- **Duration scaling & safeguards:** **10s–15s** (*Hotfix Drop* — short steep 2-tier sprint, no warp
-  pipes), **30s** (*Standard Sprint* — full 4-tier board with warp pipes & LGTM flippers), and
-  **60s–120s** (*Release Train* — multi-lap Dev → Stage → Prod marathon), backed by an Anti-Stuck
-  micro-nudge and the **Friday 4:55 PM Deploy** Force-Push fallback so rounds always finish on time.
-- **Smart Lead-Follow Camera & Live Leader Ticker:** pans smoothly down with the top 3 marbles, locks
-  onto Zone 4 for a photo finish, and displays a live leader ticker (e.g. `1st: Ada · In QA` and warp-pipe
-  `"was voted off the team."` alerts).
-
-  <p>
-    <img src="docs/plinko-wide.png" width="600" alt="Kanban Plinko 3D vertical pinball board: tilted dark Kanban cabinet with Backlog, In Progress, Code Review & QA, and Deploy to Prod swimlanes, glowing marbles with nameplates, neon Scope Creep bumpers, Merge Conflict spinners, and the Live Leader Ticker.">
-  </p>
-
-  *Kanban Plinko on a 1366 × 768 screen.*
-
-### Code Freeze
-
-A 3D Red Light, Green Light survival sprint (2–30 players) down a dark-mode neon CI/CD runway facing a
-swiveling **RELEASE MANAGER** laser turret:
-
-- **3-State Cycle:** **GREEN (`SPRINT OPEN`)** → **YELLOW (`PR IN REVIEW`)** braking warning → **RED
-  (`CODE FREEZE!`)** crimson laser sweep. Anyone still sliding gets zapped into binary particles with dev
-  excuses (*"Blamed for not being clear!"*, *"Made secret hotfixes!"*, *"Added ?ReturnUrl= to all URLs."*,
-  *"Created four 800-columns tables."*, *"Rolled back the server clock!"*, *"Voted off the team"*).
-- **Two Win Conditions:** first developer across the **RELEASE / LEAD STANDUP** finish tape, or the last
-  developer standing after a brutal freeze.
-- **Duration Scaling:** **10s–15s** (*Hotfix Dash*), **30s** (*Standard Release* with Yellow fake-outs),
-  and **60s–120s** (*Enterprise Deployment* with **Staging** & **UAT** checkpoints and slippery **Tech Debt
-  Ice** patches), plus an **Emergency Deploy!** timer guardrail so rounds always finish on time.
-
-  <p>
-    <img src="docs/freeze-wide.png" width="600" alt="Code Freeze 3D neon CI/CD sprint runway: developers sprinting and braking before the swiveling RELEASE MANAGER laser tower under the live SPRINT OPEN / CODE FREEZE status banner.">
-  </p>
-
-  *Code Freeze on a 1366 × 768 screen.*
-
-### Launchpad Roulette
-
-Choose **🚀 Launchpad Roulette** (2 to 30 players) for a 3D Kerbal-style rocket ignition spectacle on a coastal Chesapeake Bay launch complex (`public/js/launchpad-sim.js`, `public/js/launchpad.js`):
-
-- **Coastal Launch Complex & Responsive Pads:** every active teammate gets a detailed aerospace rocket (curved ogive fairing, Saturn V roll-pattern hull, strap-on SRB pods, parabolic engine nozzles, multi-layer exhaust plumes, and quirky flairs) arranged in a shallow arc (`2–10` players) or a staggered multi-row amphitheater (`11–30` players) beneath a glowing **MISSION: STANDUP** sign, surrounded by scenic Chesapeake Bay islands (with a lighthouse and spaceport radar dome) and drifting volumetric cumulus clouds.
-- **6 Comedic Failure Archetypes:** after the NASA-style **3… 2… 1… DEPLOY!** countdown, rockets suffer staggered malfunctions — Pad Fizzle (*"Oops. That was pr0dI. I needed pr0dL."*, *"16 chars secret is too big"*), Spiral Corkscrew (*"Failed to add ?returnUrl= to URL"*, *"800 columns is not enough"*), Sideways Veer (*"Rolled back the server clock"*, *"Failed to ping before flushing"*), Premature Staging (*"SSL Certs Ran Out of Fuel"*, *"Stabbed by Null pointer"*), Mid-Air Stall & Parachute (*"Common sense leak"*, *"Engine was voted off the team!"*), and Cloud-Deck Heartbreak (*"Blamed for not being clear"*, *"500 Internal Server Error"*) — until the sole survivor reaches **Prod Orbit** and deploys a tiny victory flag.
-- **Flight Length Scaling:** **10s–15s** (*Hotfix Launch* single-stage dash), **30s** (*Two-Stage Ascent* with mid-air **Stage Separation** `Local → Staging → Prod`), and **60s–120s** (*Orbital Gauntlet* climbing through `Dev Troposphere → QA Stratosphere → Prod Orbit`), with a dynamic daylight → twilight → starry-space skybox and synthesized Web Audio.
-
-  <p>
-    <img src="docs/launchpad-wide.png" width="600" alt="Launchpad Roulette on the coastal Chesapeake Bay launch complex: detailed aerospace rockets lifting off with glowing exhaust plumes beneath the MISSION: STANDUP sign, surrounded by Chesapeake Bay islands, a lighthouse, and volumetric cumulus clouds.">
-  </p>
-
-  *Launchpad Roulette on a 1366 × 768 screen.*
-
-### Jenga Connect
-
-Choose **🧱 Jenga Connect** (2 to 30 players) for a 3D collapsing-tower survival spectacle on top of a conference room table (`public/js/jenga-sim.js`, `public/js/jenga.js`):
-
-- **Conference Room Setting & Wall Displays:** all active teammates stand solidly atop a 3:1 maple/birch Jenga tower of laser-etched legacy software packages (`lamha.js`, `jquery-1.9.min.js`, `is-even`, `todo-fix-never`, `node_tables (200 GB)`, `temp-hotfix-1999`) resting on a walnut boardroom table. Wall 1 features a dry-erase whiteboard detailing the confidential **Jenga Connect SOC Audit Log Plan**, while Wall 2 mounts a live 4K status display tracking **Build Health**, **Structural Stability (%)**, and **Tower Lean (°)** with an inclinometer gauge.
-- **Automated `npm audit fix --force` Cursor & Grounded Hinge Physics:** a glowing 3D cursor slides blocks cleanly out lengthwise while the base stays flat on the table and upper tiers micro-shudder and creep, knocking outer stragglers off with dev-humor popups (*"Failed to rollback server clock"*, *"Failed to renew software license!"*, *"Failed to make WORD docs readible"*, *"Failed to complete a completed migration"*, *"Failed to explain it a sixth time"*).
-- **Fatal Keystone & `LTS-support` Climax:** a siren chirps as the camera cuts tight to a glowing crimson keystone (`blamed-for-not-being-clear`, `do-not-touch-utils-x`, `auth-v9-final2-draft7-actual4`, `core-business-dont-ask-why.php`, `load-bearing-hotfix`) before triggering a directional `0.35×` slow-motion collapse where the sole survivor lands safely on the glowing `LTS-support` block to lead standup.
-- **Duration Scaling:** **10s–15s** (*Friday Patch* — 12-tier tower, 3 rapid pulls), **30s** (*Major Version Bump* — 18-tier tower with Dependabot **Fake-Out Taps**), and **60s–120s** (*Full Monolith Migration* — 24-tier mega-tower with **Stack-On-Top Rebuilding**).
-
-  <p>
-    <img src="docs/jenga-wide.png" width="600" alt="Jenga Connect on a walnut conference room table: wooden package-labeled Jenga tower with developers perched on top, the Jenga Connect SOC Audit Log Plan whiteboard on the back wall, and the live Stability, Build Health, and Tower Lean TV display on the right wall.">
-  </p>
-
-  *Jenga Connect on a 1366 × 768 screen.*
-
-### Deploy Cannon
-
-Choose **💣 Deploy Cannon** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D human-cannonball artillery volley over the Chesapeake Bay (`public/js/cannon-sim.js`, `public/js/cannon.js`):
-
-- **Chesapeake Bay Pier & Brass Battery:** active teammates peek out of gleaming brass circus cannons wearing tiny aviator goggles (arranged in a curved pier arc for `2–12` players or a two-tier stadium parapet for `13–30`), beneath a whipping striped windsock (`CROSSWIND: 24 KTS — SCOPE CREEP`), aimed at a bobbing concentric bullseye barge (`DEV → QA → STAGING → PROD / LEAD STANDUP`).
-- **6 Reverse-Solved Flight Mishaps:** on **`SHIP IT!`**, rolling-thunder cannon booms launch the team across the bay — with Pier Duds (*"Failed to renew software license"*, *"Failed to renew SSL cert"*), Overshoots (*"16 chars is too long for a password"*, *"Added managerial genius' unrequested feature"*), Crosswind Drifts (*"Blamed for not being clear"*, *"Failed to read Iklauti-ji's mind"*), Seagull Interceptions (*"Blocked by own-party API"*, *"Blocked by common sense"*), Emergency Chutes (*"Busy completing an already completed data migration"*, *"Busy scrolling 800 columns"*), and Rim-Bounce Heartbreaks (*"Blocked by BadalBhadak"*) — until the winner sticks the dead-center golden **`PROD`** bullseye in `0.4×` slow-motion **Barge Cam**.
-- **Salvo Scaling:** **10s–15s** (*Hotfix Volley* simultaneous barrage), **30s** (*Two-Stage Qualification* with Salvo 1 & sudden-death Salvo 2 at a drifting barge), and **60s–120s** (*Artillery Showcase* staggered launches at a weaving barge with a live **Closest to Bullseye** tracker).
-
-  <p>
-    <img src="docs/cannon-wide.png" width="600" alt="Deploy Cannon on the Chesapeake Bay pier: gleaming brass circus cannons firing a simultaneous human-cannonball volley toward the bobbing concentric PROD bullseye barge surrounded by Bay islands and clouds.">
-  </p>
-
-  *Deploy Cannon on a 1366 × 768 screen.*
-
-### Standup Mini-Golf
-
-Choose **⛳ Standup Mini-Golf** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for 3D simultaneous putt-putt chaos floating over the Chesapeake Bay (`public/js/golf-sim.js`, `public/js/golf.js`):
-
-- **Floating Chesapeake Putt-Putt Course:** all active teammates tee off simultaneously as dimpled, team-striped golf balls on mowed emerald astroturf framed by weathered timber marina rails, 8 Chesapeake Bay islands, a striped lighthouse, drifting volumetric cumulus clouds, and bobbing Derby sailboats.
-- **2.5D Rolling Physics & 6 Dev Hazards:** piecewise heightmap slopes up to the elevated **`PROD / LEAD STANDUP`** green, elastic ball-to-ball caroms, coastal Dutch clapboard **Sprint Review Windmills** with lattice sails, steel **BadalJwala Firewall Gates**, raked **Procurement Sand Traps**, **Legacy Code Water Hazards**, fluted chrome **Scope Creep Bumpers**, and the **"One Quick Idea" Detour Boost**.
-- **Cup Capture, Lip-Outs & Course Scaling:** fast shots lip-out around the rim while **Cup Cam** zooms in on the animated popping flagstick, backed by automated follow-up putts, a live **Distance-to-Pin** banner, a **Friday Afternoon Gimme** fallback breeze, and 10s–120s scaling (*Par-1 Hole-in-One Dash*, *Par-3 Floating Course*, *3-Hole Chesapeake Championship*).
-
-  <p>
-    <img src="docs/golf-wide.png" width="600" alt="Standup Mini-Golf floating over the Chesapeake Bay: dimpled golf balls rolling down mowed astroturf past a Dutch Sprint Review Windmill, chrome Scope Creep bumpers, Bay islands, lighthouse, and sailboats.">
-  </p>
-
-  *Standup Mini-Golf on a 1366 × 768 screen.*
-
-### RTO Mini-Golf
-
-Choose **🏢 RTO Mini-Golf** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for the *Return-to-Office Mandate Open* indoor office cubicle putt-putt chaos (`public/js/rto-sim.js`, `public/js/rto.js`):
-
-- **Moody After-Hours IT Floor & Bobblehead Capsules:** Claw-of-Destiny developer portrait bobbleheads inside glossy rolling gachapon capsules tee off simultaneously down a duct-taped emerald putting mat over speckled gray office carpet, lit by recessed parabolic-louver ceiling troffers and venetian-blind sunset windows, flanked by cubicles with glowing IDE monitors, sticky notes, and propped-open 42U server racks.
-- **6 Workplace Obstacles & Mug Finish:** dodge spinning 5-caster **Ergonomic Desk Chairs**, wedge **3-Ring Binder Ramps**, yellow floor cable protectors, pulsing **BadalJwala Jammed Copiers**, sticky **Spilled Iced Coffee Puddles** with **Wet Floor** signs, the **`?ReturnUrl=`** security detour, and stacked **Retired Hardware Bumpers** (CRTs, Dell towers, copy-paper reams) to clink into the oversized tipped-over **`WORLD'S OKAYEST DEVELOPER`** ceramic coffee mug.
-- **Course Scaling:** **10s–15s** (*Hallway Hotfix Dash*), **30s** (*Return-to-Office Mandate Open*), and **60s–120s** (*3-Hole "Instead of Raises" Championship*) with an **HVAC Draft / Friday 4:55 PM Gimme** breeze.
-
-  <p>
-    <img src="docs/rto-wide.png" width="600" alt="RTO Mini-Golf on an after-hours IT cubicle floor: developer bobblehead capsules rolling down a duct-taped putting mat past spinning ergonomic desk chairs, spilled iced coffee, and retired hardware toward the tipped-over coffee mug.">
-  </p>
-
-  *RTO Mini-Golf on a 1366 × 768 screen.*
-
-### Tumba Lata
-
-Choose **🩴 Tumba Lata** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D *Slipper-Slinging Server Raid* adapted from the classic Bisayan street game (`public/js/tumba-sim.js`, `public/js/tumba.js`):
-
-- **Twilight Fiesta Street & `SARI-SARI DEV SHOP`:** active teammates line up behind the glowing cyan chalk *badlis* holding contoured 3D rubber *tsinelas* flip-flops under swaying crisscross *banderitas*, warm streetlamps, and a neon **`SARI-SARI DEV SHOP`** storefront while an overworked, caffeinated AI **Bantay** guards the shiny ribbed **`PROD SERVER`** tin can.
-- **Two-Act Street Chaos (`BATO!` → Scramble → Hunting Mode):** on **`BATO!`**, a simultaneous rainbow volley of spinning flip-flops blasts **`PROD SERVER`** flying across the asphalt (`60 ms` hit-stop). Everyone sprints out to snatch their slipper and race back behind the *badlis* before the Bantay slams the can back upright, flashes the streetlamps red (**`PROD RESTORED — HUNTING MODE!`**), and tags the final straggler in slow motion to crown the new **Bantay**.
-- **Round Scaling:** **10s–15s** (*Street Blitz* single volley), **30s** (*Classic Barangay Round* with `CAFFEINE BOOST x2`), and **60s–120s** (*Fiesta Elimination* 3-volley showdown).
-
-  <p>
-    <img src="docs/tumba-wide.png" width="600" alt="Tumba Lata on a glowing twilight fiesta street: crisscross banderitas, neon SARI-SARI DEV SHOP storefront, bobblehead runners behind the chalk badlis hurling tsinelas at the PROD SERVER tin can guarded by the Bantay.">
-  </p>
-
-  *Tumba Lata on a 1366 × 768 screen.*
-
-### Karang Derby
-
-Choose **🎋 Karang Derby** (2 to 30 players, on Page 2 of the lobby's `◀ 1 / 2 ▶` mode carousel) for a 3D Cebuano bamboo stilt wobble race down a moonlit twilight fiesta boulevard (`public/js/karang-sim.js`, `public/js/karang.js`):
-
-- **Bamboo (`Kawayan`) & Coconut-Shell (`Bagol 🥥`) Stilts:** toggle between tall segmented bamboo poles and nostalgic coconut-shell *bagol* stilts under a realistic full moon, glowing paper lanterns, low-hanging *banderitas*, and cheering crowd barricades.
-- **Inverted-Pendulum Wobble & Fiesta Hazards:** bobblehead stilt-walkers with color-shifting **Balance Meter** halos windmill their arms through **PanganodSilab 500 Crosswind** gusts, spilled-coffee slicks, snapped legacy bamboo poles, and low-hanging clotheslines—culminating in a `0.45×` slow-motion photo-finish teeter across the glowing **`FINISH · LEAD STANDUP`** ribbon.
-- **Course Scaling:** **10s–15s** (*Barangay Sprint*), **30s** (*Fiesta Obstacle Derby* with stilt-recovery climbs), and **60s–120s** (*Grand Cebu-Chesapeake Relay*).
-
-  <p>
-    <img src="docs/karang-wide.png" width="600" alt="Karang Derby on a moonlit twilight fiesta boulevard: bobblehead stilt-walkers teetering on tall segmented bamboo stilts beneath a glowing full moon, paper lanterns, and crisscross banderitas.">
-  </p>
-
-  *Karang Derby on a 1366 × 768 screen.*
+| 1 | **[🏁 Derby Race](docs/game-modes.md#1--derby-race)** | 3D web-dev kart obstacle course over the Chesapeake Bay (`10s–120s`) |
+| 2 | **[🤼 Let’s Rumble](docs/game-modes.md#2--lets-rumble)** | Kurukshetra Battle Royal wrestling ring with Classic & HD models (`2–12` players) |
+| 3 | **[🔫 Standup Deathmatch](docs/game-modes.md#3--standup-deathmatch)** | QuakeWorld arena inside a Google Meet daily standup with live chat & clock rollback |
+| 4 | **[🕹️ The Claw of Destiny](docs/game-modes.md#4--the-claw-of-destiny)** | 3D arcade claw machine with gachapon bobblehead capsules & VIP Lounge |
+| 5 | **[🎰 Kanban Plinko](docs/game-modes.md#5--kanban-plinko)** | 2.5D vertical pachinko gauntlet down Backlog → In Progress → QA → Prod |
+| 6 | **[🚦 Code Freeze](docs/game-modes.md#6--code-freeze)** | Red Light, Green Light neon CI/CD sprint facing a swiveling laser turret |
+| 7 | **[🚀 Launchpad Roulette](docs/game-modes.md#7--launchpad-roulette)** | Kerbal-style rocket ignition spectacle on a Chesapeake Bay launch complex |
+| 8 | **[🧱 Jenga Connect](docs/game-modes.md#8--jenga-connect)** | Collapsing legacy-package Jenga tower atop a conference room table |
+| 9 | **[💣 Deploy Cannon](docs/game-modes.md#9--deploy-cannon)** | Human-cannonball artillery volley toward a bobbing PROD bullseye barge |
+| 10 | **[⛳ Standup Mini-Golf](docs/game-modes.md#10--standup-mini-golf)** | Simultaneous putt-putt floating over the Chesapeake Bay |
+| 11 | **[🏢 RTO Mini-Golf](docs/game-modes.md#11--rto-mini-golf)** | After-hours indoor cubicle putt-putt aiming for a tipped-over coffee mug |
+| 12 | **[🩴 Tumba Lata](docs/game-modes.md#12--tumba-lata)** | Twilight Bisayan fiesta slipper-slinging raid on the `PROD SERVER` tin can |
+| 13 | **[🎋 Karang Derby](docs/game-modes.md#13--karang-derby)** | Moonlit Cebuano bamboo & coconut-shell stilt wobble race |
+| 14 | **[💧 Tubig-Tubig](docs/game-modes.md#14--tubig-tubig)** | Glowing twilight Filipino *Patintero* water-line tag dash |
+| 15 | **[🁣 Domino Slam](docs/game-modes.md#15--domino-slam)** | Rum-shop mahogany tabletop domino shockwave knockout |
+| 16 | **[🌴 Greasy Pole](docs/game-modes.md#16--greasy-pole)** | Mashramani slip-and-slide festival pole climb over a mud pit |
+| 17 | **[🔮 Taw Knockout](docs/game-modes.md#17--taw-knockout)** | Executive boardroom ring-out marbles showdown with a rogue Steelie Boler |
+| 18 | **[🟥 Ddakji Flip-Out](docs/game-modes.md#18--ddakji-flip-out)** | Traditional Korean Hanok boardroom origami paper-tile slam royale |
+| 19 | **[📺 Nōkabe Wall Crunch](docs/game-modes.md#19--nōkabe-wall-crunch)** | Outdoor daytime Japanese TV game-show poolside *Hole in the Wall* |
+| 20 | **[🀄 Mahjong Tile Wash](docs/game-modes.md#20--mahjong-tile-wash)** | Chinese tea-house parlor 144-tile *Xǐpái* whirlpool rumble |
+| 21 | **[🪑 Kho-Kho Relay Blitz](docs/game-modes.md#21--kho-kho-relay-blitz)** | Swivel-chair IT boardroom directional chase with `KHO!` chair ambushes |
+| 22 | **[🐚 Chaupar Cowrie-Clash](docs/game-modes.md#22--chaupar-cowrie-clash)** | Modern Bengaluru boardroom *Pachisi* cross-cloth race with giant cowrie shells |
+| 23 | **[🌉 Glass Bridge Deploy](docs/game-modes.md#23--glass-bridge-deploy)** | 4-lane dusk commuter suspension bridge with middle glass panels & outer car-accident lanes |
 
 ### Winner history (Hall of Fame)
 
@@ -474,52 +225,7 @@ same three-pick exclusion. It needs at least two people checked.
 
 ## What's on the track
 
-**Racers** — each name is dealt one at random; all 11 appear before any repeats:
-
-Browser tab · Dev tools panel · CSS stylesheet scroll · Hamburger menu · Responsive layout ·
-Hosting server · Domain name · Loading spinner · Flexbox box · Cookie banner · Sticky navbar
-
-**Audience** — grandstands on both sides of the start and the finish are packed with Chesapeake
-wildlife cheering the racers on: blue crabs, ospreys, bald eagles, great blue herons, eastern oysters,
-ribbed mussels, diamondback terrapins, American beavers, North American river otters and northern
-watersnakes.
-
-**Obstacles**
-
-| Obstacle            | What it does                                                  |
-| ------------------- | ------------------------------------------------------------- |
-| 404 pit             | You fall in and respawn a moment later                        |
-| Broken link         | Trip over the chain and spin out                              |
-| Merge conflict      | A wall of `<<<<<<<` — stop and resolve it                     |
-| Infinite scroll     | A conveyor of feed cards dragging you backwards               |
-| Slow load zone      | Crawl along at 99% loaded                                     |
-| Redirect loop       | Round and round, twice                                        |
-| Null pointer        | A sweeping mouse cursor that turns you into `null`            |
-| Unhandled exception | A mine that throws everyone nearby (and re-arms)              |
-| SSL Expired         | A "Your connection is not private" page stops you for a moment |
-| DO NOT MODIFY URLS  | A barricade that drops you into an error pit for a few seconds |
-| 800-Column Table    | Juts into the track from one edge. The first racer to come near sets off **BULK LOAD IN PROGRESS** and it expands sideways until it fills half the track — a quick leader may get past before it is fully grown. Squeeze through the gap or clip it: you bounce back and lose any item you were holding. 10 seconds after the bulk load it is truncated and the track is fully open again. |
-
-**Items** — picked up from the spinning `{?}` crates:
-
-| Item          | Effect                                                              |
-| ------------- | ------------------------------------------------------------------- |
-| ☕ Coffee      | Speed boost                                                         |
-| 💨 Bay Breeze  | Big tailwind — only racers near the back get these                  |
-| 🛡️ Firewall    | Blocks the next obstacle or attack                                  |
-| 🐛 Bug         | Thrown at the racer directly ahead; they spin out                   |
-| 💥 Force Push  | Homes in on the leader — only racers in the back half get these     |
-| 🔐 Renewed Certificate | Immune to SSL Expired for 20 seconds                        |
-| ↩️ ?returnUrl= | Lets you through the next DO NOT MODIFY URLS barricade (used up by it) |
-| 🌫️ You Are Not Being Clear | Thrown at the rival ahead; they spin out trying to clarify. *"It's your fault."* |
-| 📋 Eight-Minute Audit | Locks the rival ahead's controls for 8 seconds: no steering round obstacles, no crates, no items. *"Access limited pending audit."* |
-| 🎰 Production Roulette | Reverses the rival ahead's steering for 6 seconds, so they swerve towards trouble. *"Oops. That was pr0dI."* |
-| 🎭 Security Theater | Locks the rival ahead to 12–15 mph for 6 seconds. *"Vahi says you're going too fast."* |
-| 📊 200GB Table | Thrown at the racer directly ahead, like the bug; it lands on them and flattens them for a moment. *"You're wasting disk space."* |
-
-The four office-politics items are thrown at the nearest racer ahead (within range), so the leader never
-gets them. A Firewall blocks them like any other attack. Seconds are race time, so they pass faster at
-shorter race lengths.
+See **[Derby Race in docs/game-modes.md](docs/game-modes.md#1--derby-race)** for the full list of 11 racers, Chesapeake wildlife audience, 11 track obstacles, and 12 items.
 
 ## Is it fair?
 
