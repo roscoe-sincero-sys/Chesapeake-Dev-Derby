@@ -5,6 +5,21 @@ All notable changes to Chesapeake Dev Derby are recorded here. The project uses
 `package.json` and is shown next to the app's name in the lobby. See *Versioning* in the README for how
 to release.
 
+## [1.16.0] - 2026-11-23
+
+6 new 3D game modes — **Ddakji Flip-Out**, **Nōkabe Wall Crunch**, **Mahjong Tile Wash**, **Kho-Kho Relay Blitz**, **Chaupar Cowrie-Clash**, and **Glass Bridge Deploy** (23 built-in modes total) — plus a streamlined **Winner History** UI overhaul.
+
+### Added
+- **Ddakji Flip-Out (18th game mode):** Traditional South Korean Hanok executive conference room paper-tile slam royale (`2–30` players; `public/js/ddakji-sim.js`, `public/js/ddakji.js`) with developer portrait tiles, embroidered silk *bangseok* floor cushions, **CHEOL-DDAKJI** shockwaves, **Champion** vs. **First Flip** rules, and unit + browser tests (`test/ddakji-sim.test.js`).
+- **Nōkabe Wall Crunch (19th game mode):** Daytime outdoor Japanese TV game-show poolside set (`2–30` players; `public/js/nokabe-sim.js`, `public/js/nokabe.js`) with recessed turquoise pool, non-slip hazard-chevron stage dock, beaded-styrofoam pose walls on brushed-steel rail sleds, Red/Blue Team stadium grandstands with cheering wildlife audience, broadcast cameras, **Stay Dry** vs. **First Splash** rules, and unit + browser tests (`test/nokabe-sim.test.js`).
+- **Mahjong Tile Wash (20th game mode):** Warm 4-wall Chinese tea-house parlor whirlpool rumble (`2–30` players; `public/js/mahjong-sim.js`, `public/js/mahjong.js`) with 144 swirling tiles, recessed brass Auto-Shuffle Chute with closed-lid collision guard, **`審計日誌 · AUDIT LOG PARLOR RULES`** board, single full-moon lattice window, **Hú!** vs. **Fàngpào** rules, and unit + browser tests (`test/mahjong-sim.test.js`).
+- **Kho-Kho Relay Blitz (21st game mode):** Swivel-chair IT boardroom directional tag (`2–30` players; `public/js/khokho-sim.js`, `public/js/khokho.js`) with alternating N–S–N–S swivel chairs, realistic tailored seated executives, West Rolling Projector Cart & East Chai/Samosa Trolley, executive double doors, dual whiteboards (including the **`Paper Trail Project for Cyber Defense Center (CDC)`** board with **`S`** key & Projector-click camera zoom Easter eggs), **Elusive** vs. **First P1** rules, and unit + browser tests (`test/khokho-sim.test.js`).
+- **Chaupar Cowrie-Clash (22nd game mode):** Modern Bengaluru tech conference room (`CUBBON BOARDROOM · BLR-04`) cross-board Pachisi (`2–30` players; `public/js/chaupar-sim.js`, `public/js/chaupar.js`) with panoramic Bengaluru skyline & painterly Garden City trees/Namma Metro view, varnished teak table, crimson-and-emerald embroidered *chaupar* cloth, bouncing ivory cowrie shells (*kaudi*), Polycom speakerphone quakes, cutting-chai & samosa tray, **Charkoni** vs. **First Cut** rules, and unit + browser tests (`test/chaupar-sim.test.js`).
+- **Glass Bridge Deploy (23rd game mode):** 4-lane dusk commuter suspension bridge (`2–30` players; `public/js/glass-sim.js`, `public/js/glass.js`) with two middle **TESTED vs. UNTESTED PROD** glass-panel lanes flanked by two outer asphalt street lanes with sculpted commuter car accidents, animated wispy radiator smoke plumes, blinking hazard lights, arched-davit streetlights, **`DEPLOY TO CLINIC`** finish arch, standing corporate executive guards, **Survivor** vs. **Canary** rules, and unit + browser tests (`test/glass-sim.test.js`).
+
+### Changed
+- **Winner History UX Overhaul (`public/history.html`, `public/js/history.js`, `public/css/style.css`):** Replaced the multi-row 23-mode summary, tall Game Mix card, 5-row pill wrap, and 27-column Standings table with a compact 1-line summary, top-3 Game Mix card, single-row toolbar with an `All modes (count)` dropdown + horizontally scrollable quick-filter rail, and a zero-horizontal-scroll 5-column Standings table.
+
 ## [1.14.0] - 2026-11-22
 
 Paged 2-Row Mode Carousel plus 5 new 3D game modes — **Deploy Cannon**, **Standup Mini-Golf**, **RTO Mini-Golf**, **Tumba Lata**, and **Karang Derby** (13 built-in modes total), by Google Gemini 4 Neon in Antigravity.

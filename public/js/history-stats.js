@@ -12,7 +12,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   const total = history.length;
 
   // Mode mix counts (in display order).
-  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, claw: 0, plinko: 0, freeze: 0, launchpad: 0, jenga: 0, cannon: 0, golf: 0, rto: 0, tumba: 0, karang: 0, tubig: 0, domino: 0, pole: 0, taw: 0, skip: 0, unknown: 0 };
+  const modeCounts = { race: 0, wrestle: 0, deathmatch: 0, claw: 0, plinko: 0, freeze: 0, launchpad: 0, jenga: 0, cannon: 0, golf: 0, rto: 0, tumba: 0, karang: 0, tubig: 0, domino: 0, pole: 0, taw: 0, ddakji: 0, nokabe: 0, mahjong: 0, khokho: 0, chaupar: 0, glass: 0, skip: 0, unknown: 0 };
   const byKey = new Map();
 
   const ensure = (rawName) => {
@@ -41,6 +41,12 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
         domino: 0,
         pole: 0,
         taw: 0,
+        ddakji: 0,
+        nokabe: 0,
+        mahjong: 0,
+        khokho: 0,
+        chaupar: 0,
+        glass: 0,
         skip: 0,
         unknown: 0,
         lastDate: null,
@@ -56,7 +62,7 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
   for (const name of rosterNames) ensure(name);
 
   history.forEach((h, idx) => {
-    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'claw' || h.mode === 'plinko' || h.mode === 'freeze' || h.mode === 'launchpad' || h.mode === 'jenga' || h.mode === 'cannon' || h.mode === 'golf' || h.mode === 'rto' || h.mode === 'tumba' || h.mode === 'karang' || h.mode === 'tubig' || h.mode === 'domino' || h.mode === 'pole' || h.mode === 'taw' || h.mode === 'skip' ? h.mode : 'unknown';
+    const mode = h.mode === 'race' || h.mode === 'wrestle' || h.mode === 'deathmatch' || h.mode === 'claw' || h.mode === 'plinko' || h.mode === 'freeze' || h.mode === 'launchpad' || h.mode === 'jenga' || h.mode === 'cannon' || h.mode === 'golf' || h.mode === 'rto' || h.mode === 'tumba' || h.mode === 'karang' || h.mode === 'tubig' || h.mode === 'domino' || h.mode === 'pole' || h.mode === 'taw' || h.mode === 'ddakji' || h.mode === 'nokabe' || h.mode === 'mahjong' || h.mode === 'khokho' || h.mode === 'chaupar' || h.mode === 'glass' || h.mode === 'skip' ? h.mode : 'unknown';
     modeCounts[mode]++;
     const entry = ensure(h.name);
     entry.total++;
@@ -135,6 +141,12 @@ export function computeHistoryStats({ history = [], rosterNames = [], winners = 
     domino: { count: modeCounts.domino, pct: pct(modeCounts.domino) },
     pole: { count: modeCounts.pole, pct: pct(modeCounts.pole) },
     taw: { count: modeCounts.taw, pct: pct(modeCounts.taw) },
+    ddakji: { count: modeCounts.ddakji, pct: pct(modeCounts.ddakji) },
+    nokabe: { count: modeCounts.nokabe, pct: pct(modeCounts.nokabe) },
+    mahjong: { count: modeCounts.mahjong, pct: pct(modeCounts.mahjong) },
+    khokho: { count: modeCounts.khokho, pct: pct(modeCounts.khokho) },
+    chaupar: { count: modeCounts.chaupar, pct: pct(modeCounts.chaupar) },
+    glass: { count: modeCounts.glass, pct: pct(modeCounts.glass) },
     skip: { count: modeCounts.skip, pct: pct(modeCounts.skip) },
     unknown: { count: modeCounts.unknown, pct: pct(modeCounts.unknown) },
   };

@@ -42,7 +42,7 @@ export const POLE_POPUPS = {
   mud: ['Ekmaatra-ji still setting up an internal SSL cert for public website'],
   grease: [
     "Ekmaatra-ji's secret hotfixes recreates vital tables",
-    'Ekmaatra-ji bans URL edits to break reports. Fix: add ?ReturnUrl= to URL',
+    'Ekmaatra-ji bans URL edits. Broke reports. Fix: add ?ReturnUrl= to URL',
   ],
   static: [
     'Ekmaatra-ji says you were not being clear',
