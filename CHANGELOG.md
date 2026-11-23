@@ -5,6 +5,21 @@ All notable changes to Chesapeake Dev Derby are recorded here. The project uses
 `package.json` and is shown next to the app's name in the lobby. See *Versioning* in the README for how
 to release.
 
+## [1.16.1] - 2026-11-23
+
+Security hardening patch release resolving 7 security audit findings (`#64`, `#65`, `#66`, `#143`, `#144`, `#145`, `#146`) plus dependency and CI action updates.
+
+### Security
+- **Stored XSS fix (`#143`):** Switched `Hud.note()` in `public/js/hud.js` to render plain text via `el.textContent` (`lineText()`) by default, restricting HTML rendering to `Hud.noteHtml()` for pre-escaped Wrestle callers.
+- **Unicode & control character sanitization (`#64`):** Normalized roster names to NFC and stripped invisible format/control characters (`\p{Cf}`, `\p{Cc}`, bidi overrides, ZWSP, NUL) in `parseNames()`, `validateRoster()`, and `nameKey()`.
+- **Resilient winner saving (`#65`):** Wrote `winners.json` before reading `history.json`, quarantined unreadable `history.json` to `history.json.corrupt-<timestamp>`, and surfaced recovery warnings in the lobby and Full History page.
+- **Server, CSP & launcher hardening (`#66`, `#146`):** Returned `400` on malformed URL escapes, removed absolute filesystem paths from client-facing error responses, added `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and LF-normalized SHA-256 `Content-Security-Policy` headers, capped concurrent `/api/session` SSE streams (`429`), enforced `Sec-Fetch-Site` on read `/api/*` routes, switched browser launch from `exec()` to `execFile()`, switched `start.cmd` to `npm ci --no-audit --no-fund`, and switched default unseeded RNG to `crypto.getRandomValues()`.
+- **Client query validation & debug gating (`#144`):** Normalized/clamped all 20 URL duration/speed overrides (`clampSpeedScale`, `queryDurationOverride`) and gated `?test` / `window.derbyTest` behind `!DEMO`.
+- **CI/CD supply-chain hardening (`#145`):** Scoped `pages: write` and `id-token: write` to the `deploy` job only, pinned all 5 GitHub Actions in `.github/workflows/pages.yml` to verified 40-char commit SHAs, and added `.github/dependabot.yml`.
+
+### Dependencies
+- Updated `three` from `0.170.0` to `0.187.0` (PR #153) and updated pinned GitHub Actions (`actions/checkout`, `actions/setup-node`, `actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages`; PRs #148–#152).
+
 ## [1.16.0] - 2026-11-23
 
 6 new 3D game modes — **Ddakji Flip-Out**, **Nōkabe Wall Crunch**, **Mahjong Tile Wash**, **Kho-Kho Relay Blitz**, **Chaupar Cowrie-Clash**, and **Glass Bridge Deploy** (23 built-in modes total) — plus a streamlined **Winner History** UI overhaul.
