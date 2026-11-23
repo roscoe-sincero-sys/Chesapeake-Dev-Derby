@@ -521,7 +521,7 @@ export class Hud {
     this.root.hidden = true;
     this.root.classList.remove('results-open', 'wrestling', 'roster-open');
     $('ring-roster').replaceChildren();
-    for (const id of ['plinko-ticker', 'freeze-banner', 'jenga-banner', 'cannon-banner', 'golf-banner', 'rto-banner', 'tumba-banner', 'karang-banner']) {
+    for (const id of ['plinko-ticker', 'freeze-banner', 'jenga-banner', 'cannon-banner', 'golf-banner', 'rto-banner', 'tumba-banner', 'karang-banner', 'tubig-banner', 'domino-banner', 'pole-banner', 'taw-banner']) {
       const el = $(id);
       if (el) el.hidden = true;
     }

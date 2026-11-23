@@ -50,7 +50,7 @@ export const CANNON_ARCHETYPES = {
   crosswind: {
     id: 'crosswind',
     label: 'The Crosswind Drift',
-    popups: ['Blamed for not being clear', "Failed to read Iklauti-ji's mind"],
+    popups: ['Blamed for not being clear', "Failed to read Ekmaatra's mind"],
   },
   seagull: {
     id: 'seagull',

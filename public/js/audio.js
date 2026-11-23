@@ -338,6 +338,80 @@ export class Sfx {
         this.tone(880, 0.14, { type: 'triangle', gain: 0.15, delay: 0.1 });
         this.tone(1318, 0.42, { type: 'sine', gain: 0.16, delay: 0.2 });
         break;
+      case 'tubigWhistle':
+        this.tone(2450, 0.14, { type: 'sine', gain: 0.11, slide: 180, delay: 0 });
+        this.tone(2680, 0.18, { type: 'sine', gain: 0.1, slide: -120, delay: 0.16 });
+        break;
+      case 'tubigSplash':
+        this.noise(0.28, { gain: 0.18, cutoff: 1700 });
+        this.tone(420, 0.24, { type: 'sine', gain: 0.1, slide: -280 });
+        break;
+      case 'tubigWin':
+        this.tone(587, 0.14, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(880, 0.14, { type: 'triangle', gain: 0.15, delay: 0.1 });
+        this.tone(1174, 0.42, { type: 'sine', gain: 0.16, delay: 0.2 });
+        break;
+      case 'dominoSlam':
+        // Layered CLACK-THOOM: sharp ivory slap + resonant hollow hardwood boom
+        this.noise(0.06, { gain: 0.2, cutoff: 3400 });
+        this.tone(125, 0.24, { type: 'sine', gain: 0.24, slide: -60 });
+        break;
+      case 'dominoKnock':
+        // Double wood-tap KNOCK-KNOCK!
+        this.tone(360, 0.06, { type: 'triangle', gain: 0.16, slide: -120, delay: 0 });
+        this.tone(380, 0.06, { type: 'triangle', gain: 0.16, slide: -120, delay: 0.14 });
+        break;
+      case 'dominoDrop':
+        this.tone(760, 0.28, { type: 'sine', gain: 0.09, slide: -520 });
+        break;
+      case 'dominoWin':
+        this.tone(523, 0.12, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(659, 0.12, { type: 'triangle', gain: 0.15, delay: 0.09 });
+        this.tone(784, 0.12, { type: 'triangle', gain: 0.15, delay: 0.18 });
+        this.tone(1047, 0.42, { type: 'sine', gain: 0.16, delay: 0.27 });
+        break;
+      case 'poleHorn':
+        this.tone(440, 0.22, { type: 'sawtooth', gain: 0.12, delay: 0 });
+        this.tone(554, 0.28, { type: 'sawtooth', gain: 0.12, delay: 0.08 });
+        break;
+      case 'poleSqueak':
+        this.tone(1120, 0.16, { type: 'sine', gain: 0.09, slide: -480 });
+        break;
+      case 'poleSplorch':
+        this.noise(0.24, { gain: 0.18, cutoff: 1100 });
+        this.tone(160, 0.2, { type: 'sine', gain: 0.16, slide: -90 });
+        break;
+      case 'poleWin':
+        this.tone(587, 0.12, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(740, 0.12, { type: 'triangle', gain: 0.15, delay: 0.09 });
+        this.tone(880, 0.12, { type: 'triangle', gain: 0.15, delay: 0.18 });
+        this.tone(1174, 0.44, { type: 'sine', gain: 0.16, delay: 0.27 });
+        break;
+      case 'tawClack': {
+        // Crystalline glass-on-glass marble clack: high-Q sine pings + crisp click
+        const f = 3400 + Math.random() * 2200;
+        this.noise(0.015, { gain: 0.12, cutoff: 5200 });
+        this.tone(f, 0.045, { type: 'sine', gain: 0.13 });
+        this.tone(f * 1.48, 0.03, { type: 'sine', gain: 0.07 });
+        break;
+      }
+      case 'tawSteelie':
+        // Heavy chrome Steelie Boler metallic clang
+        this.noise(0.05, { gain: 0.18, cutoff: 3800 });
+        this.tone(920, 0.18, { type: 'triangle', gain: 0.16, slide: -140 });
+        this.tone(2450, 0.14, { type: 'sine', gain: 0.11, slide: -220 });
+        break;
+      case 'tawOut':
+        // Hollow ring-out plop
+        this.tone(520, 0.18, { type: 'sine', gain: 0.11, slide: -310 });
+        break;
+      case 'tawWin':
+        // Bright schoolyard steelpan victory chime
+        this.tone(587, 0.11, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(784, 0.11, { type: 'triangle', gain: 0.15, delay: 0.08 });
+        this.tone(988, 0.12, { type: 'triangle', gain: 0.15, delay: 0.16 });
+        this.tone(1174, 0.42, { type: 'sine', gain: 0.17, delay: 0.24 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

@@ -100,6 +100,42 @@ import {
   DEFAULT_KARANG_STILTS,
   normalizeKarangDuration,
 } from './karang-sim.js';
+import {
+  planTubigMatch,
+  MIN_TUBIG_PLAYERS,
+  MAX_TUBIG_PLAYERS,
+  TUBIG_DURATIONS,
+  DEFAULT_TUBIG_DURATION,
+  DEFAULT_TUBIG_RULE,
+  normalizeTubigDuration,
+} from './tubig-sim.js';
+import {
+  runDominoHeadless,
+  MIN_DOMINO_PLAYERS,
+  MAX_DOMINO_PLAYERS,
+  DOMINO_DURATIONS,
+  DEFAULT_DOMINO_DURATION,
+  DEFAULT_DOMINO_RULE,
+  normalizeDominoDuration,
+} from './domino-sim.js';
+import {
+  runPoleHeadless,
+  MIN_POLE_PLAYERS,
+  MAX_POLE_PLAYERS,
+  POLE_DURATIONS,
+  DEFAULT_POLE_DURATION,
+  DEFAULT_POLE_RULE,
+  normalizePoleDuration,
+} from './pole-sim.js';
+import {
+  runTawHeadless,
+  MIN_TAW_PLAYERS,
+  MAX_TAW_PLAYERS,
+  TAW_DURATIONS,
+  DEFAULT_TAW_DURATION,
+  DEFAULT_TAW_RULE,
+  normalizeTawDuration,
+} from './taw-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -435,6 +471,126 @@ export const MODES = [
     ready: (n) => `${n} devs hoisted onto bamboo stilts — SAKA NA, DAGAN!`,
     stagePreview: (stage, { names, options }) => stage.showKarangBoulevard(names, { duration: options.duration, stilts: options.stilts }),
     start: startKarang,
+  },
+  {
+    id: 'tubig',
+    winMode: 'tubig',
+    icon: '💧',
+    name: 'Tubig-Tubig',
+    verb: 'dash',
+    tagline: 'Water-line gauntlet — juke past blockers to STAGING & back.',
+    players: { min: MIN_TUBIG_PLAYERS, max: MAX_TUBIG_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Round length',
+        steps: TUBIG_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_TUBIG_DURATION,
+        normalize: normalizeTubigDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_TUBIG_RULE,
+        choices: [{ value: 'champion', label: 'Champion' }, { value: 'tag', label: 'Ikaw Na!' }],
+      },
+    ],
+    guide: 'tubig',
+    ready: (n) => `${n} runners on LOCALHOST — DEPLOY! PANAGAN!`,
+    stagePreview: (stage, { names, options }) => stage.showTubigCourt(names, { duration: options.duration, rule: options.rule }),
+    start: startTubig,
+  },
+  {
+    id: 'domino',
+    winMode: 'domino',
+    icon: '🁣',
+    name: 'Domino Slam',
+    verb: 'slam',
+    tagline: 'Rum-shop tabletop shockwaves — last on the table leads.',
+    players: { min: MIN_DOMINO_PLAYERS, max: MAX_DOMINO_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Hand length',
+        steps: DOMINO_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_DOMINO_DURATION,
+        normalize: normalizeDominoDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_DOMINO_RULE,
+        choices: [{ value: 'champion', label: 'Champion' }, { value: 'sixlove', label: 'Six-Love' }],
+      },
+    ],
+    guide: 'domino',
+    ready: (n) => `${n} devs on the scarred mahogany table — SHUFFLE UP!`,
+    stagePreview: (stage, { names }) => stage.showDominoTable(names),
+    start: startDomino,
+  },
+  {
+    id: 'pole',
+    winMode: 'pole',
+    icon: '🌴',
+    name: 'Greasy Pole',
+    verb: 'climb',
+    tagline: 'Mashramani slip-and-slide — first to grab the summit banner leads.',
+    players: { min: MIN_POLE_PLAYERS, max: MAX_POLE_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Climb length',
+        steps: POLE_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_POLE_DURATION,
+        normalize: normalizePoleDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_POLE_RULE,
+        choices: [{ value: 'summit', label: 'Summit' }, { value: 'muddrop', label: 'Mud-Drop' }],
+      },
+    ],
+    guide: 'pole',
+    ready: (n) => `${n} climbers chalking up at the mud pit — MASH UP DE POLE!`,
+    stagePreview: (stage, { names, options }) => stage.showGreasyPole(names, { duration: options.duration }),
+    start: startPole,
+  },
+  {
+    id: 'taw',
+    winMode: 'taw',
+    icon: '🔮',
+    name: 'Taw Knockout',
+    verb: 'pitch',
+    tagline: 'Schoolyard ring-out marbles — last marble in the chalk circle leads.',
+    players: { min: MIN_TAW_PLAYERS, max: MAX_TAW_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Match length',
+        steps: TAW_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_TAW_DURATION,
+        normalize: normalizeTawDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_TAW_RULE,
+        choices: [{ value: 'champion', label: 'Champion' }, { value: 'keepsies', label: 'Keepsies' }],
+      },
+    ],
+    guide: 'taw',
+    ready: (n) => `${n} glass marbles clustered in the chalk ring — KNUCKLES DOWN, PITCH!`,
+    stagePreview: (stage, { names, options }) => stage.showTawRing(names, { duration: options.duration }),
+    start: startTaw,
   },
 ];
 
@@ -1271,4 +1427,299 @@ function startKarang(ctx, { duration, stilts }) {
     },
   });
   ctx.showQuit('✕ Quit Karang');
+}
+
+// ------------------------------------------------------------------ tubig-tubig gauntlet
+
+function startTubig(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const plan = planTubigMatch(ctx.names, { duration, rule, rng: ctx.rng });
+    ctx.hud.showWinner(
+      plan.winner.name,
+      null,
+      plan.duration,
+      0,
+      plan.rule === 'tag'
+        ? `IKAW NA! First dev splashed becomes the new Patotot (${plan.variant.label}, off-screen).`
+        : `CLEARED ALL GATES — survived LOCALHOST ↔ STAGING (${plan.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(plan.winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const tubigParams = new URLSearchParams(location.search);
+  const effectiveDuration = tubigParams.has('tubigDuration')
+    ? Number(tubigParams.get('tubigDuration')) || duration
+    : duration;
+  const banner = document.getElementById('tubig-banner');
+  const setBanner = (text, tone = 'green') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('💧 POURING WATER LINES — NONE SHALL MERGE!', 'yellow');
+
+  game.startTubig(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'green');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, plan) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        plan.rule === 'tag'
+          ? `💦 IKAW NA! ${winner.name} IS THE NEW PATOTOT!`
+          : `💧 ${winner.name} CLEARED ALL GATES — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        plan.duration,
+        1500,
+        plan.rule === 'tag'
+          ? `IKAW NA! First dev splashed becomes the new Patotot (${plan.variant.label})`
+          : `CLEARED ALL GATES — round-trip survivor (${plan.variant.label})`,
+        { kicker: plan.rule === 'tag' ? 'New Patotot' : 'Tubig-Tubig Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Tubig-Tubig');
+}
+
+// ------------------------------------------------------------------ rum-shop domino slam
+
+function startDomino(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runDominoHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.players[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'sixlove'
+        ? `SIX-LOVE (6-0)! First dev blasted off the rum-shop table (${sim.variant.label}, off-screen).`
+        : `LAST ON THE TABLE — survived the domino slams (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const dominoParams = new URLSearchParams(location.search);
+  const effectiveDuration = dominoParams.has('dominoDuration')
+    ? Number(dominoParams.get('dominoDuration')) || duration
+    : duration;
+  const banner = document.getElementById('domino-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🁣 WASH DE BONES! ON TABLE: ${ctx.names.length} / ${ctx.names.length}`, 'yellow');
+
+  game.startDomino(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'sixlove'
+          ? `🁣 SIX-LOVE (6-0)! ${winner.name} LEADS STANDUP!`
+          : `🁣 ${winner.name} LAST ON THE TABLE — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'sixlove'
+          ? `SIX-LOVE (6-0)! First dev blasted off the rum-shop table (${sim.variant.label})`
+          : `LAST ON THE TABLE — survived the domino shockwaves (${sim.variant.label})`,
+        { kicker: sim.rule === 'sixlove' ? 'SIX-LOVE (6-0)' : 'Rum-Shop Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Domino Slam');
+}
+
+// ------------------------------------------------------------------ greasy pole scramble
+
+function startPole(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runPoleHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'muddrop'
+        ? `FIRST IN DE MUD — face-planted into the mud pit (${sim.variant.label}, off-screen).`
+        : `SUMMIT CHAMPION — grabbed the Mashramani banner (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const poleParams = new URLSearchParams(location.search);
+  const effectiveDuration = poleParams.has('poleDuration')
+    ? Number(poleParams.get('poleDuration')) || duration
+    : duration;
+  const banner = document.getElementById('pole-banner');
+  const setBanner = (text, tone = 'green') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner('🌴 CHALKING UP AT THE MUD PIT — GET READY!', 'yellow');
+
+  game.startPole(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'green');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'muddrop'
+          ? `🫧 FIRST IN DE MUD! ${winner.name} LEADS STANDUP!`
+          : `🌴 ${winner.name} GRABBED THE SUMMIT BANNER — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'muddrop'
+          ? `FIRST IN DE MUD — splashed straight into the pit (${sim.variant.label})`
+          : `SUMMIT CHAMPION — yanked down the Mashramani banner (${sim.variant.label})`,
+        { kicker: sim.rule === 'muddrop' ? 'First in de Mud' : 'King of the Pole' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Greasy Pole');
+}
+
+// ------------------------------------------------------------------ schoolyard taw knockout
+
+function startTaw(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runTawHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'keepsies'
+        ? `KEEPSIES — first marble knocked out of the chalk ring (${sim.variant.label}, off-screen).`
+        : `LAST MARBLE STANDING — owned the schoolyard ring (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const tawParams = new URLSearchParams(location.search);
+  const effectiveDuration = tawParams.has('tawDuration')
+    ? Number(tawParams.get('tawDuration')) || duration
+    : duration;
+  const banner = document.getElementById('taw-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🔮 KNUCKLES DOWN — ${ctx.names.length} MARBLES IN THE CHALK RING!`, 'yellow');
+
+  game.startTaw(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'keepsies'
+          ? `🔮 KEEPSIES! ${winner.name} FIRST OUT — LEADS STANDUP!`
+          : `🔮 ${winner.name} LAST MARBLE IN THE RING — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'keepsies'
+          ? `KEEPSIES — first marble knocked past the chalk line (${sim.variant.label})`
+          : `LAST MARBLE STANDING — ruled the schoolyard ring (${sim.variant.label})`,
+        { kicker: sim.rule === 'keepsies' ? 'Keepsies' : 'King of the Ring' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Taw Knockout');
 }

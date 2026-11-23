@@ -77,15 +77,31 @@ function renderParsed({ immediateStage = false } = {}) {
   const { names: parsed, warnings } = parseNames(namesInput.value.split(/\r?\n/));
   $('roster-cap').textContent = `${parsed.length} / ${MAX_NAMES}`;
 
-  // Mode-fit pills (Derby Race 2+, Let's Rumble 2–12, etc.).
+  // Mode-fit pills: show a compact ready summary and only list modes that don't meet player criteria.
   const strip = $('mode-fit-strip');
   strip.replaceChildren();
-  for (const mode of MODES) {
-    const ok = fitsPlayers(mode, parsed.length);
+  const unfit = MODES.filter((mode) => !fitsPlayers(mode, parsed.length));
+  if (unfit.length === 0) {
     const pill = document.createElement('span');
-    pill.className = `fit-pill ${ok ? 'ok' : 'warn'}`;
-    pill.textContent = `${ok ? '✓' : '⚠'} ${mode.name} (${playersText(mode)})`;
+    pill.className = 'fit-pill ok';
+    pill.textContent = `✓ All ${MODES.length} games ready`;
     strip.append(pill);
+  } else if (unfit.length === MODES.length) {
+    const pill = document.createElement('span');
+    pill.className = 'fit-pill warn';
+    pill.textContent = '⚠ Add at least 2 teammates to play';
+    strip.append(pill);
+  } else {
+    const summary = document.createElement('span');
+    summary.className = 'fit-pill ok';
+    summary.textContent = `✓ ${MODES.length - unfit.length} of ${MODES.length} games ready`;
+    strip.append(summary);
+    for (const mode of unfit) {
+      const pill = document.createElement('span');
+      pill.className = 'fit-pill warn';
+      pill.textContent = `⚠ ${mode.name} (${playersText(mode)})`;
+      strip.append(pill);
+    }
   }
 
   // Interactive Roster Chips.

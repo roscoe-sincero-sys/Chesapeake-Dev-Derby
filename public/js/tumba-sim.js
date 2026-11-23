@@ -52,7 +52,7 @@ export const TUMBA_POPUPS = {
   scramble: [
     "Grabbed someone else's branch!",
     'Hotfix rolled back the clock too fast!',
-    "Failed to read Iklauti-ji's mind",
+    "Failed to read Ekmaatra-ji's mind",
     'Blocked by audit logs not being available',
   ],
 };

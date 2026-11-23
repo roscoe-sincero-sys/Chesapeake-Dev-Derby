@@ -39,7 +39,7 @@ export function freezeVariant(seconds) {
 /** Exact dev-themed elimination popups from docs/code_freeze_game_mode_spec.md. */
 export const FREEZE_EXCUSES = [
   'Blamed for not being clear!',
-  'Made secret hotfixes!',
+  'Made secret Ekmaatra hotfixes!',
   'Added ?ReturnUrl= to URLs.',
   'Created four 800-columns tables.',
   'Rolled back the server clock!',

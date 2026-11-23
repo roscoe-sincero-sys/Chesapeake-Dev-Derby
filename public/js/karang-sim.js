@@ -42,9 +42,9 @@ export function karangVariant(seconds) {
 export const KARANG_POPUPS = {
   snap: ['Leaned on do-not-touch-utils-safe-to-delete', 'Blocked by pan-os software license'],
   snag: ['Clotheslined by common sense', "Zabardasti feature paksit'd prod", 'URL edits banned. Fix: add ?ReturnUrl='],
-  tangle: ["Tumba'd the user table!", "Failed to read Iklauti-ji's mind"],
+  tangle: ["Tumba'd the user table!", "Failed to read Ekmaatra's mind"],
   wind: ['PanganodSilab 500 Crosswind', 'Prod is down — PANAGAN!'],
-  slick: ["Unstable Iklauti-ji's mind", 'IYAHAY NA!'],
+  slick: ["Unstable Ekmaatra's mind", 'IYAHAY NA!'],
 };
 
 export const BOULEVARD_HALF_W = 8.4;
