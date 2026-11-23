@@ -28,9 +28,14 @@ export function isCalendarLabel(text) {
   return CALENDAR_LABEL_SET.has(bare);
 }
 
+/** Normalises Unicode to NFC and removes invisible format and control characters (e.g. ZWSP, bidi overrides, NUL). */
+export function sanitizeNameText(text) {
+  return String(text).normalize('NFC').replace(/[\p{Cf}\p{Cc}]/gu, '');
+}
+
 /** Case- and whitespace-insensitive key used to compare names. */
 export function nameKey(name) {
-  return String(name).trim().replace(/\s+/g, ' ').toLowerCase();
+  return sanitizeNameText(name).trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 /**
@@ -49,14 +54,21 @@ export function parseNames(raw) {
   const names = [];
   let skippedInvalid = 0;
   let skippedDuplicate = 0;
+  let strippedInvisible = 0;
   const skippedLabels = new Map(); // label as typed -> count
 
   for (const entry of list) {
-    if (typeof entry !== 'string' || !entry.trim()) {
+    if (typeof entry !== 'string') {
       skippedInvalid++;
       continue;
     }
-    let name = entry.trim().replace(/\s+/g, ' ');
+    const cleaned = sanitizeNameText(entry);
+    if (cleaned !== entry.normalize('NFC')) strippedInvisible++;
+    if (!cleaned.trim()) {
+      skippedInvalid++;
+      continue;
+    }
+    let name = cleaned.trim().replace(/\s+/g, ' ');
     if (isCalendarLabel(name)) {
       skippedLabels.set(name, (skippedLabels.get(name) || 0) + 1);
       continue;
@@ -74,6 +86,7 @@ export function parseNames(raw) {
     names.push(name);
   }
 
+  if (strippedInvisible) warnings.push(`Removed invisible characters from ${strippedInvisible} name${strippedInvisible === 1 ? '' : 's'}.`);
   if (skippedInvalid) warnings.push(`${skippedInvalid} blank or non-text entr${skippedInvalid === 1 ? 'y was' : 'ies were'} ignored.`);
   if (skippedLabels.size) {
     const count = [...skippedLabels.values()].reduce((a, b) => a + b, 0);
@@ -147,12 +160,11 @@ export function validateRoster(raw) {
   if (!raw || !Array.isArray(raw.names) || raw.names.some((n) => typeof n !== 'string')) {
     throw Object.assign(new Error('Provide an object with a "names" array of text names.'), { statusCode: 400 });
   }
-  const entries = raw.names.map((n) => n.trim().replace(/\s+/g, ' ')).filter((n) => n && !isCalendarLabel(n));
-  const labels = raw.names.filter((n) => isCalendarLabel(n));
+  const entries = raw.names.map((n) => sanitizeNameText(n).trim().replace(/\s+/g, ' ')).filter((n) => n && !isCalendarLabel(n));
   if (entries.length > MAX_NAMES || entries.some((n) => n.length > MAX_NAME_LENGTH)) {
     throw Object.assign(new Error(`Use at most ${MAX_NAMES} names, each ${MAX_NAME_LENGTH} characters or fewer.`), { statusCode: 400 });
   }
-  return parseNames({ names: [...entries, ...labels] });
+  return parseNames({ names: raw.names.filter((n) => sanitizeNameText(n).trim()) });
 }
 
 /**

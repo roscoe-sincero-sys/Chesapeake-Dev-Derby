@@ -428,8 +428,13 @@ export class Hud {
     this.callout(outText(this.outNames), 1600 + (this.outNames.length - 1) * 500);
   }
 
-  /** Adds a line to the event feed from outside the race (e.g. the wrestling match). */
-  note(html, big = false) {
+  /** Adds a plain-text line to the event feed (safe against HTML injection, #143). */
+  note(text, big = false) {
+    this.lineText(text, big);
+  }
+
+  /** Adds pre-escaped HTML (from who()/throwText()/closeCallText()) to the event feed. */
+  noteHtml(html, big = false) {
     this.line(html, big);
   }
 
@@ -466,6 +471,20 @@ export class Hud {
         else if (e.place <= 3) this.podium(e.place, e.racer.name);
         break;
     }
+  }
+
+  lineText(text, big = false) {
+    if (!text) return;
+    const now = performance.now();
+    if (!big && now - this.lastLine < 350) return;
+    if (!big) this.lastLine = now;
+    const el = document.createElement('div');
+    el.className = big ? 'line big' : 'line';
+    el.textContent = String(text);
+    this.feed.append(el);
+    while (this.feed.children.length > 5) this.feed.firstChild.remove();
+    setTimeout(() => el.classList.add('out'), 3600);
+    setTimeout(() => el.remove(), 4200);
   }
 
   line(html, big = false) {

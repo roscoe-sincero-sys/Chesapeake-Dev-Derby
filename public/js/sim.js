@@ -5,6 +5,16 @@
 //   d = sideways offset from the centre line (negative = left, positive = right)
 // The renderer maps (s, d) onto the curved 3D track.
 
+/** Cryptographically strong uniform float in [0, 1) using Web Crypto (falls back to Math.random). */
+export function cryptoRandom() {
+  if (globalThis.crypto?.getRandomValues) {
+    const buf = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(buf);
+    return buf[0] / 0x100000000;
+  }
+  return Math.random();
+}
+
 export const OBSTACLE_TYPES = [
   'pit404',
   'brokenLink',

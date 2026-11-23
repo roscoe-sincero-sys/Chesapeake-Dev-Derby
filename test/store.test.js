@@ -138,3 +138,19 @@ test('only whole-line labels are skipped, never names that merely contain one', 
     assert.equal(isCalendarLabel(label), true, label);
   }
 });
+
+// ---------------------------------------------------------------- invisible / control characters (issue #64)
+
+test('parseNames and nameKey strip invisible, bidi override and NUL characters and warn (#64)', () => {
+  const { names, warnings } = parseNames([
+    'Ada\u200B',       // zero-width space lookalike
+    'Ada',             // duplicate once U+200B is removed
+    '\u202Eadyh',      // right-to-left override
+    'Gr\u0000ace',     // NUL control character
+  ]);
+  assert.deepEqual(names, ['Ada', 'adyh', 'Grace']);
+  assert.ok(warnings.some((w) => /Removed invisible characters from 3 names/.test(w)));
+  assert.ok(warnings.some((w) => /1 duplicate name was ignored/.test(w)));
+  assert.equal(nameKey('Ada\u200B'), nameKey('Ada'));
+  assert.equal(nameKey('Gr\u0000ace'), nameKey('Grace'));
+});

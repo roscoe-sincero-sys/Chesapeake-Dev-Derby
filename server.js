@@ -11,15 +11,16 @@
 //   POST /api/winners  -> body { name, mode? } (mode "race", "skip" or "wrestle") ; returns { winners }
 //   DELETE /api/winners -> body {} ; clears the history, returns { winners: [] }
 
+import crypto from 'node:crypto';
 import http from 'node:http';
 import path from 'node:path';
-import { createReadStream, readFileSync } from 'node:fs';
+import { createReadStream, readdirSync, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { createStore } from './lib/store.js';
 import { openBrowserUnlessConnected } from './lib/browser-session.js';
-import { trustedOrigin, isSameOriginRequest, isJsonRequest } from './lib/request-security.js';
+import { trustedOrigin, isSameOriginRequest, isJsonRequest, isCrossSiteFetch } from './lib/request-security.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 
@@ -100,33 +101,71 @@ async function serveFile(res, file, method) {
   createReadStream(file).pipe(res);
 }
 
+/** Computes SHA-256 CSP hashes for the inline <script type="importmap"> blocks in public/*.html. */
+function buildCspHeader(publicDir) {
+  const hashes = new Set();
+  for (const name of readdirSync(publicDir).filter((f) => f.endsWith('.html'))) {
+    const html = readFileSync(path.join(publicDir, name), 'utf8');
+    for (const match of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+      if (!match[1].trim()) continue;
+      // HTML parsers normalise CRLF/CR to LF before evaluating inline script CSP hashes.
+      const body = match[1].replace(/\r\n?/g, '\n');
+      const digest = crypto.createHash('sha256').update(body, 'utf8').digest('base64');
+      hashes.add(`'sha256-${digest}'`);
+    }
+  }
+  const scriptSrc = ["'self'", ...hashes].join(' ');
+  return `default-src 'self'; script-src ${scriptSrc}; img-src 'self' data: blob:; style-src 'self'; frame-ancestors 'none'`;
+}
+
+/** Removes local filesystem prefixes from client-facing error messages (full paths stay in server logs). */
+function sanitizeErrorMessage(message, dirs) {
+  let text = String(message ?? 'Internal server error.');
+  for (const dir of dirs) {
+    if (!dir) continue;
+    text = text.replaceAll(dir + path.sep, '').replaceAll(dir, '');
+  }
+  return text.replace(/[A-Za-z]:\\[^\s'"]+/g, (m) => path.basename(m)).replace(/\/(?:Users|home|tmp|var|etc)\/[^\s'"]+/g, (m) => path.basename(m));
+}
+
 /**
  * Builds the HTTP server. `dataDir` is where names.json / winners.json live;
  * tests point it at a temp folder.
  */
-export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = false, shutdownDelay = 3000 } = {}) {
+export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = false, shutdownDelay = 3000, maxSessions = 32 } = {}) {
   const store = createStore(dataDir);
   const publicDir = path.join(ROOT, 'public');
   const threeDir = path.join(ROOT, 'node_modules', 'three');
+  const cspHeader = buildCspHeader(publicDir);
 
   let tabs = 0;
   let shutdownTimer;
   const server = http.createServer(async (req, res) => {
     try {
-      // Apply framing protections to pages and error responses alike.
-      res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+      // Apply security and framing protections to pages and error responses alike (#66).
+      res.setHeader('Content-Security-Policy', cspHeader);
       res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Referrer-Policy', 'no-referrer');
       const origin = trustedOrigin(req, server.address()?.port);
       if (!origin) return sendJson(res, 421, { error: 'Untrusted request host.' });
       const url = new URL(req.url, origin);
       if (url.origin !== origin) return sendJson(res, 421, { error: 'Untrusted request target.' });
-      const pathname = decodeURIComponent(url.pathname);
+      let pathname;
+      try {
+        pathname = decodeURIComponent(url.pathname);
+      } catch {
+        return sendJson(res, 400, { error: 'Malformed request path.' });
+      }
       const mutation = (pathname === '/api/names' && req.method === 'PUT') ||
         (pathname === '/api/winners' && (req.method === 'POST' || req.method === 'DELETE')) ||
         (pathname === '/api/exit' && req.method === 'POST');
       const session = pathname === '/api/session' && req.method === 'GET';
       if ((mutation || session) && !isSameOriginRequest(req, origin)) {
         return sendJson(res, 403, { error: 'A same-origin request is required.' });
+      }
+      if (pathname.startsWith('/api/') && isCrossSiteFetch(req)) {
+        return sendJson(res, 403, { error: 'Cross-site API requests are not allowed.' });
       }
       if (mutation && !isJsonRequest(req)) {
         return sendJson(res, 415, { error: 'Content-Type must be application/json.' });
@@ -138,6 +177,9 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         if (!exitOnClose) {
           res.writeHead(204);
           return res.end();
+        }
+        if (tabs >= maxSessions) {
+          return sendJson(res, 429, { error: 'Too many active sessions.' });
         }
         clearTimeout(shutdownTimer);
         tabs++;
@@ -185,7 +227,10 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
       }
 
       if (pathname === '/api/history' && req.method === 'GET') {
-        return sendJson(res, 200, { history: (await store.loadHistory()).reverse() });
+        const list = await store.loadHistory({ recover: true });
+        const body = { history: [...list].reverse() };
+        if (list.warning) body.warning = list.warning;
+        return sendJson(res, 200, body);
       }
 
       if (pathname === '/api/names' && req.method === 'PUT') {
@@ -209,7 +254,9 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
           return sendJson(res, 400, { error: 'A winner "name" is required.' });
         }
         const winners = await store.recordWinner(payload.name, payload.mode ?? 'race', payload.absent);
-        return sendJson(res, 200, { winners });
+        const body = { winners };
+        if (winners.warning) body.warning = winners.warning;
+        return sendJson(res, 200, body);
       }
 
       if (pathname === '/api/winners' && req.method === 'DELETE') {
@@ -238,10 +285,12 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
     } catch (err) {
       const status = err.statusCode || 500;
       if (status >= 500) console.error(`[error] ${req.method} ${req.url}: ${err.message}`);
-      if (!res.headersSent) sendJson(res, status, { error: err.message });
+      if (!res.headersSent) sendJson(res, status, { error: sanitizeErrorMessage(err.message, [dataDir, ROOT]) });
       else res.end();
     }
   });
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
   server.on('close', () => clearTimeout(shutdownTimer));
   return server;
 }
@@ -271,8 +320,11 @@ if (isMain) {
     const address = `http://${host === '::1' ? '[::1]' : host}:${port}`;
     console.log(`\n  🏁 Chesapeake Dev Derby is running at ${address}\n  Press Ctrl+C to stop.\n`);
     if (process.argv.includes('--open')) {
-      const opener = process.platform === 'win32' ? `start "" "${address}"` : process.platform === 'darwin' ? `open "${address}"` : `xdg-open "${address}"`;
-      const open = () => exec(opener, () => {});
+      const open = () => {
+        if (process.platform === 'win32') execFile('cmd.exe', ['/c', 'start', '', address], () => {});
+        else if (process.platform === 'darwin') execFile('open', [address], () => {});
+        else execFile('xdg-open', [address], () => {});
+      };
       if (exitOnClose) openBrowserUnlessConnected(server, open);
       else open();
     }
