@@ -136,6 +136,60 @@ import {
   DEFAULT_TAW_RULE,
   normalizeTawDuration,
 } from './taw-sim.js';
+import {
+  runDdakjiHeadless,
+  MIN_DDAKJI_PLAYERS,
+  MAX_DDAKJI_PLAYERS,
+  DDAKJI_DURATIONS,
+  DEFAULT_DDAKJI_DURATION,
+  DEFAULT_DDAKJI_RULE,
+  normalizeDdakjiDuration,
+} from './ddakji-sim.js';
+import {
+  runNokabeHeadless,
+  MIN_NOKABE_PLAYERS,
+  MAX_NOKABE_PLAYERS,
+  NOKABE_DURATIONS,
+  DEFAULT_NOKABE_DURATION,
+  DEFAULT_NOKABE_RULE,
+  normalizeNokabeDuration,
+} from './nokabe-sim.js';
+import {
+  runMahjongHeadless,
+  MIN_MAHJONG_PLAYERS,
+  MAX_MAHJONG_PLAYERS,
+  MAHJONG_DURATIONS,
+  DEFAULT_MAHJONG_DURATION,
+  DEFAULT_MAHJONG_RULE,
+  normalizeMahjongDuration,
+} from './mahjong-sim.js';
+import {
+  runKhokhoHeadless,
+  MIN_KHOKHO_PLAYERS,
+  MAX_KHOKHO_PLAYERS,
+  KHOKHO_DURATIONS,
+  DEFAULT_KHOKHO_DURATION,
+  DEFAULT_KHOKHO_RULE,
+  normalizeKhokhoDuration,
+} from './khokho-sim.js';
+import {
+  runChauparHeadless,
+  MIN_CHAUPAR_PLAYERS,
+  MAX_CHAUPAR_PLAYERS,
+  CHAUPAR_DURATIONS,
+  DEFAULT_CHAUPAR_DURATION,
+  DEFAULT_CHAUPAR_RULE,
+  normalizeChauparDuration,
+} from './chaupar-sim.js';
+import {
+  runGlassHeadless,
+  MIN_GLASS_PLAYERS,
+  MAX_GLASS_PLAYERS,
+  GLASS_DURATIONS,
+  DEFAULT_GLASS_DURATION,
+  DEFAULT_GLASS_RULE,
+  normalizeGlassDuration,
+} from './glass-sim.js';
 
 /**
  * Each mode's `start(ctx, options)` gets `options` (its own option values, checked) and `ctx`, which the
@@ -591,6 +645,186 @@ export const MODES = [
     ready: (n) => `${n} glass marbles clustered in the chalk ring — KNUCKLES DOWN, PITCH!`,
     stagePreview: (stage, { names, options }) => stage.showTawRing(names, { duration: options.duration }),
     start: startTaw,
+  },
+  {
+    id: 'ddakji',
+    winMode: 'ddakji',
+    icon: '🟥',
+    name: 'Ddakji Flip-Out',
+    verb: 'slam',
+    tagline: 'Paper-tile slam royale — last unflipped tile leads standup.',
+    players: { min: MIN_DDAKJI_PLAYERS, max: MAX_DDAKJI_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Match length',
+        steps: DDAKJI_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_DDAKJI_DURATION,
+        normalize: normalizeDdakjiDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_DDAKJI_RULE,
+        choices: [{ value: 'champion', label: 'Champion' }, { value: 'recruiter', label: 'Recruiter' }],
+      },
+    ],
+    guide: 'ddakji',
+    ready: (n) => `${n} folded origami tiles laid on the Seoul slate — KKA-RA, TTAK!`,
+    stagePreview: (stage, { names, options }) => stage.showDdakjiCourt(names, { duration: options.duration }),
+    start: startDdakji,
+  },
+  {
+    id: 'nokabe',
+    winMode: 'nokabe',
+    icon: '📺',
+    name: 'Nōkabe Crunch',
+    verb: 'pose',
+    tagline: 'Hole-in-the-wall contortion — last dry dev on the dock leads.',
+    players: { min: MIN_NOKABE_PLAYERS, max: MAX_NOKABE_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Episode length',
+        steps: NOKABE_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_NOKABE_DURATION,
+        normalize: normalizeNokabeDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_NOKABE_RULE,
+        choices: [{ value: 'dry', label: 'Dry Champ' }, { value: 'canary', label: 'Canary' }],
+      },
+    ],
+    guide: 'nokabe',
+    ready: (n) => `${n} silver-suited devs on the dunk-tank dock — KABE GA KURU YO!`,
+    stagePreview: (stage, { names, options }) => stage.showNokabeStudio(names, { duration: options.duration }),
+    start: startNokabe,
+  },
+  {
+    id: 'mahjong',
+    winMode: 'mahjong',
+    icon: '🀄',
+    name: 'Mahjong Wash',
+    verb: 'wash',
+    tagline: 'Xǐpái whirlpool rumble — last standing on the emerald baize leads.',
+    players: { min: MIN_MAHJONG_PLAYERS, max: MAX_MAHJONG_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Wash length',
+        steps: MAHJONG_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_MAHJONG_DURATION,
+        normalize: normalizeMahjongDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_MAHJONG_RULE,
+        choices: [{ value: 'hu', label: 'Hú!' }, { value: 'fangpao', label: 'Fàngpào' }],
+      },
+    ],
+    guide: 'mahjong',
+    ready: (n) => `${n} devs dropped onto the emerald baize with 144 swirling tiles — XǏPÁI!`,
+    stagePreview: (stage, { names, options }) => stage.showMahjongTable(names, { duration: options.duration }),
+    start: startMahjong,
+  },
+  {
+    id: 'khokho',
+    winMode: 'khokho',
+    icon: '🪑',
+    name: 'Kho-Kho Blitz',
+    verb: 'dash',
+    tagline: 'Swivel-chair boardroom tag — dodge KHO! chair ambushes to lead.',
+    players: { min: MIN_KHOKHO_PLAYERS, max: MAX_KHOKHO_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Meeting length',
+        steps: KHOKHO_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_KHOKHO_DURATION,
+        normalize: normalizeKhokhoDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_KHOKHO_RULE,
+        choices: [{ value: 'elusive', label: 'Elusive' }, { value: 'p1', label: 'First P1' }],
+      },
+    ],
+    guide: 'khokho',
+    ready: (n) => `${n} runners in the boardroom aisles — KHO! BHAAGO!`,
+    stagePreview: (stage, { names, options }) => stage.showKhokhoBoardroom(names, { duration: options.duration }),
+    start: startKhokho,
+  },
+  {
+    id: 'chaupar',
+    winMode: 'chaupar',
+    icon: '🐚',
+    name: 'Chaupar Clash',
+    verb: 'roll',
+    tagline: 'Boardroom Pachisi & cowrie rain — claim the Charkoni throne to lead.',
+    players: { min: MIN_CHAUPAR_PLAYERS, max: MAX_CHAUPAR_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Sync length',
+        steps: CHAUPAR_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_CHAUPAR_DURATION,
+        normalize: normalizeChauparDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_CHAUPAR_RULE,
+        choices: [{ value: 'throne', label: 'Charkoni' }, { value: 'firstcut', label: 'First Cut' }],
+      },
+    ],
+    guide: 'chaupar',
+    ready: (n) => `${n} pawns on the embroidered Chaupar cloth — KAUDI PHEKO!`,
+    stagePreview: (stage, { names, options }) => stage.showChauparBoardroom(names, { duration: options.duration }),
+    start: startChaupar,
+  },
+  {
+    id: 'glass',
+    winMode: 'glass',
+    icon: '🌉',
+    name: 'Glass Bridge',
+    verb: 'leap',
+    tagline: 'Tempered vs. untested prod panes — survive the 50/50 crossing to lead.',
+    players: { min: MIN_GLASS_PLAYERS, max: MAX_GLASS_PLAYERS },
+    options: [
+      {
+        id: 'duration',
+        type: 'range',
+        label: 'Bridge length',
+        steps: GLASS_DURATIONS.map(({ seconds, label, text }) => ({ value: seconds, label, text })),
+        default: DEFAULT_GLASS_DURATION,
+        normalize: normalizeGlassDuration,
+      },
+      {
+        id: 'rule',
+        type: 'segmented',
+        label: 'Rules',
+        default: DEFAULT_GLASS_RULE,
+        choices: [{ value: 'survivor', label: 'Survivor' }, { value: 'canary', label: 'Canary' }],
+      },
+    ],
+    guide: 'glass',
+    ready: (n) => `${n} devs in numbered vests on the staging gantry — CHOOSE YOUR LANE!`,
+    stagePreview: (stage, { names, options }) => stage.showGlassBridge(names, { duration: options.duration }),
+    start: startGlass,
   },
 ];
 
@@ -1722,4 +1956,448 @@ function startTaw(ctx, { duration, rule }) {
     },
   });
   ctx.showQuit('✕ Quit Taw Knockout');
+}
+
+// ------------------------------------------------------------------ ddakji flip-out
+
+function startDdakji(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runDdakjiHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'recruiter'
+        ? `RECRUITER SLAP — first tile flipped upside-down (${sim.variant.label}, off-screen).`
+        : `UNFLIPPED CHAMPION — last origami tile face-up (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const ddakjiParams = new URLSearchParams(location.search);
+  const effectiveDuration = ddakjiParams.has('ddakjiDuration')
+    ? Number(ddakjiParams.get('ddakjiDuration')) || duration
+    : duration;
+  const banner = document.getElementById('ddakji-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🟥 KKA-RA! — ${ctx.names.length} ORIGAMI TILES ON THE SLATE`, 'yellow');
+
+  game.startDdakji(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'recruiter'
+          ? `🟥 RECRUITER SLAP! ${winner.name} FIRST FLIPPED — LEADS STANDUP!`
+          : `🟥 ${winner.name} UNFLIPPED CHAMPION — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'recruiter'
+          ? `RECRUITER SLAP — first tile flipped upside-down (${sim.variant.label})`
+          : `UNFLIPPED CHAMPION — last tile standing face-up (${sim.variant.label})`,
+        { kicker: sim.rule === 'recruiter' ? 'You’re Up — Lead Standup!' : 'Unflipped Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Ddakji');
+}
+
+// ------------------------------------------------------------------ nokabe wall crunch
+
+function startNokabe(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runNokabeHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'canary'
+        ? `FIRST IN THE TANK — first dev splashed into the dunk tank (${sim.variant.label}, off-screen).`
+        : `PASSED COMPLIANCE — last dry dev on the dock (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const nokabeParams = new URLSearchParams(location.search);
+  const effectiveDuration = nokabeParams.has('nokabeDuration')
+    ? Number(nokabeParams.get('nokabeDuration')) || duration
+    : duration;
+  const banner = document.getElementById('nokabe-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`📺 JUNBI OK! — ${ctx.names.length} DEVS ON THE DUNK-TANK DOCK`, 'yellow');
+
+  game.startNokabe(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'canary'
+          ? `💦 FIRST IN THE TANK! ${winner.name} LEADS STANDUP!`
+          : `📺 ${winner.name} PASSED COMPLIANCE — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'canary'
+          ? `FIRST IN THE TANK — belly-flopped straight into the dunk tank (${sim.variant.label})`
+          : `PASSED COMPLIANCE — stayed dry through every styrofoam wall (${sim.variant.label})`,
+        { kicker: sim.rule === 'canary' ? 'Dunk-Tank Canary' : 'Dry Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Nōkabe');
+}
+
+// ------------------------------------------------------------------ mahjong tile wash
+
+function startMahjong(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runMahjongHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'fangpao'
+        ? `DEALT INTO THE WINNING HAND — first dev swallowed by the chute (${sim.variant.label}, off-screen).`
+        : `ZÌMŌ (SELF-DRAWN WIN) — last dev standing on the emerald baize (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const mahjongParams = new URLSearchParams(location.search);
+  const effectiveDuration = mahjongParams.has('mahjongDuration')
+    ? Number(mahjongParams.get('mahjongDuration')) || duration
+    : duration;
+  const banner = document.getElementById('mahjong-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🀄 XǏPÁI! — ${ctx.names.length} DEVS ON THE BAIZE · WIND: EAST`, 'yellow');
+
+  game.startMahjong(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'fangpao'
+          ? `🀄 FÀNGPÀO! ${winner.name} DEALT INTO THE WINNING HAND — LEADS STANDUP!`
+          : `🀄 HÚ! ${winner.name} ZÌMŌ (SELF-DRAWN WIN) — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'fangpao'
+          ? `DEALT INTO THE WINNING HAND — first dev into the brass chute (${sim.variant.label})`
+          : `ZÌMŌ (SELF-DRAWN WIN) — last dev standing on the emerald baize (${sim.variant.label})`,
+        { kicker: sim.rule === 'fangpao' ? 'Fàngpào — First Discard' : 'Hú! Parlor Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Mahjong');
+}
+
+// ------------------------------------------------------------------ kho-kho relay blitz
+
+function startKhokho(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runKhokhoHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'p1'
+        ? `ON-CALL OWNER — first runner ambushed by a swivel chair (${sim.variant.label}, off-screen).`
+        : `DODGED THE ESCALATION — outlasted every KHO! chair ambush (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const khokhoParams = new URLSearchParams(location.search);
+  const effectiveDuration = khokhoParams.has('khokhoDuration')
+    ? Number(khokhoParams.get('khokhoDuration')) || duration
+    : duration;
+  const banner = document.getElementById('khokho-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🪑 MEETING STARTING — ${ctx.names.length} RUNNERS IN THE BOARDROOM!`, 'yellow');
+
+  game.startKhokho(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'p1'
+          ? `🚨 ON-CALL OWNER! ${winner.name} FIRST TAGGED — LEADS STANDUP!`
+          : `🪑 ${winner.name} DODGED THE ESCALATION — LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'p1'
+          ? `ON-CALL OWNER — ambushed by the P1 swivel-chair relay (${sim.variant.label})`
+          : `DODGED THE ESCALATION — outlasted ${sim.khoChain}x KHO! chains (${sim.variant.label})`,
+        { kicker: sim.rule === 'p1' ? 'Assigned P1!' : 'Elusive Champion' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Kho-Kho');
+}
+
+// ------------------------------------------------------------------ chaupar cowrie-clash
+
+function startChaupar(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runChauparHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'firstcut'
+        ? `CUT TO SPRINT 0 — first pawn flicked into the office wastebasket (${sim.variant.label}, off-screen).`
+        : `CHARKONI CLAIMED — stormed the central boardroom throne (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const chauparParams = new URLSearchParams(location.search);
+  const effectiveDuration = chauparParams.has('chauparDuration')
+    ? Number(chauparParams.get('chauparDuration')) || duration
+    : duration;
+  const banner = document.getElementById('chaupar-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🐚 CHALO! ${ctx.names.length} PAWNS ON THE CHAUPAR CLOTH!`, 'yellow');
+
+  game.startChaupar(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'firstcut'
+          ? `🗑️ KAAT DIYA! ${winner.name} CUT TO SPRINT 0 — LEADS STANDUP!`
+          : `🐚 CHARKONI CLAIMED! ${winner.name} LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'firstcut'
+          ? `CUT TO SPRINT 0 — first pawn flicked off the teak table (${sim.variant.label})`
+          : `CHARKONI CLAIMED — last roll ${sim.lastRollLabel} (${sim.variant.label})`,
+        { kicker: sim.rule === 'firstcut' ? 'Cut to Sprint 0!' : 'Chair of the Board' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Chaupar');
+}
+
+// ------------------------------------------------------------------ glass bridge deploy
+
+function startGlass(ctx, { duration, rule }) {
+  ctx.setPhase('race');
+  ctx.hideLobby();
+
+  if (!ctx.game) {
+    const sim = runGlassHeadless(ctx.names, { duration, rule, rng: ctx.rng });
+    const winner = sim.winner ?? sim.standings()[0];
+    ctx.hud.showWinner(
+      winner.name,
+      null,
+      sim.time,
+      0,
+      sim.rule === 'canary'
+        ? `CANARY FAILED — first dev to shatter an untested prod pane (${sim.variant.label}, off-screen).`
+        : `SURVIVED PROD CUTOVER — crossed all ${sim.pairCount} glass pairs (${sim.variant.label}, off-screen).`,
+      { kicker: 'Leads today’s standup' },
+    );
+    ctx.setPhase('results');
+    ctx.saveWinner(winner.name);
+    return;
+  }
+
+  const { game, hud } = ctx;
+  const glassParams = new URLSearchParams(location.search);
+  const effectiveDuration = glassParams.has('glassDuration')
+    ? Number(glassParams.get('glassDuration')) || duration
+    : duration;
+  const banner = document.getElementById('glass-banner');
+  const setBanner = (text, tone = 'yellow') => {
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `freeze-banner freeze-${tone}`;
+    banner.hidden = false;
+  };
+
+  hud.beginWrestle([]);
+  setBanner(`🌉 CHOOSE YOUR LANE! ${ctx.names.length} DEVS ON THE GLASS BRIDGE!`, 'yellow');
+
+  game.startGlass(ctx.names, {
+    duration: effectiveDuration,
+    rule,
+    rng: ctx.rng,
+    onEvent: (e) => {
+      if (e.type === 'status') setBanner(e.text, e.tone ?? 'yellow');
+      else if (e.type === 'note') hud.note(e.text, Boolean(e.important));
+    },
+    onWinner: (winner, sim) => {
+      ctx.setPhase('results');
+      ctx.hideQuit();
+      if (banner) banner.hidden = true;
+      hud.callout(
+        sim.rule === 'canary'
+          ? `💥 CANARY FAILED! #${winner.vest} ${winner.name} LEADS STANDUP!`
+          : `🌉 SURVIVED PROD CUTOVER! #${winner.vest} ${winner.name} LEADS STANDUP!`,
+        2400,
+      );
+      hud.showWinner(
+        winner.name,
+        null,
+        sim.time,
+        1500,
+        sim.rule === 'canary'
+          ? `CANARY FAILED — first dev to drop through an untested pane (${sim.variant.label})`
+          : `SURVIVED PROD CUTOVER — crossed all ${sim.pairCount} glass pairs (${sim.variant.label})`,
+        { kicker: sim.rule === 'canary' ? 'Canary Failed!' : 'Deployed to Prod' },
+      );
+      ctx.saveWinner(winner.name);
+    },
+  });
+  ctx.showQuit('✕ Quit Bridge');
 }

@@ -412,6 +412,152 @@ export class Sfx {
         this.tone(988, 0.12, { type: 'triangle', gain: 0.15, delay: 0.16 });
         this.tone(1174, 0.42, { type: 'sine', gain: 0.17, delay: 0.24 });
         break;
+      case 'ddakjiSlap':
+        // Dry cardstock TTAK!: sharp bandpass crack + fast 110Hz compressed-air thump
+        this.noise(0.055, { gain: 0.22, cutoff: 3200 });
+        this.tone(115, 0.14, { type: 'sine', gain: 0.22, slide: -55 });
+        break;
+      case 'ddakjiCheol':
+        // Heavy CHEOL-DDAKJI iron-cardstock boom + kkwaenggwari gong accent
+        this.noise(0.11, { gain: 0.25, cutoff: 2600 });
+        this.tone(92, 0.26, { type: 'sine', gain: 0.26, slide: -40 });
+        this.tone(1480, 0.22, { type: 'triangle', gain: 0.12, slide: -120 });
+        break;
+      case 'ddakjiFlip':
+        // Crisp papery flup-flup whoosh
+        this.noise(0.09, { gain: 0.12, cutoff: 2200 });
+        this.tone(620, 0.14, { type: 'triangle', gain: 0.09, slide: -280 });
+        break;
+      case 'ddakjiWin':
+        // Samulnori kkwaenggwari + bright arcade fanfare
+        this.tone(659, 0.11, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(880, 0.11, { type: 'triangle', gain: 0.15, delay: 0.08 });
+        this.tone(1047, 0.12, { type: 'triangle', gain: 0.15, delay: 0.16 });
+        this.tone(1319, 0.42, { type: 'sine', gain: 0.17, delay: 0.24 });
+        break;
+      case 'nokabeKlaxon':
+        // Rising Japanese game-show siren klaxon ("WOO-WOO!")
+        this.tone(540, 0.16, { type: 'sawtooth', gain: 0.1, slide: 280, delay: 0 });
+        this.tone(540, 0.18, { type: 'sawtooth', gain: 0.1, slide: 340, delay: 0.19 });
+        break;
+      case 'nokabeBonk':
+        // Hollow styrofoam BONK-THUD + crumbling foam crackle
+        this.noise(0.08, { gain: 0.16, cutoff: 2600 });
+        this.tone(165, 0.16, { type: 'triangle', gain: 0.2, slide: -75 });
+        break;
+      case 'nokabeSplash':
+        // Swimming-pool KER-SPLASH
+        this.noise(0.32, { gain: 0.2, cutoff: 1600 });
+        this.tone(320, 0.24, { type: 'sine', gain: 0.11, slide: -210 });
+        break;
+      case 'nokabePinPon':
+        // Classic Japanese variety-show PIN-PON! chime
+        this.tone(1047, 0.12, { type: 'sine', gain: 0.14, delay: 0 });
+        this.tone(1319, 0.26, { type: 'sine', gain: 0.15, delay: 0.11 });
+        break;
+      case 'nokabeWin':
+        // Energetic variety-show brass-and-synth fanfare
+        this.tone(587, 0.12, { type: 'sawtooth', gain: 0.11, delay: 0 });
+        this.tone(784, 0.12, { type: 'sawtooth', gain: 0.11, delay: 0.09 });
+        this.tone(1047, 0.14, { type: 'triangle', gain: 0.15, delay: 0.18 });
+        this.tone(1174, 0.44, { type: 'sine', gain: 0.17, delay: 0.28 });
+        break;
+      case 'mahjongClatter': {
+        // Crisp ivory Mahjong xǐpái tile clack-clatter burst
+        const f = 2600 + Math.random() * 1800;
+        this.noise(0.03, { gain: 0.14, cutoff: 4200 });
+        this.tone(f, 0.035, { type: 'sine', gain: 0.11 });
+        this.tone(f * 1.24, 0.03, { type: 'sine', gain: 0.08, delay: 0.03 });
+        break;
+      }
+      case 'mahjongChute':
+        // Mechanical hydraulic whir-CLUNK for center brass auto-shuffle chute
+        this.noise(0.18, { gain: 0.14, cutoff: 950 });
+        this.tone(130, 0.26, { type: 'sawtooth', gain: 0.12, slide: -55 });
+        break;
+      case 'mahjongGong':
+        // Resonant brass parlor gong + guzheng pluck sting on PONG! / KONG! / WIND!
+        this.tone(240, 0.45, { type: 'triangle', gain: 0.18, slide: -35 });
+        this.tone(740, 0.28, { type: 'sine', gain: 0.12, slide: -60, delay: 0.02 });
+        break;
+      case 'mahjongWin':
+        // Festive pentatonic HÚ! victory chime
+        this.tone(523, 0.11, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(587, 0.11, { type: 'triangle', gain: 0.15, delay: 0.08 });
+        this.tone(784, 0.12, { type: 'triangle', gain: 0.15, delay: 0.16 });
+        this.tone(1047, 0.44, { type: 'sine', gain: 0.17, delay: 0.24 });
+        break;
+      case 'khokhoSlap':
+        // Leather backrest slap KHO! + hydraulic swivel chair whoosh-squeak
+        this.noise(0.06, { gain: 0.18, cutoff: 3400 });
+        this.tone(920, 0.12, { type: 'sine', gain: 0.1, slide: 420 });
+        break;
+      case 'khokhoChai':
+        // Metallic cutting-chai glass clink-rattle on East Trolley whip
+        this.tone(3600, 0.06, { type: 'sine', gain: 0.1, delay: 0 });
+        this.tone(4250, 0.07, { type: 'sine', gain: 0.08, delay: 0.05 });
+        break;
+      case 'khokhoChime':
+        // Dual-tone Outlook meeting chime for VP JOINED THE CALL!
+        this.tone(880, 0.14, { type: 'triangle', gain: 0.14, delay: 0 });
+        this.tone(1174, 0.24, { type: 'triangle', gain: 0.15, delay: 0.14 });
+        break;
+      case 'khokhoWin':
+        // Tabla-synth victory chime
+        this.tone(587, 0.11, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(740, 0.11, { type: 'triangle', gain: 0.15, delay: 0.09 });
+        this.tone(880, 0.12, { type: 'triangle', gain: 0.15, delay: 0.18 });
+        this.tone(1174, 0.44, { type: 'sine', gain: 0.17, delay: 0.27 });
+        break;
+      case 'chauparCowrie': {
+        // Rapid burst of high-frequency cowrie-shell clatter-rattle taps on teak
+        for (let i = 0; i < 4; i++) {
+          const f = 3100 + Math.random() * 2400;
+          this.tone(f, 0.032, { type: 'sine', gain: 0.09, delay: i * 0.045 });
+        }
+        this.noise(0.05, { gain: 0.13, cutoff: 4400 });
+        break;
+      }
+      case 'chauparCut':
+        // Billiard-style wooden pawn SMACK + metallic wastebasket CLANG
+        this.noise(0.07, { gain: 0.2, cutoff: 3200 });
+        this.tone(240, 0.11, { type: 'triangle', gain: 0.18, slide: -120 });
+        this.tone(1420, 0.18, { type: 'square', gain: 0.07, slide: -240, delay: 0.12 });
+        break;
+      case 'chauparBeep':
+        // Classic Polycom conference-phone DTMF alert chime
+        this.tone(941, 0.14, { type: 'sine', gain: 0.12, delay: 0 });
+        this.tone(1336, 0.14, { type: 'sine', gain: 0.12, delay: 0 });
+        this.tone(1209, 0.2, { type: 'sine', gain: 0.12, delay: 0.16 });
+        break;
+      case 'chauparWin':
+        // Celebratory sitar-brass Charkoni victory chord
+        this.tone(523, 0.12, { type: 'triangle', gain: 0.15, delay: 0 });
+        this.tone(659, 0.12, { type: 'triangle', gain: 0.15, delay: 0.08 });
+        this.tone(784, 0.14, { type: 'triangle', gain: 0.15, delay: 0.16 });
+        this.tone(1047, 0.48, { type: 'sine', gain: 0.17, delay: 0.24 });
+        break;
+      case 'glassRing':
+        // Crisp damped metallic-glass ping on safe tempered landing
+        this.tone(1680 + Math.random() * 420, 0.09, { type: 'sine', gain: 0.1 });
+        break;
+      case 'glassShatter':
+        // Layered glass KRA-SHATTER + shimmering shard cascade + descending chasm drop
+        this.noise(0.14, { gain: 0.22, cutoff: 5800 });
+        this.tone(4200, 0.08, { type: 'sine', gain: 0.09, slide: -1400, delay: 0.02 });
+        this.tone(6200, 0.07, { type: 'sine', gain: 0.08, slide: -1800, delay: 0.05 });
+        this.tone(520, 0.28, { type: 'triangle', gain: 0.1, slide: -380, delay: 0.06 });
+        break;
+      case 'glassDark':
+        // Heavy circuit-breaker power-down buzz for DARK MODE blackout
+        this.tone(240, 0.32, { type: 'sawtooth', gain: 0.13, slide: -180 });
+        break;
+      case 'glassWin':
+        // Dramatic brass/synth PROD cutover fanfare
+        this.tone(587, 0.12, { type: 'sawtooth', gain: 0.11, delay: 0 });
+        this.tone(880, 0.12, { type: 'triangle', gain: 0.15, delay: 0.09 });
+        this.tone(1174, 0.48, { type: 'sine', gain: 0.18, delay: 0.18 });
+        break;
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => this.tone(f, i === notes.length - 1 ? 0.7 : 0.16, { type: 'square', gain: 0.12, delay: i * 0.13 }));

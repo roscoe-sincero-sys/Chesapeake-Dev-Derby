@@ -58,6 +58,12 @@ export const MODE = {
   domino: '🁣 Domino Slam',
   pole: '🌴 Greasy Pole',
   taw: '🔮 Taw Knockout',
+  ddakji: '🟥 Ddakji Flip-Out',
+  nokabe: '📺 Nōkabe Crunch',
+  mahjong: '🀄 Mahjong Wash',
+  khokho: '🪑 Kho-Kho Blitz',
+  chaupar: '🐚 Chaupar Clash',
+  glass: '🌉 Glass Bridge',
 };
 
 /** How the Full history summary counts each way of winning ("4 by race"), in the order it lists them. */
@@ -79,6 +85,12 @@ export const MODE_COUNT = {
   domino: 'by Domino Slam',
   pole: 'by Greasy Pole',
   taw: 'by Taw Knockout',
+  ddakji: 'by Ddakji Flip-Out',
+  nokabe: 'by Nōkabe Crunch',
+  mahjong: 'by Mahjong Wash',
+  khokho: 'by Kho-Kho Blitz',
+  chaupar: 'by Chaupar Clash',
+  glass: 'by Glass Bridge',
   skip: 'skipped',
 };
 

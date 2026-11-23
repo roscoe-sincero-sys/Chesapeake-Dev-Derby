@@ -989,21 +989,59 @@ a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visi
 .mix-race { background: var(--gold); }
 .mix-wrestle { background: var(--orange); }
 .mix-taw { background: #7950f2; }
+.mix-ddakji { background: #e63946; }
+.mix-nokabe { background: #ff2a85; }
+.mix-mahjong { background: #12b886; }
+.mix-khokho { background: #f59f00; }
+.mix-chaupar { background: #e03131; }
+.mix-glass { background: #38bdf8; }
 .mix-skip { background: #8ab4f8; }
 .mix-unknown { background: #4b5870; }
 
 .studio-controls {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
   margin-top: 10px;
 }
 
-.view-toggle, .mode-filters {
-  display: inline-flex;
+.studio-toolbar {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 8px;
+}
+
+.view-toggle {
+  display: inline-flex;
+  flex-wrap: nowrap;
   gap: 4px;
+}
+
+.mode-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #3b4557 transparent;
+}
+
+.mode-filters .filter-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.studio-select {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #161c2a;
+  border: 1px solid #3b4557;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 210px;
 }
 
 .filter-chip {

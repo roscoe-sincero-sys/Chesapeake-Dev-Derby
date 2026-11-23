@@ -58,13 +58,21 @@
             </div>
           </section>
 
-          <!-- Interactive view toggle, mode filters & name search -->
+          <!-- Interactive view toggle, mode filter dropdown, name search & compact chip rail -->
           <div id="history-controls" class="studio-controls" hidden>
-            <div class="view-toggle" role="group" aria-label="History view">
-              <button id="view-log" type="button" class="filter-chip" aria-pressed="true">Match log</button>
-              <button id="view-standings" type="button" class="filter-chip" aria-pressed="false">Standings</button>
+            <div class="studio-toolbar">
+              <div class="view-toggle" role="group" aria-label="History view">
+                <button id="view-log" type="button" class="filter-chip" aria-pressed="true">Match log</button>
+                <button id="view-standings" type="button" class="filter-chip" aria-pressed="false">Standings</button>
+              </div>
+              <label for="mode-select" class="visually-hidden">Filter by game mode</label>
+              <select id="mode-select" class="studio-select">
+                <option value="all">All modes</option>
+              </select>
+              <label for="history-search" class="visually-hidden">Filter by name</label>
+              <input id="history-search" class="studio-search" type="search" placeholder="Filter by name…" autocomplete="off" />
             </div>
-            <div id="mode-filters" class="mode-filters" role="group" aria-label="Filter by game mode">
+            <div id="mode-filters" class="mode-filters" role="group" aria-label="Quick mode filters">
               <button type="button" class="filter-chip" data-mode="all" aria-pressed="true">All</button>
               <button type="button" class="filter-chip" data-mode="race" aria-pressed="false">🏁 Race</button>
               <button type="button" class="filter-chip" data-mode="wrestle" aria-pressed="false">🤼 Wrestle</button>
@@ -83,10 +91,14 @@
               <button type="button" class="filter-chip" data-mode="domino" aria-pressed="false">🁣 Domino Slam</button>
               <button type="button" class="filter-chip" data-mode="pole" aria-pressed="false">🌴 Greasy Pole</button>
               <button type="button" class="filter-chip" data-mode="taw" aria-pressed="false">🔮 Taw Knockout</button>
+              <button type="button" class="filter-chip" data-mode="ddakji" aria-pressed="false">🟥 Ddakji Flip-Out</button>
+              <button type="button" class="filter-chip" data-mode="nokabe" aria-pressed="false">📺 Nōkabe Crunch</button>
+              <button type="button" class="filter-chip" data-mode="mahjong" aria-pressed="false">🀄 Mahjong Wash</button>
+              <button type="button" class="filter-chip" data-mode="khokho" aria-pressed="false">🪑 Kho-Kho Blitz</button>
+              <button type="button" class="filter-chip" data-mode="chaupar" aria-pressed="false">🐚 Chaupar Clash</button>
+              <button type="button" class="filter-chip" data-mode="glass" aria-pressed="false">🌉 Glass Bridge</button>
               <button type="button" class="filter-chip" data-mode="skip" aria-pressed="false">🎲 Skip</button>
             </div>
-            <label for="history-search" class="visually-hidden">Filter by name</label>
-            <input id="history-search" class="studio-search" type="search" placeholder="Filter by name…" autocomplete="off" />
           </div>
         </div>
 
@@ -102,7 +114,7 @@
           <table id="standings-table" class="log-table" hidden>
             <caption class="visually-hidden">All-time standings by total wins</caption>
             <thead>
-              <tr><th scope="col">Rank</th><th scope="col">Teammate</th><th scope="col">Wins</th><th scope="col">🏁</th><th scope="col">🤼</th><th scope="col">🔫</th><th scope="col">🕹️</th><th scope="col">🎰</th><th scope="col">🚦</th><th scope="col">🚀</th><th scope="col">🧱</th><th scope="col">💣</th><th scope="col">⛳</th><th scope="col">🏢</th><th scope="col">🩴</th><th scope="col">🎋</th><th scope="col">💧</th><th scope="col">🁣</th><th scope="col">🌴</th><th scope="col">🔮</th><th scope="col">🎲</th><th scope="col">Last win</th></tr>
+              <tr><th scope="col">Rank</th><th scope="col">Teammate</th><th scope="col">Wins</th><th scope="col">Top modes</th><th scope="col">Last win</th></tr>
             </thead>
             <tbody id="standings-rows"></tbody>
           </table>

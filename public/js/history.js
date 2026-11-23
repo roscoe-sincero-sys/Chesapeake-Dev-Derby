@@ -51,14 +51,50 @@ function renderStats(stats) {
   const mix = stats.modeMix;
   const bar = $('stat-mix-bar');
   bar.replaceChildren();
-  for (const [key, cls] of [['race', 'mix-race'], ['wrestle', 'mix-wrestle'], ['deathmatch', 'mix-deathmatch'], ['claw', 'mix-claw'], ['plinko', 'mix-plinko'], ['freeze', 'mix-freeze'], ['launchpad', 'mix-launchpad'], ['jenga', 'mix-jenga'], ['cannon', 'mix-cannon'], ['golf', 'mix-golf'], ['rto', 'mix-rto'], ['tumba', 'mix-tumba'], ['karang', 'mix-karang'], ['tubig', 'mix-tubig'], ['domino', 'mix-domino'], ['pole', 'mix-pole'], ['taw', 'mix-taw'], ['skip', 'mix-skip'], ['unknown', 'mix-unknown']]) {
+  const modeMeta = [
+    ['race', 'mix-race', '🏁'], ['wrestle', 'mix-wrestle', '🤼'], ['deathmatch', 'mix-deathmatch', '🔫'],
+    ['claw', 'mix-claw', '🕹️'], ['plinko', 'mix-plinko', '🎰'], ['freeze', 'mix-freeze', '🚦'],
+    ['launchpad', 'mix-launchpad', '🚀'], ['jenga', 'mix-jenga', '🧱'], ['cannon', 'mix-cannon', '💣'],
+    ['golf', 'mix-golf', '⛳'], ['rto', 'mix-rto', '🏢'], ['tumba', 'mix-tumba', '🩴'],
+    ['karang', 'mix-karang', '🎋'], ['tubig', 'mix-tubig', '💧'], ['domino', 'mix-domino', '🁣'],
+    ['pole', 'mix-pole', '🌴'], ['taw', 'mix-taw', '🔮'], ['ddakji', 'mix-ddakji', '🟥'],
+    ['nokabe', 'mix-nokabe', '📺'], ['mahjong', 'mix-mahjong', '🀄'], ['khokho', 'mix-khokho', '🪑'],
+    ['chaupar', 'mix-chaupar', '🐚'], ['glass', 'mix-glass', '🌉'], ['skip', 'mix-skip', '🎲'], ['unknown', 'mix-unknown', '❔'],
+  ];
+  for (const [key, cls] of modeMeta) {
     if (!mix[key].count) continue;
     const seg = document.createElement('span');
     seg.className = `mix-seg ${cls}`;
     seg.style.flexGrow = String(mix[key].count);
     bar.append(seg);
   }
-  $('stat-mix-sub').textContent = `🏁 ${mix.race.count} · 🤼 ${mix.wrestle.count} · 🔫 ${mix.deathmatch.count} · 🕹️ ${mix.claw.count} · 🎰 ${mix.plinko.count} · 🚦 ${mix.freeze.count} · 🚀 ${mix.launchpad.count} · 🧱 ${mix.jenga.count} · 💣 ${mix.cannon.count} · ⛳ ${mix.golf.count} · 🏢 ${mix.rto.count} · 🩴 ${mix.tumba.count} · 🎋 ${mix.karang.count} · 💧 ${mix.tubig.count} · 🁣 ${mix.domino.count} · 🌴 ${mix.pole.count} · 🔮 ${mix.taw.count} · 🎲 ${mix.skip.count}`;
+  const activeModes = modeMeta
+    .filter(([key]) => key !== 'unknown' && mix[key].count > 0)
+    .sort((a, b) => mix[b[0]].count - mix[a[0]].count);
+  const top3 = activeModes.slice(0, 3).map(([key, , icon]) => `${icon} ${mix[key].count}`);
+  const rest = activeModes.length - top3.length;
+  $('stat-mix-sub').textContent = rest > 0 ? `${top3.join(' · ')} · +${rest} more` : top3.join(' · ');
+
+  // Populate the compact mode filter dropdown & hide 0-count chips for a clean single-row rail.
+  const select = $('mode-select');
+  if (select) {
+    select.replaceChildren();
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all';
+    allOpt.textContent = `All modes (${stats.total})`;
+    select.append(allOpt);
+    for (const [key] of activeModes) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${MODE[key] ?? key} (${mix[key].count})`;
+      select.append(opt);
+    }
+    select.value = state.modeFilter;
+  }
+  for (const btn of document.querySelectorAll('#mode-filters button[data-mode]')) {
+    const m = btn.dataset.mode;
+    btn.hidden = m !== 'all' && (!mix[m] || mix[m].count === 0);
+  }
 }
 
 function makeNameCell(rawName, sittingOut) {
@@ -80,6 +116,11 @@ function renderTables() {
   $('view-log').setAttribute('aria-pressed', String(isLog));
   $('view-standings').setAttribute('aria-pressed', String(!isLog));
   $('mode-filters').hidden = !isLog;
+  const select = $('mode-select');
+  if (select) {
+    select.hidden = !isLog;
+    select.value = state.modeFilter;
+  }
   for (const btn of $('mode-filters').querySelectorAll('button')) {
     btn.setAttribute('aria-pressed', String(btn.dataset.mode === state.modeFilter));
   }
@@ -113,31 +154,27 @@ function renderTables() {
     const rows = $('standings-rows');
     rows.replaceChildren();
     const list = (state.stats?.standings ?? []).filter((row) => !q || row.shown.toLowerCase().includes(q) || row.name.toLowerCase().includes(q));
+    const modeIcons = [
+      ['race', '🏁'], ['wrestle', '🤼'], ['deathmatch', '🔫'], ['claw', '🕹️'], ['plinko', '🎰'],
+      ['freeze', '🚦'], ['launchpad', '🚀'], ['jenga', '🧱'], ['cannon', '💣'], ['golf', '⛳'],
+      ['rto', '🏢'], ['tumba', '🩴'], ['karang', '🎋'], ['tubig', '💧'], ['domino', '🁣'],
+      ['pole', '🌴'], ['taw', '🔮'], ['ddakji', '🟥'], ['nokabe', '📺'], ['mahjong', '🀄'],
+      ['khokho', '🪑'], ['chaupar', '🐚'], ['glass', '🌉'], ['skip', '🎲'],
+    ];
     for (const row of list) {
       const tr = document.createElement('tr');
       const [day] = dateAndTime(row.lastDate);
+      const topModes = modeIcons
+        .filter(([k]) => row[k] > 0)
+        .sort((a, b) => row[b[0]] - row[a[0]])
+        .slice(0, 3)
+        .map(([k, icon]) => `${icon} ${row[k]}`)
+        .join(' · ');
       tr.append(
         cell(`#${row.rank}`, 'num'),
         makeNameCell(row.name, row.sittingOut),
         cell(String(row.total), 'num'),
-        cell(String(row.race), 'num'),
-        cell(String(row.wrestle), 'num'),
-        cell(String(row.deathmatch), 'num'),
-        cell(String(row.claw), 'num'),
-        cell(String(row.plinko), 'num'),
-        cell(String(row.freeze), 'num'),
-        cell(String(row.launchpad), 'num'),
-        cell(String(row.jenga), 'num'),
-        cell(String(row.cannon), 'num'),
-        cell(String(row.golf), 'num'),
-        cell(String(row.rto), 'num'),
-        cell(String(row.tumba), 'num'),
-        cell(String(row.karang), 'num'),
-        cell(String(row.tubig), 'num'),
-        cell(String(row.domino), 'num'),
-        cell(String(row.pole), 'num'),
-        cell(String(row.taw), 'num'),
-        cell(String(row.skip), 'num'),
+        cell(topModes || '—', 'mode'),
         cell(row.total ? day : '—'),
       );
       rows.append(tr);
@@ -164,11 +201,11 @@ async function load() {
     state.shown = displayNames([...new Set([...rosterNames, ...history.map((h) => h.name)])]);
     state.stats = computeHistoryStats({ history, rosterNames, winners, show: showName });
 
-    const counts = Object.entries(MODE_COUNT).map(([mode, words]) => `${history.filter((h) => h.mode === mode).length} ${words}`);
-    const unknown = history.filter((h) => !Object.hasOwn(MODE_COUNT, h.mode ?? '')).length;
-    if (unknown) counts.push(`${unknown} recorded before the history was kept (how unknown)`);
+    const playedModes = Object.keys(MODE_COUNT).filter((m) => m !== 'skip' && history.some((h) => h.mode === m)).length;
+    const skipped = history.filter((h) => h.mode === 'skip').length;
+    const games = history.length - skipped;
     summary.textContent = history.length
-      ? `${history.length} result${history.length === 1 ? '' : 's'}: ${counts.join(', ')}.`
+      ? `${history.length} result${history.length === 1 ? '' : 's'} across ${playedModes} game mode${playedModes === 1 ? '' : 's'} · ${games} game${games === 1 ? '' : 's'}, ${skipped} skipped.`
       : 'No winners yet. Results appear here after each game or pick.';
 
     $('history-controls').hidden = !history.length;
@@ -189,6 +226,10 @@ $('mode-filters').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-mode]');
   if (!btn) return;
   state.modeFilter = btn.dataset.mode;
+  renderTables();
+});
+$('mode-select')?.addEventListener('change', (e) => {
+  state.modeFilter = e.target.value;
   renderTables();
 });
 $('history-search').addEventListener('input', (e) => {

@@ -128,8 +128,8 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   // With its text, like a real key, so a focused button acts on it.
   const enter = () => key('Enter', 'Enter', 13, '\r');
   let lobby = await evaluate(LOBBY);
-  assert.equal(lobby.cards.length, 18);
-  assert.deepEqual(lobby.cards[17], '🎯 Arena 2–4 players · 6 checked ✓');
+  assert.equal(lobby.cards.length, 24);
+  assert.deepEqual(lobby.cards[23], '🎯 Arena 2–4 players · 6 checked ✓');
   assert.equal(lobby.selected, 'race', 'a browser that has never chosen starts on Race');
   assert.equal(lobby.focus, 'start', 'focus starts on Start');
   // Every button, including the cards and choices the lobby builds, has a name (no "empty button").
@@ -182,7 +182,7 @@ test('a third mode joins the lobby as one more card, with its own options, limit
   assert.equal(lobby.count, '4 playing');
   assert.equal(lobby.startDisabled, false);
   assert.equal(lobby.readiness, '4 contenders ready — last one standing leads standup.');
-  assert.equal(lobby.cards[17], '🎯 Arena 2–4 players ✓');
+  assert.equal(lobby.cards[23], '🎯 Arena 2–4 players ✓');
 
   // Its options, by keyboard: Tab from the card through the toggle's three choices (Space picks one),
   // then to the slider (the arrow keys move it). The lobby draws them with its own controls.
@@ -430,6 +430,26 @@ test('Live 3D Stage (#123 phase 2): reacts to mode switches, roster toggles, Cla
   await evaluate(`document.querySelector('.mode-card[data-mode="taw"]').click()`);
   assert.deepEqual(await stage(), { mode: 'taw-ring', count: 4 });
 
+  // Ddakji Flip-Out (page 2 of the carousel) lays origami tiles in the twilight Seoul courtyard.
+  await evaluate(`document.querySelector('.mode-card[data-mode="ddakji"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'ddakji-court', count: 4 });
+
+  // Nōkabe Wall Crunch (page 2 of the carousel) stages silver-suited devs on the dunk-tank dock.
+  await evaluate(`document.querySelector('.mode-card[data-mode="nokabe"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'nokabe-studio', count: 4 });
+
+  // Mahjong Tile Wash (page 2 of the carousel) stages devs on the emerald baize parlor table.
+  await evaluate(`document.querySelector('.mode-card[data-mode="mahjong"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'mahjong-table', count: 4 });
+
+  // Kho-Kho Relay Blitz (page 2 of the carousel) stages runners in the swivel-chair boardroom.
+  await evaluate(`document.querySelector('.mode-card[data-mode="khokho"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'khokho-boardroom', count: 4 });
+  await evaluate(`document.querySelector('.mode-card[data-mode="chaupar"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'chaupar-boardroom', count: 4 });
+  await evaluate(`document.querySelector('.mode-card[data-mode="glass"]').click()`);
+  assert.deepEqual(await stage(), { mode: 'glass-bridge', count: 4 });
+
   // Phase 3: Broadcast chyron shows live highlights, and Surprise me switches to another eligible mode.
   assert.equal(await evaluate(`document.getElementById('chyron').hidden`), false, 'chyron is visible on wide screen');
   assert.ok(await evaluate(`document.getElementById('chyron-tag').textContent.length > 0`));
@@ -622,11 +642,11 @@ test('Broadcast Studio shell (#133 phase 1): shared header, open 3D stage, and m
 });
 
 for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [320, 568, true]]) {
-  test(`seventeen modes fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
+  test(`twenty-three modes fit a ${width} x ${height} screen with Start in one place`, { skip, timeout: 120000 }, async (t) => {
     const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
     const { evaluate } = await openLobby(t, { extra: 0, names, width, height, mobile, reducedMotion: true });
     const ids = await evaluate(`[...document.querySelectorAll('.mode-card')].map((c) => c.dataset.mode)`);
-    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang', 'tubig', 'domino', 'pole', 'taw']);
+    assert.deepEqual(ids, ['race', 'rumble', 'deathmatch', 'claw', 'plinko', 'freeze', 'launchpad', 'jenga', 'cannon', 'golf', 'rto', 'tumba', 'karang', 'tubig', 'domino', 'pole', 'taw', 'ddakji', 'nokabe', 'mahjong', 'khokho', 'chaupar', 'glass']);
     const starts = new Set();
     for (const id of ids) {
       await evaluate(`(() => {
@@ -653,7 +673,7 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
       assert.ok(!s.hscroll, `${at}: no sideways scrolling`);
       assert.ok(s.oneRow, `${at}: Just pick and Start in one row`);
       assert.deepEqual(s.shown, [id], `${at}: its options show, and no others`);
-      const verb = { launchpad: 'launch', rto: 'putt', tumba: 'play', karang: 'race', tubig: 'dash', domino: 'slam', pole: 'climb', taw: 'pitch' }[id] ?? id;
+      const verb = { launchpad: 'launch', rto: 'putt', tumba: 'play', karang: 'race', tubig: 'dash', domino: 'slam', pole: 'climb', taw: 'pitch', ddakji: 'slam', nokabe: 'pose', mahjong: 'wash', khokho: 'dash', chaupar: 'roll', glass: 'leap' }[id] ?? id;
       assert.equal(s.label, `▶ Start ${verb}`);
       for (const card of s.cards) {
         assert.ok(card.w >= 140 && card.h >= 44, `${at}: card ${card.w} x ${card.h} is a big enough target`);
@@ -668,7 +688,7 @@ for (const [width, height, mobile] of [[1366, 768, false], [390, 844, true], [32
 
 test('Responsive 3-row carousel shows 12/page at 1366 x 768 (>= 50% open stage) and all 18 on 1 page at 1920 x 1080', { skip, timeout: 120000 }, async (t) => {
   const names = Array.from({ length: 13 }, (_, i) => `Teammate ${i + 1}`);
-  const { evaluate } = await openLobby(t, { extra: 1, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  const { evaluate } = await openLobby(t, { extra: 0, names, width: 1366, height: 768, mobile: false, reducedMotion: true });
   const check = () => evaluate(`(() => {
     const stage = document.querySelector('.lobby-stage').getBoundingClientRect();
     const drawer = document.getElementById('roster-section').getBoundingClientRect();
@@ -687,7 +707,7 @@ test('Responsive 3-row carousel shows 12/page at 1366 x 768 (>= 50% open stage) 
   })()`);
 
   const p1 = await check();
-  assert.equal(p1.total, 18);
+  assert.equal(p1.total, 23);
   assert.equal(p1.visible, 12);
   assert.equal(p1.pagerHidden, false);
   assert.equal(p1.pageLabel, '1 / 2');
@@ -698,15 +718,15 @@ test('Responsive 3-row carousel shows 12/page at 1366 x 768 (>= 50% open stage) 
 
   await evaluate(`document.getElementById('mode-next').click()`);
   const p2 = await check();
-  assert.equal(p2.visible, 6);
+  assert.equal(p2.visible, 11);
   assert.equal(p2.pageLabel, '2 / 2');
   assert.equal(p2.prevDisabled, false);
   assert.equal(p2.nextDisabled, true);
   assert.ok(p2.openRatio >= 0.5, `page 2 keeps >= 50% open 3D stage (got ${(p2.openRatio * 100).toFixed(1)}%)`);
   assert.equal(p2.cardsFit, true);
 
-  // At 1920 x 1080 (6x3 = 18/page), all 18 modes fit on a single page with pager hidden!
-  const wide = await openLobby(t, { extra: 1, names, width: 1920, height: 1080, mobile: false, reducedMotion: true });
+  // At 1920 x 1080 (6x3 = 18/page), page 1 shows 18 cards and pager reveals page 2!
+  const wide = await openLobby(t, { extra: 0, names, width: 1920, height: 1080, mobile: false, reducedMotion: true });
   const w1 = await wide.evaluate(`(() => {
     const visibleCards = [...document.querySelectorAll('.mode-card')].filter((c) => !c.hidden);
     return {
@@ -716,9 +736,9 @@ test('Responsive 3-row carousel shows 12/page at 1366 x 768 (>= 50% open stage) 
       cardsFit: visibleCards.every((c) => c.offsetWidth >= 140 && c.offsetHeight >= 44),
     };
   })()`);
-  assert.equal(w1.total, 18);
+  assert.equal(w1.total, 23);
   assert.equal(w1.visible, 18);
-  assert.equal(w1.pagerHidden, true);
+  assert.equal(w1.pagerHidden, false);
   assert.equal(w1.cardsFit, true);
 });
 
@@ -804,4 +824,76 @@ test('Schoolyard Taw Knockout ricochets glass marbles in the shrinking chalk rin
   await until(`!document.getElementById('taw-banner').hidden`, 15000, 'Taw Knockout status banner');
   await until(`!document.getElementById('results').hidden`, 60000, 'Taw Knockout winner card');
   assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /LAST MARBLE STANDING/);
+});
+
+test('Ddakji Flip-Out slams origami paper tiles in the twilight Seoul courtyard and crowns the unflipped champion', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=ddakji&seed=2026&ddakjiDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('ddakji-banner').hidden`, 15000, 'Ddakji Flip-Out status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Ddakji Flip-Out winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /UNFLIPPED CHAMPION/);
+});
+
+test('Nōkabe Wall Crunch slides hollow cutout walls down the studio rails and crowns the last dry dev', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=nokabe&seed=2026&nokabeDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('nokabe-banner').hidden`, 15000, 'Nōkabe Wall Crunch status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Nōkabe Wall Crunch winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /PASSED COMPLIANCE/);
+});
+
+test('Mahjong Tile Wash swirls 144 tiles on the emerald baize and crowns the ZÌMŌ champion', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=mahjong&seed=2026&mahjongDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('mahjong-banner').hidden`, 15000, 'Mahjong Tile Wash status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Mahjong Tile Wash winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /ZÌMŌ/);
+});
+
+test('Kho-Kho Relay Blitz races through swivel-chair boardroom aisles and crowns the elusive survivor', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=khokho&seed=2026&khokhoDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('khokho-banner').hidden`, 15000, 'Kho-Kho Relay Blitz status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Kho-Kho Relay Blitz winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /DODGED THE ESCALATION/);
+});
+
+test('Chaupar Cowrie-Clash rains ivory cowries across the boardroom table and crowns the Charkoni winner', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=chaupar&seed=2026&chauparDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('chaupar-banner').hidden`, 15000, 'Chaupar Cowrie-Clash status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Chaupar Cowrie-Clash winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /CHARKONI CLAIMED/);
+});
+
+test('Glass Bridge Deploy leaps across tempered vs. untested prod panes and crowns the survivor', { skip, timeout: 120000 }, async (t) => {
+  const { evaluate, until, load } = await openLobby(t, { extra: 0, width: 1366, height: 768, mobile: false, reducedMotion: true });
+  await load('&mode=glass&seed=2026&glassDuration=10');
+  const hasWebgl = await evaluate('Boolean(window.derbyTest.game)');
+  if (!hasWebgl) return;
+
+  await evaluate(`document.getElementById('start').click()`);
+  await until(`!document.getElementById('glass-banner').hidden`, 15000, 'Glass Bridge Deploy status banner');
+  await until(`!document.getElementById('results').hidden`, 60000, 'Glass Bridge Deploy winner card');
+  assert.match(await evaluate(`document.getElementById('winner-kind').textContent`), /SURVIVED PROD CUTOVER/);
 });

@@ -91,7 +91,25 @@ test('race and rumble keep their player ranges and defaults', () => {
   const taw = findMode('taw');
   assert.equal(taw.winMode, 'taw');
   assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(taw, n)), [false, true, true, true, false]);
-  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' }, tubig: { duration: 15, rule: 'champion' }, domino: { duration: 15, rule: 'champion' }, pole: { duration: 15, rule: 'summit' }, taw: { duration: 15, rule: 'champion' } });
+  const ddakji = findMode('ddakji');
+  assert.equal(ddakji.winMode, 'ddakji');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(ddakji, n)), [false, true, true, true, false]);
+  const nokabe = findMode('nokabe');
+  assert.equal(nokabe.winMode, 'nokabe');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(nokabe, n)), [false, true, true, true, false]);
+  const mahjong = findMode('mahjong');
+  assert.equal(mahjong.winMode, 'mahjong');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(mahjong, n)), [false, true, true, true, false]);
+  const khokho = findMode('khokho');
+  assert.equal(khokho.winMode, 'khokho');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(khokho, n)), [false, true, true, true, false]);
+  const chaupar = findMode('chaupar');
+  assert.equal(chaupar.winMode, 'chaupar');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(chaupar, n)), [false, true, true, true, false]);
+  const glass = findMode('glass');
+  assert.equal(glass.winMode, 'glass');
+  assert.deepEqual([1, 2, 16, 30, 31].map((n) => fitsPlayers(glass, n)), [false, true, true, true, false]);
+  assert.deepEqual(allModeOptions(), { race: { speed: DEFAULT_SPEED }, rumble: { models: 'classic' }, deathmatch: {}, claw: { duration: 15 }, plinko: { duration: 30 }, freeze: { duration: 30 }, launchpad: { duration: 15 }, jenga: { duration: 15 }, cannon: { duration: 15 }, golf: { duration: 15 }, rto: { duration: 15 }, tumba: { duration: 15 }, karang: { duration: 15, stilts: 'bamboo' }, tubig: { duration: 15, rule: 'champion' }, domino: { duration: 15, rule: 'champion' }, pole: { duration: 15, rule: 'summit' }, taw: { duration: 15, rule: 'champion' }, ddakji: { duration: 15, rule: 'champion' }, nokabe: { duration: 15, rule: 'dry' }, mahjong: { duration: 15, rule: 'hu' }, khokho: { duration: 15, rule: 'elusive' }, chaupar: { duration: 15, rule: 'throne' }, glass: { duration: 15, rule: 'survivor' } });
 });
 
 test('unknown modes fall back to the default, and option values are checked', () => {
