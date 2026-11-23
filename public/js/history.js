@@ -191,7 +191,7 @@ async function load() {
   summary.className = 'hint';
   summary.textContent = 'Loading history...';
   try {
-    const [{ history }, roster] = await Promise.all([
+    const [{ history, warning }, roster] = await Promise.all([
       request('/api/history'),
       request('/api/state').catch(() => ({ names: [], winners: [] })),
     ]);
@@ -204,9 +204,10 @@ async function load() {
     const playedModes = Object.keys(MODE_COUNT).filter((m) => m !== 'skip' && history.some((h) => h.mode === m)).length;
     const skipped = history.filter((h) => h.mode === 'skip').length;
     const games = history.length - skipped;
-    summary.textContent = history.length
+    const baseSummary = history.length
       ? `${history.length} result${history.length === 1 ? '' : 's'} across ${playedModes} game mode${playedModes === 1 ? '' : 's'} · ${games} game${games === 1 ? '' : 's'}, ${skipped} skipped.`
       : 'No winners yet. Results appear here after each game or pick.';
+    summary.textContent = warning ? `${baseSummary} ${warning}` : baseSummary;
 
     $('history-controls').hidden = !history.length;
     renderStats(state.stats);

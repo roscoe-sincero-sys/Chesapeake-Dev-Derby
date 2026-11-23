@@ -5,7 +5,7 @@ import { Game } from './game.js';
 import { Hud } from './hud.js';
 import { Sfx } from './audio.js';
 import { buildRoster, selectRacers, pickRandomRacer, nameKey, displayNames, sortByDisplayName, selectAbsentees } from './eligibility.js';
-import { mulberry32 } from './sim.js';
+import { mulberry32, cryptoRandom } from './sim.js';
 import { apiFetch, DEMO } from './api.js';
 import { endSession, resumeSession } from './session.js';
 import { readLobbySettings, writeLobbySettings, retainRosterAbsences } from './lobby-settings.js';
@@ -24,8 +24,9 @@ const $ = (id) => document.getElementById(id);
 //   ?test         expose the game and HUD as window.derbyTest (the browser tests use it), and add any
 //                 stand-in modes the tests put in window.derbyTestModes (see test/lobby-browser.test.js)
 const params = new URLSearchParams(location.search);
+const testMode = !DEMO && params.has('test');
 const seed = params.has('seed') ? Number(params.get('seed')) || 0 : null;
-if (params.has('test') && Array.isArray(window.derbyTestModes)) MODES.push(...window.derbyTestModes);
+if (testMode && Array.isArray(window.derbyTestModes)) MODES.push(...window.derbyTestModes);
 const savedSettings = readLobbySettings();
 if (params.has('speed')) savedSettings.options.race.speed = normalizeSpeed(Number(params.get('speed')) || DEFAULT_SPEED);
 if (MODES.some((mode) => mode.id === params.get('mode'))) savedSettings.mode = params.get('mode');
@@ -60,7 +61,7 @@ const sfx = new Sfx();
 const hud = new Hud();
 const lobbyMeetChat = new LobbyMeetChat($('dm-lobby-chat'), $('dm-lobby-chat-list'), $('dm-lobby-chat-time'));
 let game = null;
-if (params.has('test')) window.derbyTest = { hud, get game() { return game; } };
+if (testMode) window.derbyTest = { hud, get game() { return game; } };
 
 // ------------------------------------------------------------------ server
 
@@ -142,7 +143,12 @@ async function saveWinner(name, mode) {
     state.winners = data.winners;
     state.pendingWinner = null;
     // The three-pick rule applies however someone won.
-    hud.saveStatus(`Saved. ${show(name)} sits out the next three picks.`, 'ok');
+    hud.saveStatus(
+      data?.warning
+        ? `Saved. ${show(name)} sits out the next three picks. ${data.warning}`
+        : `Saved. ${show(name)} sits out the next three picks.`,
+      'ok',
+    );
   } catch (err) {
     hud.saveStatus(`Could not save the winner: ${err.message}`, 'error');
   }
@@ -429,7 +435,7 @@ function surpriseMode() {
   if (eligible.length < 2) return;
   const others = eligible.filter((m) => m.id !== state.mode);
   const pool = others.length ? others : eligible;
-  const picked = pool[Math.floor(Math.random() * pool.length)];
+  const picked = pool[Math.floor(cryptoRandom() * pool.length)];
   selectMode(picked.id);
   sfx.unlock();
   sfx.play('switch', 0.05);
@@ -441,7 +447,7 @@ function hideLobby() {
   const lobby = $('lobby');
   clearTimeout(launchTimer);
   const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const instant = reduced || !game || (params.has('test') && Array.isArray(window.derbyTestModes));
+  const instant = reduced || !game || (testMode && Array.isArray(window.derbyTestModes));
   if (instant) {
     lobby.classList.remove('launching');
     lobby.hidden = true;
@@ -748,7 +754,7 @@ async function start(mode) {
   await mode.start({
     names: storedNames.map(show),
     sittingOut: state.winners.map((w) => show(w.name)),
-    rng: seed === null ? Math.random : mulberry32(seed),
+    rng: seed === null ? cryptoRandom : mulberry32(seed),
     game,
     hud,
     sfx,
@@ -778,7 +784,7 @@ function startSelected() {
 
 function pick() {
   if (state.phase !== 'lobby') return;
-  const rng = seed === null ? Math.random : mulberry32(seed);
+  const rng = seed === null ? cryptoRandom : mulberry32(seed);
   const winner = pickRandomRacer(state.roster, state.absent, rng);
   if (!winner) return;
   state.phase = 'results';

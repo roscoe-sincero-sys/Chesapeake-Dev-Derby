@@ -148,7 +148,7 @@ test('HTML, HEAD, and error responses prohibit framing', async (t) => {
   for (const [route, method] of [['/', 'GET'], ['/roster.html', 'GET'], ['/roster.html', 'HEAD'],
     ['/missing.html', 'GET'], ['/api/session', 'GET']]) {
     const result = await request(base, route, { method });
-    assert.equal(result.headers['content-security-policy'], "frame-ancestors 'none'");
+    assert.match(result.headers['content-security-policy'], /(?:^|;\s*)frame-ancestors 'none'(?:;|$)/);
     assert.equal(result.headers['x-frame-options'], 'DENY');
   }
 });

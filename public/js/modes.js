@@ -966,10 +966,10 @@ async function startRumble(ctx, { models }) {
       else if (e.type === 'out') {
         hud.wrestleOut(e.victim.id);
         hud.outCallout(e.victim.name);
-        hud.note(throwText(e));
-      } else if (e.type === 'final') hud.note(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
-      else if (e.type === 'closeCall') hud.note(closeCallText(e.wrestler, e.other));
-      else if (e.type === 'showman') hud.note(`${who(e.wrestler)} plays to the crowd 👑`);
+        hud.noteHtml(throwText(e));
+      } else if (e.type === 'final') hud.noteHtml(`Final two: ${who(e.pair[0])} vs ${who(e.pair[1])}`, true);
+      else if (e.type === 'closeCall') hud.noteHtml(closeCallText(e.wrestler, e.other));
+      else if (e.type === 'showman') hud.noteHtml(`${who(e.wrestler)} plays to the crowd 👑`);
     },
     onWinner: (w) => {
       ctx.setPhase('results');
@@ -988,6 +988,24 @@ async function startRumble(ctx, { models }) {
   hud.sceneBlocks = (width, height) => game.wrestle?.landingRects(width, height) ?? [];
   if (hdFallback) hud.note('HD models could not load. This match uses the original models.', true);
   ctx.showQuit('✕ Quit match');
+}
+
+/** Clamps an optional URL speed multiplier to a safe finite range (#144). */
+export function clampSpeedScale(raw, fallback = 1) {
+  if (raw === null || raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.max(0.5, Math.min(8, n));
+}
+
+/** Validates and normalises an optional URL duration override (#144). */
+export function queryDurationOverride(paramName, fallback, normalize, search = typeof location !== 'undefined' ? location.search : '') {
+  const params = new URLSearchParams(search);
+  if (!params.has(paramName)) return fallback;
+  const n = Number(params.get(paramName));
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  const clamped = Math.max(10, Math.min(120, n));
+  return typeof normalize === 'function' ? normalize(clamped) : clamped;
 }
 
 // ------------------------------------------------------------------ standup deathmatch
@@ -1013,8 +1031,7 @@ function startDeathmatch(ctx) {
     return;
   }
 
-  const dmParams = new URLSearchParams(location.search);
-  const dmSpeed = dmParams.has('dmSpeed') ? Number(dmParams.get('dmSpeed')) || 1 : 1;
+  const dmSpeed = clampSpeedScale(new URLSearchParams(location.search).get('dmSpeed'), 1);
 
   ctx.game.startDeathmatch(ctx.names, {
     rng: ctx.rng,
@@ -1060,8 +1077,7 @@ function startClaw(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const clawParams = new URLSearchParams(location.search);
-  const effectiveDuration = clawParams.has('clawDuration') ? Number(clawParams.get('clawDuration')) || duration : duration;
+  const effectiveDuration = queryDurationOverride('clawDuration', duration, normalizeClawDuration);
 
   game.startClaw(ctx.names, {
     duration: effectiveDuration,
@@ -1113,8 +1129,7 @@ function startPlinko(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const plinkoParams = new URLSearchParams(location.search);
-  const effectiveDuration = plinkoParams.has('plinkoDuration') ? Number(plinkoParams.get('plinkoDuration')) || duration : duration;
+  const effectiveDuration = queryDurationOverride('plinkoDuration', duration, normalizePlinkoDuration);
   hud.beginWrestle([]);
   const ticker = document.getElementById('plinko-ticker');
   if (ticker) {
@@ -1174,8 +1189,7 @@ function startFreeze(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const freezeParams = new URLSearchParams(location.search);
-  const effectiveDuration = freezeParams.has('freezeDuration') ? Number(freezeParams.get('freezeDuration')) || duration : duration;
+  const effectiveDuration = queryDurationOverride('freezeDuration', duration, normalizeFreezeDuration);
   const banner = document.getElementById('freeze-banner');
   const setBanner = (light, rem, total) => {
     if (!banner) return;
@@ -1244,10 +1258,7 @@ function startLaunchpad(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const launchParams = new URLSearchParams(location.search);
-  const effectiveDuration = launchParams.has('launchDuration')
-    ? Number(launchParams.get('launchDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('launchDuration', duration, normalizeLaunchDuration);
 
   game.startLaunchpad(ctx.names, {
     duration: effectiveDuration,
@@ -1298,10 +1309,7 @@ function startJenga(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const jengaParams = new URLSearchParams(location.search);
-  const effectiveDuration = jengaParams.has('jengaDuration')
-    ? Number(jengaParams.get('jengaDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('jengaDuration', duration, normalizeJengaDuration);
   const banner = document.getElementById('jenga-banner');
   const setBanner = (stability, rem, total) => {
     if (!banner) return;
@@ -1364,10 +1372,7 @@ function startCannon(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const cannonParams = new URLSearchParams(location.search);
-  const effectiveDuration = cannonParams.has('cannonDuration')
-    ? Number(cannonParams.get('cannonDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('cannonDuration', duration, normalizeCannonDuration);
   const banner = document.getElementById('cannon-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -1429,10 +1434,7 @@ function startGolf(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const golfParams = new URLSearchParams(location.search);
-  const effectiveDuration = golfParams.has('golfDuration')
-    ? Number(golfParams.get('golfDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('golfDuration', duration, normalizeGolfDuration);
   const banner = document.getElementById('golf-banner');
   const setBanner = (text) => {
     if (!banner) return;
@@ -1494,10 +1496,7 @@ function startRto(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const rtoParams = new URLSearchParams(location.search);
-  const effectiveDuration = rtoParams.has('rtoDuration')
-    ? Number(rtoParams.get('rtoDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('rtoDuration', duration, normalizeRtoDuration);
   const banner = document.getElementById('rto-banner');
   const setBanner = (text) => {
     if (!banner) return;
@@ -1558,10 +1557,7 @@ function startTumba(ctx, { duration }) {
   }
 
   const { game, hud } = ctx;
-  const tumbaParams = new URLSearchParams(location.search);
-  const effectiveDuration = tumbaParams.has('tumbaDuration')
-    ? Number(tumbaParams.get('tumbaDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('tumbaDuration', duration, normalizeTumbaDuration);
   const banner = document.getElementById('tumba-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -1621,10 +1617,7 @@ function startKarang(ctx, { duration, stilts }) {
   }
 
   const { game, hud } = ctx;
-  const karangParams = new URLSearchParams(location.search);
-  const effectiveDuration = karangParams.has('karangDuration')
-    ? Number(karangParams.get('karangDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('karangDuration', duration, normalizeKarangDuration);
   const banner = document.getElementById('karang-banner');
   const setBanner = (text, tone = 'green') => {
     if (!banner) return;
@@ -1687,10 +1680,7 @@ function startTubig(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const tubigParams = new URLSearchParams(location.search);
-  const effectiveDuration = tubigParams.has('tubigDuration')
-    ? Number(tubigParams.get('tubigDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('tubigDuration', duration, normalizeTubigDuration);
   const banner = document.getElementById('tubig-banner');
   const setBanner = (text, tone = 'green') => {
     if (!banner) return;
@@ -1761,10 +1751,7 @@ function startDomino(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const dominoParams = new URLSearchParams(location.search);
-  const effectiveDuration = dominoParams.has('dominoDuration')
-    ? Number(dominoParams.get('dominoDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('dominoDuration', duration, normalizeDominoDuration);
   const banner = document.getElementById('domino-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -1835,10 +1822,7 @@ function startPole(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const poleParams = new URLSearchParams(location.search);
-  const effectiveDuration = poleParams.has('poleDuration')
-    ? Number(poleParams.get('poleDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('poleDuration', duration, normalizePoleDuration);
   const banner = document.getElementById('pole-banner');
   const setBanner = (text, tone = 'green') => {
     if (!banner) return;
@@ -1909,10 +1893,7 @@ function startTaw(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const tawParams = new URLSearchParams(location.search);
-  const effectiveDuration = tawParams.has('tawDuration')
-    ? Number(tawParams.get('tawDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('tawDuration', duration, normalizeTawDuration);
   const banner = document.getElementById('taw-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -1983,10 +1964,7 @@ function startDdakji(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const ddakjiParams = new URLSearchParams(location.search);
-  const effectiveDuration = ddakjiParams.has('ddakjiDuration')
-    ? Number(ddakjiParams.get('ddakjiDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('ddakjiDuration', duration, normalizeDdakjiDuration);
   const banner = document.getElementById('ddakji-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -2057,10 +2035,7 @@ function startNokabe(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const nokabeParams = new URLSearchParams(location.search);
-  const effectiveDuration = nokabeParams.has('nokabeDuration')
-    ? Number(nokabeParams.get('nokabeDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('nokabeDuration', duration, normalizeNokabeDuration);
   const banner = document.getElementById('nokabe-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -2131,10 +2106,7 @@ function startMahjong(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const mahjongParams = new URLSearchParams(location.search);
-  const effectiveDuration = mahjongParams.has('mahjongDuration')
-    ? Number(mahjongParams.get('mahjongDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('mahjongDuration', duration, normalizeMahjongDuration);
   const banner = document.getElementById('mahjong-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -2205,10 +2177,7 @@ function startKhokho(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const khokhoParams = new URLSearchParams(location.search);
-  const effectiveDuration = khokhoParams.has('khokhoDuration')
-    ? Number(khokhoParams.get('khokhoDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('khokhoDuration', duration, normalizeKhokhoDuration);
   const banner = document.getElementById('khokho-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -2279,10 +2248,7 @@ function startChaupar(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const chauparParams = new URLSearchParams(location.search);
-  const effectiveDuration = chauparParams.has('chauparDuration')
-    ? Number(chauparParams.get('chauparDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('chauparDuration', duration, normalizeChauparDuration);
   const banner = document.getElementById('chaupar-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;
@@ -2353,10 +2319,7 @@ function startGlass(ctx, { duration, rule }) {
   }
 
   const { game, hud } = ctx;
-  const glassParams = new URLSearchParams(location.search);
-  const effectiveDuration = glassParams.has('glassDuration')
-    ? Number(glassParams.get('glassDuration')) || duration
-    : duration;
+  const effectiveDuration = queryDurationOverride('glassDuration', duration, normalizeGlassDuration);
   const banner = document.getElementById('glass-banner');
   const setBanner = (text, tone = 'yellow') => {
     if (!banner) return;

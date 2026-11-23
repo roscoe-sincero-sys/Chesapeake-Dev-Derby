@@ -1,8 +1,8 @@
 // Who is allowed to race. Pure logic, shared by the lobby UI and the tests.
 
-/** Case- and whitespace-insensitive key used to compare names. */
+/** Case- and whitespace-insensitive key used to compare names (stripping invisible format/control characters). */
 export function nameKey(name) {
-  return String(name).trim().replace(/\s+/g, ' ').toLowerCase();
+  return String(name).normalize('NFC').replace(/[\p{Cf}\p{Cc}]/gu, '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 /**

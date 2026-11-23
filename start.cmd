@@ -9,7 +9,7 @@ if errorlevel 1 (
 )
 if not exist "node_modules\three" (
   echo Installing Three.js ^(first run only^)...
-  call npm install --no-audit --no-fund
+  call npm ci --no-audit --no-fund
   if errorlevel 1 (
     echo npm install failed.
     pause

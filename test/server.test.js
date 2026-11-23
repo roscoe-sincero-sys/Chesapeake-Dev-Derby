@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from '../server.js';
+import { cryptoRandom } from '../public/js/sim.js';
 
 async function startServer(t, names = ['Ada', 'Grace', 'Linus', 'Hedy']) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-srv-'));
@@ -245,4 +246,103 @@ test('POST /api/exit (the lobby Exit button) answers, then stops the server; dat
   await assert.rejects(fetch(`${base}/api/version`));
   const winners = JSON.parse(await readFile(path.join(dir, 'winners.json'), 'utf8'));
   assert.deepEqual(winners.winners.map((w) => w.name), ['Ada'], 'saved winners are kept');
+});
+
+// ---------------------------------------------------------------- security hardening (#65, #66)
+
+test('corrupted history.json does not block saving winners, quarantines the bad file, and returns a warning (#65)', async (t) => {
+  const { base, dir } = await startServer(t);
+  await writeFile(path.join(dir, 'history.json'), '{ not valid json');
+
+  const res = await post(base, { name: 'Grace', mode: 'race' });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.deepEqual(body.winners.map((w) => w.name), ['Grace']);
+  assert.match(body.warning, /history\.json was unreadable/i);
+
+  const savedWinners = JSON.parse(await readFile(path.join(dir, 'winners.json'), 'utf8'));
+  assert.deepEqual(savedWinners.winners.map((w) => w.name), ['Grace']);
+  const files = await readdir(dir);
+  assert.ok(files.some((f) => f.startsWith('history.json.corrupt-')), 'corrupt history file kept aside');
+  const freshHistory = JSON.parse(await readFile(path.join(dir, 'history.json'), 'utf8'));
+  assert.equal(freshHistory.history.length, 1);
+  assert.equal(freshHistory.history[0].name, 'Grace');
+});
+
+test('hardening: malformed URLs return 400, errors omit absolute paths, and security headers are set (#66)', async (t) => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-hard-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const server = createServer({ dataDir: dir });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  // 1. Malformed URL escape gives 400 (not 500)
+  for (const badPath of ['/%E0%A4%A', '/api/%ZZ']) {
+    const res = await fetch(`${base}${badPath}`);
+    assert.equal(res.status, 400, `${badPath} should return 400`);
+  }
+
+  // 2. Missing names.json error must not expose absolute filesystem paths
+  const missing = await fetch(`${base}/api/state`);
+  assert.equal(missing.status, 500);
+  const missingBody = await missing.json();
+  assert.match(missingBody.error, /data\/names\.json/);
+  assert.ok(!missingBody.error.includes(dir), `error must not leak temp dir: ${missingBody.error}`);
+  assert.ok(!/[A-Za-z]:\\/.test(missingBody.error), `error must not leak Windows drive path: ${missingBody.error}`);
+
+  // 3. Security headers on pages and API responses
+  for (const url of [`${base}/`, `${base}/api/version`]) {
+    const res = await fetch(url);
+    assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
+    assert.equal(res.headers.get('x-frame-options'), 'DENY');
+    const csp = res.headers.get('content-security-policy');
+    assert.match(csp, /default-src 'self'/);
+    assert.match(csp, /script-src 'self' 'sha256-/);
+    assert.match(csp, /img-src 'self' data: blob:/);
+    assert.match(csp, /style-src 'self'/);
+    assert.match(csp, /frame-ancestors 'none'/);
+  }
+});
+
+test('hardening (#146): caps SSE sessions at maxSessions, blocks cross-site API reads, and provides cryptoRandom()', async (t) => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'derby-146-'));
+  await writeFile(path.join(dir, 'names.json'), JSON.stringify({ names: ['Ada', 'Grace'] }));
+  const server = createServer({ dataDir: dir, exitOnClose: true, shutdownDelay: 60_000, maxSessions: 2 });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const controllers = [];
+  t.after(async () => {
+    for (const c of controllers) c.abort();
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    await rm(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  // 1. Cross-site read API requests are refused with 403; same-origin and direct ('none') succeed
+  for (const route of ['/api/state', '/api/history', '/api/version']) {
+    const blocked = await fetch(`${base}${route}`, { headers: { 'Sec-Fetch-Site': 'cross-site' } });
+    assert.equal(blocked.status, 403, `${route} blocks cross-site`);
+    const okSame = await fetch(`${base}${route}`, { headers: { 'Sec-Fetch-Site': 'same-origin' } });
+    assert.equal(okSame.status, 200, `${route} allows same-origin`);
+    const okNone = await fetch(`${base}${route}`, { headers: { 'Sec-Fetch-Site': 'none' } });
+    assert.equal(okNone.status, 200, `${route} allows direct navigation`);
+  }
+
+  // 2. Concurrent /api/session SSE connections are capped at maxSessions (returns 429)
+  for (let i = 0; i < 2; i++) {
+    const ac = new AbortController();
+    controllers.push(ac);
+    const res = await fetch(`${base}/api/session`, { headers: { Origin: base, 'Sec-Fetch-Site': 'same-origin' }, signal: ac.signal });
+    assert.equal(res.status, 200);
+  }
+  const capped = await fetch(`${base}/api/session`, { headers: { Origin: base, 'Sec-Fetch-Site': 'same-origin' } });
+  assert.equal(capped.status, 429);
+
+  // 3. cryptoRandom() yields uniform finite floats in [0, 1)
+  for (let i = 0; i < 32; i++) {
+    const v = cryptoRandom();
+    assert.ok(Number.isFinite(v) && v >= 0 && v < 1, `cryptoRandom() in [0, 1): ${v}`);
+  }
 });
