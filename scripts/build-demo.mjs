@@ -21,7 +21,10 @@ fs.cpSync(path.join(ROOT, 'public'), out, { recursive: true });
 
 const threeDir = path.join(ROOT, 'node_modules', 'three');
 fs.mkdirSync(path.join(out, 'vendor', 'three', 'build'), { recursive: true });
-fs.copyFileSync(path.join(threeDir, 'build', 'three.module.js'), path.join(out, 'vendor', 'three', 'build', 'three.module.js'));
+for (const file of ['three.module.js', 'three.core.js']) {
+  const src = path.join(threeDir, 'build', file);
+  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(out, 'vendor', 'three', 'build', file));
+}
 fs.copyFileSync(path.join(threeDir, 'LICENSE'), path.join(out, 'vendor', 'three', 'LICENSE'));
 // GLTFLoader imports BufferGeometryUtils. Keep the upstream relative module layout.
 for (const file of ['loaders/GLTFLoader.js', 'controls/OrbitControls.js', 'utils/SkeletonUtils.js', 'utils/BufferGeometryUtils.js']) {
