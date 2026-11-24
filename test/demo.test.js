@@ -106,10 +106,19 @@ test('npm run build:demo produces a self-contained demo with demo mode on and no
   const config = await readFile(path.join(out, 'js', 'config.js'), 'utf8');
   assert.match(config, /export const DEMO = true;/);
   assert.ok(config.includes(`DEMO_VERSION = "${pkg.version}"`));
-  for (const f of ['index.html', 'roster.html', 'history.html', 'absences.html', 'js/absences.js', 'js/flyover-handoff.js', 'js/main.js', 'js/demo-api.js', 'js/data-rules.js', 'css/style.css', 'vendor/three/build/three.module.js', 'vendor/three/LICENSE', '.nojekyll']) {
+  for (const f of ['index.html', 'roster.html', 'history.html', 'absences.html', 'js/absences.js', 'js/flyover-handoff.js', 'js/main.js', 'js/demo-api.js', 'js/data-rules.js', 'css/style.css', 'vendor/three/build/three.module.js', 'vendor/three/build/three.core.js', 'vendor/three/LICENSE', '.nojekyll']) {
     await stat(path.join(out, f));
   }
   const all = await readdir(out, { recursive: true });
+  // Every relative JS import inside vendored Three.js modules must resolve to a file in the demo bundle.
+  for (const rel of all.filter((f) => f.replace(/\\/g, '/').startsWith('vendor/three/') && f.endsWith('.js'))) {
+    const full = path.join(out, rel);
+    const src = await readFile(full, 'utf8');
+    for (const m of src.matchAll(/\b(?:from|import)\s+['"](\.\.?\/[^'"?]+\.js)['"]/g)) {
+      const target = path.resolve(path.dirname(full), m[1]);
+      await stat(target);
+    }
+  }
   for (const file of ['character-prototype.html', 'js/character-prototype.js', 'js/wrestler-models.js', 'js/wrestler-looks.js',
     'wrestling-performance.html', 'js/wrestling-performance.js', 'js/frame-stats.js', 'css/wrestling-performance.css',
     'assets/wrestlers/superhero-male.glb', 'assets/wrestlers/superhero-female.glb', 'assets/wrestlers/hair-beard.glb',
