@@ -39,6 +39,7 @@ const MIME = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
   '.woff2': 'font/woff2',
 };
 
@@ -79,7 +80,7 @@ function resolveInside(baseDir, urlPath) {
   return target;
 }
 
-async function serveFile(res, file, method) {
+async function serveFile(req, res, file, method) {
   let info;
   try {
     info = await stat(file);
@@ -92,8 +93,34 @@ async function serveFile(res, file, method) {
     res.end('404 — you found the pit.');
     return;
   }
+  const contentType = MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
+  const range = method === 'GET' ? req.headers.range : undefined;
+  if (range) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+    if (!match || (!match[1] && !match[2])) {
+      res.writeHead(416, { 'Content-Range': `bytes */${info.size}` });
+      return res.end();
+    }
+    let start = match[1] ? Number.parseInt(match[1], 10) : Math.max(0, info.size - Number.parseInt(match[2], 10));
+    let end = match[1] && match[2] ? Number.parseInt(match[2], 10) : info.size - 1;
+    if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= info.size) {
+      res.writeHead(416, { 'Content-Range': `bytes */${info.size}` });
+      return res.end();
+    }
+    end = Math.min(end, info.size - 1);
+    res.writeHead(206, {
+      'Content-Type': contentType,
+      'Content-Range': `bytes ${start}-${end}/${info.size}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': end - start + 1,
+      'Cache-Control': 'no-cache',
+    });
+    createReadStream(file, { start, end }).pipe(res);
+    return;
+  }
   res.writeHead(200, {
-    'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
+    'Content-Type': contentType,
+    'Accept-Ranges': 'bytes',
     'Content-Length': info.size,
     'Cache-Control': 'no-cache',
   });
@@ -281,7 +308,7 @@ export function createServer({ dataDir = path.join(ROOT, 'data'), exitOnClose = 
         res.writeHead(403);
         return res.end();
       }
-      await serveFile(res, file, req.method);
+      await serveFile(req, res, file, req.method);
     } catch (err) {
       const status = err.statusCode || 500;
       if (status >= 500) console.error(`[error] ${req.method} ${req.url}: ${err.message}`);

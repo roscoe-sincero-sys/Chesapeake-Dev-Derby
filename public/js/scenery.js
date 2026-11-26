@@ -176,11 +176,16 @@ export function buildScenery(scene, track) {
   }
 
   // --- roadside billboards ---
+  let licenseBillboard = null;
   BILLBOARDS.forEach(([lines, color], i) => {
     const s = 55 + i * ((track.length - 100) / BILLBOARDS.length);
     if (s > track.length - 30) return;
     const side = i % 2 ? -1 : 1;
     const board = buildBillboard(lines, color);
+    if (lines.some((line) => /license expired\?/i.test(line))) {
+      board.userData.boardMesh.userData.easterEgg = 'license-expired';
+      licenseBillboard = board.userData.boardMesh;
+    }
     track.place(board, s, side * (track.edge + 7.5), 0);
     // Keep the posts vertical even where the track is on a slope.
     const yaw = Math.atan2(-track.frame(s).tan.x, -track.frame(s).tan.z);
@@ -197,6 +202,7 @@ export function buildScenery(scene, track) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   return {
     sun,
+    licenseBillboard,
     update(t) {
       if (reducedMotion.matches) t = 0;
       waves.offset.set(t * 0.004, t * 0.007);
@@ -465,5 +471,6 @@ function buildBillboard(lines, color) {
   const board = box(9, 4.5, 0.4, [frame, frame, frame, frame, face, frame]);
   const billboard = group(...posts, at(board, 0, 6, 0));
   billboard.userData.posts = posts;
+  billboard.userData.boardMesh = board;
   return billboard;
 }
