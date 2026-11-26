@@ -346,3 +346,27 @@ test('hardening (#146): caps SSE sessions at maxSessions, blocks cross-site API 
     assert.ok(Number.isFinite(v) && v >= 0 && v < 1, `cryptoRandom() in [0, 1): ${v}`);
   }
 });
+
+test('serves mp4 video assets with video/mp4 MIME type and Range support', async (t) => {
+  const { base } = await startServer(t);
+  const head = await fetch(`${base}/assets/easterEggs/softwareLicenceMeeting.mp4`, { method: 'HEAD' });
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('content-type'), 'video/mp4');
+  assert.equal(head.headers.get('accept-ranges'), 'bytes');
+  const total = Number(head.headers.get('content-length'));
+  assert.ok(total > 1000, 'mp4 file should be non-empty');
+
+  const partial = await fetch(`${base}/assets/easterEggs/softwareLicenceMeeting.mp4`, {
+    headers: { Range: 'bytes=0-1023' },
+  });
+  assert.equal(partial.status, 206);
+  assert.equal(partial.headers.get('content-type'), 'video/mp4');
+  assert.equal(partial.headers.get('content-range'), `bytes 0-1023/${total}`);
+  const buf = new Uint8Array(await partial.arrayBuffer());
+  assert.equal(buf.length, 1024);
+
+  const invalid = await fetch(`${base}/assets/easterEggs/softwareLicenceMeeting.mp4`, {
+    headers: { Range: `bytes=${total + 10}-${total + 20}` },
+  });
+  assert.equal(invalid.status, 416);
+});

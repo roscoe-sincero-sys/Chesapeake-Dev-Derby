@@ -124,6 +124,7 @@ export class Game {
     this.scene.add(this.showcase.group);
 
     this.phase = 'lobby';
+    this.paused = false;
     this.clock = 0;
     this.timeScale = 1;
     this.flyT = 0; // real seconds into the current fly-over
@@ -214,6 +215,24 @@ export class Game {
     this._a = new THREE.Vector3();
     this._b = new THREE.Vector3();
     this.focus = new THREE.Vector3();
+    this.raycaster = new THREE.Raycaster();
+    this._pointer = new THREE.Vector2();
+    this._licenseDownHit = false;
+
+    canvas.addEventListener('pointermove', (e) => {
+      canvas.style.cursor = this.hitLicenseBillboard(e.clientX, e.clientY) ? 'pointer' : '';
+    });
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button === 0) this._licenseDownHit = this.hitLicenseBillboard(e.clientX, e.clientY);
+    });
+    canvas.addEventListener('click', (e) => {
+      const hit = this._licenseDownHit || this.hitLicenseBillboard(e.clientX, e.clientY);
+      this._licenseDownHit = false;
+      if (hit) {
+        canvas.style.cursor = '';
+        this.hooks.onLicenseSignClick?.();
+      }
+    });
 
     this.resize = this.resize.bind(this);
     this.frame = this.frame.bind(this);
@@ -1897,6 +1916,40 @@ export class Game {
   }
 
   /** Stops drawing for good (after Exit). */
+  isDerbySceneActive() {
+    if (
+      this.wrestle || this.deathmatch || this.claw || this.plinko || this.freeze ||
+      this.launchpad || this.jenga || this.cannon || this.golf || this.rto ||
+      this.tumba || this.karang || this.tubig || this.domino || this.pole ||
+      this.taw || this.ddakji || this.nokabe || this.mahjong || this.khokho ||
+      this.chaupar || this.glass
+    ) {
+      return false;
+    }
+    if (this.phase === 'lobby') {
+      return this.stageMode === 'flyover' || this.stageMode === 'race-grid';
+    }
+    return true;
+  }
+
+  hitLicenseBillboard(clientX, clientY) {
+    const board = this.scenery?.licenseBillboard;
+    if (this.paused || !board || !this.isDerbySceneActive()) return false;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    this._pointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(this._pointer, this.camera);
+    return this.raycaster.intersectObject(board, false).length > 0;
+  }
+
+  setPaused(paused) {
+    this.paused = Boolean(paused);
+    if (!this.paused) this.last = performance.now();
+  }
+
   stop() {
     this.stopped = true;
   }
@@ -1904,6 +1957,10 @@ export class Game {
   frame(now) {
     if (this.stopped) return;
     requestAnimationFrame(this.frame);
+    if (this.paused) {
+      this.last = now;
+      return;
+    }
     const real = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     const dt = real * this.timeScale;

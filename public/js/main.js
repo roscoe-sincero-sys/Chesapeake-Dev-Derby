@@ -268,6 +268,41 @@ function reviewTeam() {
 }
 
 let guideReturnFocus = null;
+let licenseReturnFocus = null;
+
+/** Opens the Easter-egg video pop-up when the user clicks the "LICENSE EXPIRED?" Derby billboard. */
+function openLicenseVideo() {
+  const dialog = $('license-dialog');
+  const video = $('license-video');
+  if (!dialog || !video || dialog.open) return;
+  licenseReturnFocus = document.activeElement;
+  game?.setPaused(true);
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+  video.loop = true;
+  video.currentTime = 0;
+  video.muted = sfx.muted;
+  video.play().catch(() => {
+    if (!dialog.open) return;
+    video.muted = true;
+    video.play().catch(() => {});
+  });
+  $('license-close')?.focus({ preventScroll: true });
+}
+
+function closeLicenseVideo() {
+  const video = $('license-video');
+  if (video) {
+    video.pause();
+    video.currentTime = 0;
+  }
+  game?.setPaused(false);
+  const dialog = $('license-dialog');
+  if (document.activeElement === document.body || dialog?.contains(document.activeElement)) {
+    licenseReturnFocus?.focus?.({ preventScroll: true });
+  }
+  licenseReturnFocus = null;
+}
 
 /** Opens the "How to play" pop-up dialog for `mode`, keeping the Bottom Command Dock compact. */
 function openGuide(mode, trigger) {
@@ -870,6 +905,7 @@ function init() {
         onCountdown: (text) => hud.countdown(text),
         onFrame: (sim) => hud.frame(sim),
         onEvent: (event) => hud.event(event),
+        onLicenseSignClick: openLicenseVideo,
       },
       sfx,
     );
@@ -919,6 +955,13 @@ function init() {
     }
     guideReturnFocus = null;
   });
+  $('license-close')?.addEventListener('click', () => {
+    const dialog = $('license-dialog');
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+    closeLicenseVideo();
+  });
+  $('license-dialog')?.addEventListener('close', closeLicenseVideo);
   $('quit').addEventListener('click', backToLobby);
   $('retry-save').addEventListener('click', () => state.pendingWinner && saveWinner(state.pendingWinner, state.pendingMode));
 
@@ -930,6 +973,8 @@ function init() {
   mute.addEventListener('click', () => {
     sfx.unlock();
     sfx.setMuted(!sfx.muted);
+    const licenseVideo = $('license-video');
+    if (licenseVideo) licenseVideo.muted = sfx.muted;
     showMute();
   });
   showMute();
