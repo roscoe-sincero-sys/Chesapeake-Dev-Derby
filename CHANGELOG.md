@@ -5,6 +5,20 @@ All notable changes to Chesapeake Dev Derby are recorded here. The project uses
 `package.json` and is shown next to the app's name in the lobby. See *Versioning* in the README for how
 to release.
 
+## [1.17.0] - 2026-11-26
+
+Interactive Derby Race **"LICENSE EXPIRED?"** billboard video pop-up Easter egg, GitHub Pages demo `three.core.js` bundling fix, and game modes documentation guide.
+
+### Added
+- **Derby Race "LICENSE EXPIRED?" Billboard Easter Egg (PR #157):** Made the roadside `"LICENSE EXPIRED?"` billboard clickable via 3D raycasting (`public/js/scenery.js`, `public/js/game.js`) with pointer hover feedback. Clicking it pauses the Derby and opens a `1024×576` modal pop-up (`#license-dialog`) playing `public/assets/easterEggs/softwareLicenceMeeting.mp4` in a continuous loop until the user clicks the upper-right `✕` button (or presses `Escape`) to return to the Derby.
+- **MP4 & HTTP Range Support (`server.js`, `test/server.test.js`):** Added `.mp4` (`video/mp4`) MIME mapping and HTTP `Range` (`206 Partial Content` / `416`) support in `serveFile()` for smooth video playback and looping, plus a headless browser verification test (`test/license-easter-egg-browser.test.js`).
+
+### Fixed
+- **GitHub Pages Demo Build (PR #156):** Bundled `three.core.js` alongside `three.module.js` in `scripts/build-demo.mjs` as required by `three@0.187.0`.
+
+### Documentation
+- **Game Modes Guide (PR #155):** Moved individual game mode descriptions out of `README.md` into `docs/game-modes.md`.
+
 ## [1.16.1] - 2026-11-23
 
 Security hardening patch release resolving 7 security audit findings (`#64`, `#65`, `#66`, `#143`, `#144`, `#145`, `#146`) plus dependency and CI action updates.
